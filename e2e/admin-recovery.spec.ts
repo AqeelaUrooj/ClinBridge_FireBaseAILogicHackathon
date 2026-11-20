@@ -54,9 +54,13 @@ test('recovery: worklist, possible duplicate explained, sign off; FHIR export va
   await page.getByRole('button', { name: 'Prepare export file' }).click();
   await expect(page.getByTestId('export-summary')).toContainText('Structure check passed');
   await expect(page.getByTestId('export-summary')).toContainText('drafts not included');
+  await expect(page.getByText('Sensitive: this file is NOT encrypted')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download file' })).toBeDisabled();
+  await page.getByLabel('I understand this file is sensitive and not encrypted').check();
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download file' }).click();
   const file = await dl;
+  expect(file.suggestedFilename()).toMatch(/^SENSITIVE-clinbridge-fhir-/);
   const text = await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString('utf8'));
   const bundle = JSON.parse(text);
   expect(bundle.resourceType).toBe('Bundle');

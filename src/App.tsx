@@ -14,7 +14,7 @@ import { BodyMapPage } from './features/body/BodyMapPage';
 import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
-import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage } from './features/admin/AdminPages';
+import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
 import { RecoveryListPage, RecoveryItemPage, ExportPage } from './features/recovery/RecoveryPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
@@ -71,6 +71,7 @@ export function App() {
             <Route path="staff" element={<StaffPage />} />
             <Route path="devices" element={<DevicesPage />} />
             <Route path="audit" element={<AuditPage />} />
+            <Route path="backup" element={<BackupPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="/recovery" element={<RecoveryListPage />} />
