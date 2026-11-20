@@ -1,6 +1,7 @@
 import type { ActiveOrder, Entry, MedAdmin } from '../db/schema';
 import type { EntryWithChild } from '../db/repos/entries';
-import { DOSE_UNITS, HIGH_ALERT_DRUGS, RATE_UNITS, ROUTES } from '../config/medicationPolicy';
+import { DOSE_UNITS, RATE_UNITS, ROUTES } from '../config/medicationPolicy';
+import { ACTIVE_CLINICAL_POLICY, type ClinicalPolicy, type HighAlertEntry } from '../config/clinicalPolicy';
 import { formatDose } from './dose';
 
 /**
@@ -12,8 +13,19 @@ import { formatDose } from './dose';
 export type MedEvent = 'administered' | 'held' | 'refused' | 'rate_changed';
 export const EVENT_LABEL: Record<MedEvent, string> = { administered: 'Given', held: 'Held', refused: 'Refused', rate_changed: 'Rate changed' };
 
-export const isHighAlert = (drug: string | null | undefined): boolean =>
-  !!drug && HIGH_ALERT_DRUGS.some((d) => drug.toLowerCase().includes(d));
+/** The high-alert entry for this drug in the active policy, if any. Not being listed does NOT mean a drug is low risk. */
+export function highAlertEntry(drug: string | null | undefined, policy: ClinicalPolicy = ACTIVE_CLINICAL_POLICY): HighAlertEntry | undefined {
+  if (!drug) return undefined;
+  const d = drug.toLowerCase();
+  return policy.highAlert.entries.find((e) => e.match.some((m) => d.includes(m.toLowerCase())));
+}
+export const isHighAlert = (drug: string | null | undefined, policy?: ClinicalPolicy): boolean => !!highAlertEntry(drug, policy);
+
+/** Does this event on this drug need a second nurse under the active policy? */
+export function needsSecondNurse(drug: string | null | undefined, event: string, policy: ClinicalPolicy = ACTIVE_CLINICAL_POLICY): boolean {
+  const e = highAlertEntry(drug, policy);
+  return !!e && e.verification === 'second_nurse_pin' && (e.events as string[]).includes(event);
+}
 
 export type OrderGroup = 'scheduled' | 'prn' | 'infusion';
 export function orderGroup(o: ActiveOrder): OrderGroup {
@@ -33,14 +45,31 @@ export function slotsForDay(o: ActiveOrder, dayIso: string): string[] {
   return (o.scheduled_times ?? []).map((t) => `${day}T${t}:00${off}`);
 }
 
-export type SlotStatus = 'due' | 'given' | 'held' | 'refused' | 'draft';
+export type SlotStatus = 'due' | 'overdue' | 'given' | 'held' | 'refused' | 'draft';
 export interface Slot { time: string; status: SlotStatus; entry?: Entry }
 
-/** Status of each scheduled time = the live (not corrected / not mistake) entry recorded for that time. */
-export function slotStatuses(o: ActiveOrder, dayIso: string, meds: EntryWithChild[]): Slot[] {
-  return slotsForDay(o, dayIso).map((time) => {
+/** The approved timing window for this order, if the active policy has one. None today (no approved policy). */
+export function timingWindow(o: ActiveOrder, policy: ClinicalPolicy = ACTIVE_CLINICAL_POLICY) {
+  if (!policy.medicationTiming.approved) return undefined;
+  const drug = (o.drug_name ?? '').toLowerCase(), freq = (o.frequency ?? '').toLowerCase();
+  return policy.medicationTiming.windows.find((w) => {
+    const { drugMatch, frequency } = w.appliesTo;
+    if (!drugMatch?.length && !frequency?.length) return false;
+    return (!drugMatch?.length || drugMatch.some((m) => drug.includes(m.toLowerCase())))
+      && (!frequency?.length || frequency.some((f) => freq === f.toLowerCase()));
+  });
+}
+
+/**
+ * Status of each scheduled time = the live (not corrected / not mistake) entry recorded for that time.
+ * Unrecorded times are Due. Overdue appears ONLY when an approved timing window covers this order.
+ * nowIso doubles as "which day".
+ */
+export function slotStatuses(o: ActiveOrder, nowIso: string, meds: EntryWithChild[], policy: ClinicalPolicy = ACTIVE_CLINICAL_POLICY): Slot[] {
+  const win = timingWindow(o, policy);
+  return slotsForDay(o, nowIso).map((time) => {
     const hit = meds.find((x) => (x.child as MedAdmin | undefined)?.order_id === o.id && x.entry.scheduled_time === time && (x.entry.status === 'confirmed' || x.entry.status === 'draft'));
-    if (!hit) return { time, status: 'due' };
+    if (!hit) return { time, status: win && Date.parse(nowIso) > Date.parse(time) + win.lateMinutes * 60_000 ? 'overdue' : 'due' };
     if (hit.entry.status === 'draft') return { time, status: 'draft', entry: hit.entry };
     const ev = (hit.child as MedAdmin).event;
     return { time, status: ev === 'held' ? 'held' : ev === 'refused' ? 'refused' : 'given', entry: hit.entry };
@@ -133,7 +162,7 @@ export function validateMed(form: MedForm, order: ActiveOrder, priorRate: number
     if (values.infusion_rate != null && priorRate != null && values.infusion_rate === priorRate) warnings.push('New rate is the same as the current rate');
   }
 
-  const needsSecondCheck = isHighAlert(values.drug_name) && (form.event === 'administered' || form.event === 'rate_changed');
+  const needsSecondCheck = needsSecondNurse(values.drug_name, form.event);
   return { ok: Object.keys(errors).length === 0, errors, warnings, needsSecondCheck, values };
 }
 

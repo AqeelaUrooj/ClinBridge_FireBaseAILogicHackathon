@@ -27,12 +27,13 @@ function useMedData(encounterId: string | undefined, patientId: string) {
   }, [db, encounterId, patientId]);
 }
 
-const SLOT_STYLE: Record<Slot['status'], { tone: 'green' | 'amber' | 'neutral' | 'blue'; label: string; icon: string }> = {
+const SLOT_STYLE: Record<Slot['status'], { tone: 'green' | 'amber' | 'neutral' | 'blue' | 'red'; label: string; icon: string }> = {
   given: { tone: 'green', label: 'Given', icon: 'check' },
   due: { tone: 'amber', label: 'Due', icon: 'schedule' },
   held: { tone: 'neutral', label: 'Held', icon: 'pause' },
   refused: { tone: 'neutral', label: 'Refused', icon: 'block' },
   draft: { tone: 'blue', label: 'Check this', icon: 'rule' },
+  overdue: { tone: 'red', label: 'Overdue', icon: 'alarm' },
 };
 
 function SlotChip({ slot }: { slot: Slot }) {
@@ -149,7 +150,7 @@ export function OrderPage() {
                 <span className="w-14 font-code-tabular font-bold text-primary">{hm(s.time)}</span>
                 <SlotChip slot={s} />
                 <span className="flex-1" />
-                {s.status === 'due' && nurse && <ButtonLink to={`${rec}?slot=${encodeURIComponent(s.time)}`}><Icon name="edit_note" />Record dose</ButtonLink>}
+                {(s.status === 'due' || s.status === 'overdue') && nurse && <ButtonLink to={`${rec}?slot=${encodeURIComponent(s.time)}`}><Icon name="edit_note" />Record dose</ButtonLink>}
                 {s.entry && <ButtonLink variant="ghost" to={`/entries/${s.entry.id}`}>Open</ButtonLink>}
               </div>
             ))}
@@ -182,7 +183,7 @@ export function RecordMed() {
   if (!isNurse(user)) return <EmptyState icon="block" text="Only nurses can record medicines." />;
   const g = orderGroup(order);
   const slot = params.get('slot');
-  const validSlot = slot && slotStatuses(order, clock.nowIso(), data.meds).some((s) => s.time === slot && s.status === 'due') ? slot : null;
+  const validSlot = slot && slotStatuses(order, clock.nowIso(), data.meds).some((s) => s.time === slot && (s.status === 'due' || s.status === 'overdue')) ? slot : null;
   const startEvent = (params.get('event') === 'rate_changed' && g === 'infusion' ? 'rate_changed' : 'administered') as MedEvent;
   const events: MedEvent[] = g === 'infusion' ? ['rate_changed', 'administered', 'held'] : ['administered', 'held', 'refused'];
   const prior = currentRate(order, data.meds).rate;

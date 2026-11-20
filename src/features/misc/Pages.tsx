@@ -5,6 +5,8 @@ import { useApp, useSession } from '../../state/app';
 import { resetPractice } from '../../db/seed';
 import { verifyChain } from '../../db/audit';
 import { backupDb } from '../../db/backup';
+import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
+import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
 import { Button, ButtonLink, Card, Dialog, EmptyState, Icon, PageTitle } from '../../components/ui';
 
 /** Honest placeholder for a route that exists in ROUTES.md but is not built yet. No fake buttons. */
@@ -89,6 +91,18 @@ export function MorePage() {
             <Icon name={audit.ok ? 'verified' : 'gpp_bad'} /> {audit.verified} of {audit.total} log rows verified{audit.ok ? '' : ` · broken at row ${audit.brokenAtSeq}`}
           </p>
         ) : <p role="status">Checking…</p>}
+      </Card>
+      <Card className="flex flex-col gap-space-sm">
+        <h2 className="font-headline-sm text-headline-sm text-primary">Clinical settings</h2>
+        <p className={POLICY.status === 'institution-approved' ? 'text-sync-green' : 'text-[#7a5410]'}>
+          <Icon name={POLICY.status === 'institution-approved' ? 'verified' : 'science'} /> {POLICY.status === 'institution-approved' ? `Approved by ${POLICY.approvedBy} on ${POLICY.approvedOn}` : 'Prototype settings for fake patients. Not approved hospital policy.'}
+        </p>
+        <ul className="list-disc pl-6 font-body-md text-on-surface-variant">
+          <li>High-alert list: {POLICY.highAlert.entries.map((e) => e.label).join(', ')}{POLICY.highAlert.listIsComplete ? '' : ' (partial list, not validated)'}</li>
+          <li>Second checker: {POLICY.secondChecker.roles.join(', ')}{POLICY.secondChecker.approved ? '' : ' (needs approval)'}</li>
+          <li>Medicine timing: {POLICY.medicationTiming.windows.length ? `${POLICY.medicationTiming.windows.length} windows` : 'no Overdue rule; doses show Due'}</li>
+          <li>Vital-sign warning ranges: {CLINICAL_WARNINGS.review.approved ? 'approved' : 'drafts, not approved'}</li>
+        </ul>
       </Card>
       {backups && backups.length > 0 && (
         <Card className="flex flex-col gap-space-sm">

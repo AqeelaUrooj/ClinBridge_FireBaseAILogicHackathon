@@ -1,19 +1,9 @@
-import type { Role } from '../db/schema';
-
 /**
- * Medication settings. Planned to be editable by an admin in Settings (UI/UX S27); a file for now.
- * Every value here comes from the project documents. Items marked POLICY are hospital-policy choices that
- * need confirmation (DECISIONS.md).
+ * Medication data lists (units, routes, site words) from the project documents.
+ * These describe data formats, not clinical policy.
  */
 
-/** High-alert drugs (UI/UX doc §19 rule 4: insulin, heparin, HYDROmorphone, potassium chloride). Matched by name, case-insensitive. */
-export const HIGH_ALERT_DRUGS = ['insulin', 'heparin', 'hydromorphone', 'potassium chloride'];
-
-/**
- * POLICY (D-19): who may be the second checker. Master prompt says RN; UI/UX §6 says LPN "by hospital policy".
- * Default is the stricter RN-only until the hospital confirms.
- */
-export const SECOND_CHECKER_ROLES: Role[] = ['RN'];
+// High-alert drugs, second-checker roles and timing windows live in clinicalPolicy.ts (hospital policy, needs approval).
 
 /** Fixed lists from the Implementation Plan form schema (stops free-text units and routes). */
 export const DOSE_UNITS = ['mg', 'mcg', 'g', 'mL', 'units', 'mmol', 'tablet'] as const;

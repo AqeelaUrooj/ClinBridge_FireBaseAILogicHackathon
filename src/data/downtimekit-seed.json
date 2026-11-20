@@ -5,6 +5,7 @@
   "hospital": "Riverside General Hospital (fictional)",
   "unit": "4 West (Medical-Surgical)",
   "timezone": "UTC-05:00",
+  "second_check": "Every high-alert second check in this fictional data is done by an RN. Who may be a second checker is a hospital policy that needs approval; the app uses an RN-only prototype setting.",
   "scenario": "EHR outage 14 Nov 2026, 03:40 to 12:40 (9 hours), across the 07:00 shift change. Recovery in progress at 13:20.",
   "schema": "Data & Database Plan, section 8 (19 tables)",
   "extra_fields": "route_snomed on active_order and med_admin (SNOMED CT route code); note on downtime_event; med_admin.event also uses rate_changed for an infusion rate change; inference_source values are on_device or in_cloud",
@@ -16,7 +17,7 @@
    "allergy": 11,
    "active_order": 27,
    "snapshot_result": 61,
-   "practitioner": 6,
+   "practitioner": 7,
    "device": 2,
    "downtime_event": 1,
    "entry": 49,
@@ -1865,6 +1866,14 @@
    "role": "RN",
    "pin_hash": "FAKE-argon2id$v=19$m=65536$seed05$notarealhash",
    "active": false
+  },
+  {
+   "id": "pr-reyes",
+   "name": "Ana Reyes",
+   "initials": "AR",
+   "role": "RN",
+   "pin_hash": "FAKE-argon2id$v=19$m=65536$seed06$notarealhash",
+   "active": true
   }
  ],
  "device": [
@@ -3954,7 +3963,7 @@
    "prior_infusion_rate": null,
    "reason": null,
    "double_checked": true,
-   "double_checked_by": "pr-whitfield",
+   "double_checked_by": "pr-reyes",
    "raw_text": "insulin lispro 4 units SC with breakfast; blood sugar 248"
   },
   {
@@ -4184,7 +4193,7 @@
    "prior_infusion_rate": null,
    "reason": null,
    "double_checked": true,
-   "double_checked_by": "pr-whitfield",
+   "double_checked_by": "pr-reyes",
    "raw_text": "insulin lispro 4 units SC with lunch; blood sugar 196"
   },
   {

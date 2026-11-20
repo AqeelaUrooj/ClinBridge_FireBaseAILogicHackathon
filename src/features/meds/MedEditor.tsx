@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { ActiveOrder, MedAdmin, Practitioner } from '../../db/schema';
 import { useApp, useSession } from '../../state/app';
-import { DOSE_UNITS, RATE_UNITS, ROUTES, ROUTE_LABEL, SECOND_CHECKER_ROLES, SITE_WORDS } from '../../config/medicationPolicy';
+import { DOSE_UNITS, RATE_UNITS, ROUTES, ROUTE_LABEL, SITE_WORDS } from '../../config/medicationPolicy';
+import { ACTIVE_CLINICAL_POLICY } from '../../config/clinicalPolicy';
 import { EVENT_LABEL, orderDose, validateMed, type MedEvent, type MedForm } from '../../lib/meds';
 import { formatDose } from '../../lib/dose';
 import { dateTimeLabel, fromLocalInput, hm, toLocalInput } from '../../lib/time';
@@ -25,7 +26,7 @@ function SecondCheckDialog({ onDone, onCancel }: { onDone: (p: Practitioner) => 
   const { db } = useApp();
   const { user } = useSession();
   const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
-  const eligible = (staff ?? []).filter((p) => p.active && p.id !== user?.id && SECOND_CHECKER_ROLES.includes(p.role));
+  const eligible = (staff ?? []).filter((p) => p.active && p.id !== user?.id && ACTIVE_CLINICAL_POLICY.secondChecker.roles.includes(p.role));
   const [who, setWho] = useState<Practitioner | null>(null);
   const check = usePinCheck(who, onDone);
   return (
@@ -48,6 +49,9 @@ function SecondCheckDialog({ onDone, onCancel }: { onDone: (p: Practitioner) => 
           <PinPad value={check.pin} onChange={check.setPin} onSubmit={check.submit} disabled={check.disabled} error={check.error} />
           <Button variant="ghost" onClick={() => setWho(null)}>Pick a different nurse</Button>
         </>
+      )}
+      {ACTIVE_CLINICAL_POLICY.status !== 'institution-approved' && (
+        <p className="font-body-sm text-secondary">Who can check: {ACTIVE_CLINICAL_POLICY.secondChecker.roles.join(', ')}. Prototype setting, not approved hospital policy.</p>
       )}
       <Button variant="secondary" onClick={onCancel}>Cancel</Button>
     </Dialog>

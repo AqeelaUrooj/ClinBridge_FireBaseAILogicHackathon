@@ -78,3 +78,39 @@ describe('medicine rules', () => {
     expect(currentRate(hep, [entry('e3', 'confirmed', null, { event: 'rate_changed', infusion_rate: 1150, infusion_rate_unit: 'units/h' })]).rate).toBe(1150);
   });
 });
+
+describe('clinical policy config', () => {
+  it('prototype policy is marked unapproved and partial', async () => {
+    const { ACTIVE_CLINICAL_POLICY: p } = await import('../config/clinicalPolicy');
+    expect(p.status).toBe('synthetic-prototype');
+    expect(p.highAlert.approved).toBe(false);
+    expect(p.highAlert.listIsComplete).toBe(false);
+    expect(p.secondChecker.approved).toBe(false);
+    expect(p.secondChecker.roles).toEqual(['RN']);
+    expect(p.medicationTiming.windows).toEqual([]);
+  });
+
+  it('with no approved timing policy, a late dose still shows Due', () => {
+    const o = order({ scheduled_times: ['06:00'] });
+    expect(slotStatuses(o, '2026-11-14T13:20:00-05:00', []).map((s) => s.status)).toEqual(['due']);
+  });
+
+  it('Overdue appears only under an approved window that matches the order', async () => {
+    const { PROTOTYPE_POLICY } = await import('../config/clinicalPolicy');
+    const o = order({ scheduled_times: ['09:00', '13:00'] });
+    const approved = { ...PROTOTYPE_POLICY, medicationTiming: { approved: true, note: 'test only', windows: [{ appliesTo: { frequency: ['daily'] }, lateMinutes: 60 }] } };
+    expect(slotStatuses(o, '2026-11-14T13:20:00-05:00', [], approved).map((s) => s.status)).toEqual(['overdue', 'due']);
+    const unapproved = { ...approved, medicationTiming: { ...approved.medicationTiming, approved: false } };
+    expect(slotStatuses(o, '2026-11-14T13:20:00-05:00', [], unapproved).map((s) => s.status)).toEqual(['due', 'due']);
+    const other = order({ frequency: 'twice daily', scheduled_times: ['09:00'] });
+    expect(slotStatuses(other, '2026-11-14T13:20:00-05:00', [], approved).map((s) => s.status)).toEqual(['due']);
+  });
+
+  it('high-alert verification comes from the policy entries', async () => {
+    const { PROTOTYPE_POLICY } = await import('../config/clinicalPolicy');
+    const { needsSecondNurse } = await import('./meds');
+    const custom = { ...PROTOTYPE_POLICY, highAlert: { ...PROTOTYPE_POLICY.highAlert, entries: [] } };
+    expect(needsSecondNurse('insulin lispro', 'administered')).toBe(true);
+    expect(needsSecondNurse('insulin lispro', 'administered', custom)).toBe(false);
+  });
+});

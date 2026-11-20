@@ -1,8 +1,8 @@
 import Dexie from 'dexie';
 import type { DowntimeDB } from '../db';
 import type { AuditLog, ChildByType, Entry, EntryType, InferenceSource, MedAdmin, PhotoCheck } from '../schema';
-import { isHighAlert } from '../../lib/meds';
-import { SECOND_CHECKER_ROLES } from '../../config/medicationPolicy';
+import { needsSecondNurse } from '../../lib/meds';
+import { ACTIVE_CLINICAL_POLICY } from '../../config/clinicalPolicy';
 import { buildAuditRow } from '../audit';
 import type { Clock } from '../../lib/time';
 
@@ -63,13 +63,13 @@ function childTable(db: DowntimeDB, type: EntryType) {
   return db.table(type) as Dexie.Table<ChildByType[EntryType], string>;
 }
 
-/** Documented rule: a high-alert dose or rate change cannot be confirmed without a second, different, eligible nurse. */
+/** Documented rule: a dose needing verification under the active policy cannot be confirmed without a second, different, eligible nurse. */
 async function checkHighAlert(db: DowntimeDB, actor: Actor, m: Omit<MedAdmin, 'id' | 'entry_id'>): Promise<void> {
-  if (!isHighAlert(m.drug_name) || !(m.event === 'administered' || m.event === 'rate_changed')) return;
+  if (!needsSecondNurse(m.drug_name, m.event)) return;
   if (!m.double_checked || !m.double_checked_by) throw new EntryWriteError('A second nurse must check this high-alert drug.');
   if (m.double_checked_by === actor.userId) throw new EntryWriteError('The second check must be done by a different nurse.');
   const p = await db.practitioner.get(m.double_checked_by);
-  if (!p || !p.active || !SECOND_CHECKER_ROLES.includes(p.role)) throw new EntryWriteError('This person cannot be the second checker.');
+  if (!p || !p.active || !ACTIVE_CLINICAL_POLICY.secondChecker.roles.includes(p.role)) throw new EntryWriteError('This person cannot be the second checker.');
 }
 
 export async function createEntry<T extends EntryType>(
