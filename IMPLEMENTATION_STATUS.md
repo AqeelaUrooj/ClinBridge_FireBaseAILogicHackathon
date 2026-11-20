@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 2)
+Last updated: 20 Nov 2026 (round 3)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -8,9 +8,9 @@ Last updated: 20 Nov 2026 (round 2)
 | 1 | Foundation: project, design tokens, 19-table database, seed, audit chain, shell, sign-in, lock | Done |
 | 2 | Vertical slice: vitals | **Done** |
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
-| 4 | Fluids (intake/output), notes, labs | Not started |
+| 4 | Fluids (intake/output), notes, labs | **Done** |
 | 5 | Photo of paper form (on-device AI) | Not started |
-| 6 | Handover, body map | Not started (body map waits on P-01) |
+| 6 | Handover, body map | Body map done (first model); handover not started |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Not started |
 | 8 | Offline/security hardening, encryption at rest, deploy | Partly (offline shell works) |
 
@@ -35,14 +35,20 @@ Also working:
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
 
-## Vitals change (this round)
+## Round 3
 
-Only definitional checks block saving. Clinical ranges are in `src/config/clinicalWarnings.ts`, marked not approved, and only warn (nurse ticks "I re-checked").
+- **DB v2 applied:** `entry.change_reason` (P-02). Safety copy of the old database first, legacy reasons copied, nothing else changed, audit chain valid.
+- **Clinical policy config:** `src/config/clinicalPolicy.ts` holds the high-alert list (marked partial, not validated), second-checker roles (RN only, temporary, needs approval) and medicine timing windows (none approved, so only Due). Shown on More → Clinical settings.
+- **Fake data fixed:** insulin second checks are now done by an RN (new fictional day charge nurse, Ana Reyes).
+- **Body map:** 21 UI/UX regions on the Stitch artwork, patient's left/right, medicine sites as markers, last 3 sites shown when recording an injection.
+- **Phase 4:** fluids with daily totals, notes, labs with critical-result log, ward labs page. Every record type can be fixed.
 
 ## Waiting on you
 
-P-01 body map regions · P-02 `entry.change_reason` · P-03 `note.body_site` · GitHub account confirmation · D-18, D-19 (see DECISIONS.md).
+- **GitHub push** (blocked on the permission step, see the report).
+- **Final body map region model** (P-01). Then `note.body_site` (P-03).
+- **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
 ## Next
 
-Phase 4: fluids (intake/output with running totals), nursing notes, labs (critical result display).
+Phase 6 handover (per patient and ward), then Phase 5 photo capture with on-device AI once Firebase config arrives, then Phase 7 admin / network gate / recovery / FHIR export.

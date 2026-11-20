@@ -26,14 +26,14 @@ Schema: `src/db/schema.ts` (19 tables, matches the Data & DB tab). No invented f
 | Screen | Field |
 |---|---|
 | (automatic) | new `entry.supersedes_id` = old id; old `entry.status` → `corrected` |
-| Why are you fixing this? | `entry.confirmed.correction.reason` (provisional, D-05) + audit row |
+| Why are you fixing this? | new `entry.change_reason` (DB v2) + audit row |
 
 ## Wrong patient or mistake
 
 | Screen | Field |
 |---|---|
 | (automatic) | `entry.status` → `entered-in-error` |
-| Reason | `entry.confirmed.entered_in_error.reason` (provisional, D-05) + audit row |
+| Reason | `entry.change_reason` on the marked entry (DB v2) + audit row |
 
 ## Record medicine → `entry` + `med_admin`
 
@@ -51,6 +51,39 @@ Schema: `src/db/schema.ts` (19 tables, matches the Data & DB tab). No invented f
 | Second nurse check (high-alert) | `double_checked = true`, `double_checked_by` = that nurse's id |
 
 Medicine slot status is worked out, not stored: the live entry (confirmed or draft) with the same `order_id` and `scheduled_time`.
+
+## Fluids → `entry` + `intake_output`
+
+| Screen | Field |
+|---|---|
+| In or out | `direction` |
+| What kind (by mouth, tube feed, IV fluid, IV piggyback, other / urine, vomit, NG tube, drain, other) | `category` (`oral`, `tube`, `iv`, `ivpb`, `other` / `urine`, `emesis`, `ng`, `drain`, `other`) |
+| Amount (mL) | `volume_ml` |
+| How measured | `method` |
+| Period start / end | `start_time` / `end_time` |
+| IV order | `order_id` |
+
+## Notes → `entry` + `note`
+
+| Screen | Field |
+|---|---|
+| Type (Assessment, Care given, Talked to doctor / team, Risk score, Restraint check, Other) | `category` (`assessment`, `intervention`, `communication`, `risk_score`, `restraint_check`, `other`) |
+| Note | `text` |
+| Score name / Score (risk score only, as written) | `score_name` / `score_value` |
+
+## Labs → `entry` + `lab_event`
+
+| Screen | Field |
+|---|---|
+| Lab order / Test | `order_id` (+ `order_time` from the order) / `test_name` |
+| Status | `status` (`pending`, `collected`, `resulted`, `critical`) |
+| Sample taken at | `specimen_time` |
+| Result + unit | `value_num` (numbers) or `value_text` (words), `unit`; `result_time` = entry time when a result is recorded |
+| Who was told / Read back | `called_to` / `read_back` |
+
+## Body map (no new fields)
+
+Medicine markers come from `med_admin.site` via a fixed table (`src/features/body/regions.ts`). Region ids are drafts and are not stored. `note.body_site` is prepared but not applied (P-03).
 
 ## Audit
 

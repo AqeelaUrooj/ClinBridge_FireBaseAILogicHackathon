@@ -18,18 +18,23 @@
 | D-15 | Routes not built yet show an honest "being built" page, no dead buttons | No fake features |
 | D-17 | Vitals: only definitional checks block (number, type, decimals, no negatives, 0–100% oxygen, 0–10 pain, BP pair, flow needs a method, the 4 awake options). Clinical ranges only warn, live in `src/config/clinicalWarnings.ts`, marked not approved | Owner instruction: never reject possibly valid observations on unapproved limits |
 | D-20 | Medicines: dose/unit/route different from the order = warning to tick, never a block | Same principle; catches the 50 mg vs 5 mg case without inventing dose limits |
-| D-21 | High-alert list, units and routes come from the docs and sit in `src/config/medicationPolicy.ts` | Documented values; admin Settings later |
+| D-21 | Units, routes and site words in `src/config/medicationPolicy.ts` (data formats). High-alert list, second-checker roles and timing windows in `src/config/clinicalPolicy.ts`, status `synthetic-prototype` | Keeps prototype settings apart from approved policy |
 | D-22 | Held / Refused need a reason (`med_admin.reason`); rate change reason optional | Every held/refused dose in the synthetic seed carries one; flag if your policy differs |
+| D-23 | P-02 applied as DB v2, additive only (legacy reasons copied, not removed) | Owner: do not overwrite the original entry |
+| D-24 | Body map first model = UI/UX 21 regions; ids are drafts; Stitch quadrant labels removed (mirrored) | Owner decision; see P-01 |
+| D-25 | No Overdue status without an approved timing window; mechanism exists, list empty | Owner decision |
+| D-26 | Critical lab: missing "who was told" / read-back warns, never blocks | Do not add clinical rules without approval |
+| D-27 | Fluid totals are calendar-day sums from 00:00, not shift totals | Shift times are hospital policy; not approved |
 
 ## Open — need an answer
 
 | ID | Question | What the app does now |
 |---|---|---|
-| P-01 | Body map regions — exact differences in `docs/proposals/P-01-body-map-regions.md` | Body map not built |
+| P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
-| D-04 | Private repo `downtimekit`. Connected GitHub account is `AqeelaUrooj` (name "Aqeel Urooj"): owner must confirm it is theirs to use | Repo is local only, nothing pushed, no repo created |
-| P-02 | `entry.change_reason` — migration in `docs/proposals/P-02-entry-change-reason.md` | Until approved: reason kept in `entry.confirmed` JSON and in the audit row; migration moves them without loss |
+| D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon` (public, empty) chosen by owner | `origin` set locally; push blocked on the session's GitHub permission step |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |
-| D-18 | When does a due dose count as **Overdue**? (hospital time window) | Shows "Due" only; no Overdue status until the window is given |
-| D-19 | Can an LPN be the second checker on high-alert drugs? (UI/UX §6 says "by hospital policy"; seed has an LPN checking insulin) | RN only (stricter default) in `src/config/medicationPolicy.ts` |
+| D-18 | Approved medicine timing policy (windows may differ by drug) | Shows Due only (D-25) |
+| D-19 | Second-checker eligibility per local policy, credentials and regulations | RN only, temporary prototype setting in `clinicalPolicy.ts`; seed no longer shows an LPN checker |
+| D-28 | Hospital-approved high-alert list and verification rules | Prototype list from the UI/UX doc, marked partial |

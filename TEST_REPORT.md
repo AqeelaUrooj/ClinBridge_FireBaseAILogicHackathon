@@ -1,49 +1,51 @@
 # Test report
 
-Run: 20 Nov 2026 (round 2), local (Linux, Node 22, Chrome).
+Run: 20 Nov 2026 (round 3), local (Linux, Node 22, Chrome).
 
 | Check | Result |
 |---|---|
-| `npm run typecheck` | Pass |
-| `npm run lint` | Pass |
-| `npm test` (Vitest) | **37 / 37 pass** (5 files) |
-| `npm run build` | Pass (PWA, 14 files precached, 4.5 MB incl. icon font) |
-| `npm run test:e2e` (Playwright) | **6 / 6 pass** |
+| `npm run typecheck` | Pass (exit 0) |
+| `npm run lint` | Pass (exit 0) |
+| `npm test` (Vitest) | **53 / 53 pass** (8 files) |
+| `npm run build` | Pass (PWA, 14 files precached, 4.6 MB incl. icon font) |
+| `npm run test:e2e` (Playwright) | **9 / 9 pass** |
 
-## Unit tests
+## Unit tests (8 files)
 
-- `audit.test.ts`: JSON matches the seed's hashing; every seed audit row verifies; a tampered row is caught.
+- `audit.test.ts`: the seed's hashing matches; every seed audit row verifies; tampering is caught.
+- `migration.test.ts` (new): DB v2 for `entry.change_reason`:
+  - Still 19 tables.
+  - A real v1 database with legacy reasons gets backed up first. Every reason is copied, every other field is identical and the original values are untouched.
+  - The history (corrected / supersedes) is kept, one `schema_migrated` audit row is added and the chain still verifies. The backup holds the full v1 data.
+  - A new database needs no backup.
+  - After v2, a fix requires a reason, which is saved only in `change_reason`; the original is not overwritten. A mistake writes `change_reason`.
 - `entries.test.ts`:
-  - Seed and saving: the seed loads all 19 tables and drops non-schema fields; fake data is refused in Real records; the practice PIN is hashed; a save writes entry + child + audit together; care time and entry time stay separate.
-  - Fixes and mistakes: a fix keeps the original values; double fixes and cross-patient fixes are refused; entered-in-error keeps the record; parallel saves keep the audit chain intact.
-  - **High-alert guard:**
-    - Refused: no second nurse, the same nurse as checker, or a non-eligible role as checker.
-    - Saved: a different eligible nurse checked it.
-    - No second nurse needed: a held dose.
-- `vitals.test.ts`:
-  - Structural blocks: text, negatives, wrong type, too many decimals, oversized values, the scale edges (oxygen 0–100%, pain 0–10), a missing BP pair, flow without a method, only the 4 awake options, at least one value.
-  - Warnings only: pulse 18 / 130 / 260 / 900, and bottom BP not below top. The config is marked not approved.
+  - Seed and saving: seed import; Real records stay separate; the PIN is hashed; a save is all-or-nothing.
+  - Fixes and mistakes: a fix keeps the original; double and cross-patient fixes are refused; entered-in-error keeps the record; parallel saves keep the chain intact.
+  - High-alert guard (repository): refused with no checker, the same nurse, or a non-eligible role; saved with a different eligible RN; not needed for a held dose.
+- `vitals.test.ts`: structural checks block; clinical ranges only warn; the config is marked not approved.
 - `meds.test.ts`:
-  - Order handling: the high-alert names; Scheduled / As needed / Drip grouping; pre-fill with no trailing zero.
-  - Checks: missing route, a bad unit and a zero dose are blocked; 50 vs 5 mg is a warning, not a block; held and refused need a reason; the second nurse is needed only for high-alert doses and rate changes.
-  - Status: slot status ignores old versions; the current drip rate is the latest change, else the order.
-- `cloud.test.ts`: every cloud purpose is blocked during System down; compare only on Practice; recovery help only after the network is cleared.
+  - Medicine rules: high-alert names; grouping; no trailing zero; route / unit / dose structure; 50 vs 5 mg warns; held / refused need a reason; who needs a second nurse; slot status; drip rate.
+  - **Policy config:** prototype marked unapproved and partial, RN only, no timing windows; a late dose still shows Due; Overdue appears only under an approved, matching window; verification comes from the policy entries.
+- `charting.test.ts` (new):
+  - Fluids: structural checks; urine is not an "in"; period start/end; 9,000 mL allowed (no clinical limit); totals are plain sums.
+  - Notes: type and text required; a risk score is stored as entered.
+  - Labs: a result needs a value; text results are kept as text; for a critical result, missing who-was-told and read-back warn but do not block.
+- `regions.test.ts` (new): exactly 21 unique regions; patient's left/right correct on front and back; every standard site word maps to a region.
+- `cloud.test.ts`: cloud blocked during System down; allowed purposes only after the network is cleared.
 
-## Browser tests
+## Browser tests (9)
 
-`e2e/vitals-slice.spec.ts`:
-1. Sign in → patient check → vitals:
-   - Text blocked; pulse 160 warns and Save stays locked until ticked.
-   - Save → reload → still there.
-   - A fix needs a reason, and the old version is kept.
-2. 5 wrong PINs → locked for 1 minute.
-3. Opens with no network after the first visit.
+| File | Test |
+|---|---|
+| vitals-slice | Sign in → check patient → vitals (text blocked, unusual pulse needs a tick) → save → reload → still there → fix with reason → versions |
+| vitals-slice | 5 wrong PINs → locked 1 minute |
+| vitals-slice | Opens with no network after the first visit |
+| meds | Insulin: second-nurse PIN required, own name not offered, wrong PIN refused → saved, 18:00 not Due |
+| meds | 250 mg vs ordered 25 mg: tick the warning → save → fix to 25 mg with a reason → both versions |
+| meds | Held dose needs a reason → status Held |
+| charting | Fluids: Rosa Santos 240 in / 770 out (−530) → add 200 by mouth → 440 / 770 (−330) (totals checked against the seed file) |
+| charting | Note → fix with reason → old version shown |
+| charting | Critical lab: missing read-back warns, Save locked → fill in → saved → shows on Ward labs |
 
-`e2e/meds.spec.ts`:
-4. Insulin (high-alert):
-   - Save is locked until the second nurse check, and the signed-in nurse is not offered as checker.
-   - A wrong PIN is refused; the right PIN works → saved → 18:00 no longer Due.
-5. Metoprolol 250 mg when 25 mg is ordered: the warning must be ticked → saved → fixed to 25 mg with a reason → both versions shown.
-6. Held dose: a reason is required → status Held.
-
-Not tested yet: screen reader, tablet sizes, Firefox/Safari, the P-02 migration (not applied).
+Not tested yet: screen reader, tablet sizes, Firefox/Safari, migration inside a real browser (covered by the unit test with an IndexedDB emulator).

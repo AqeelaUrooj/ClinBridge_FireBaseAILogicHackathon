@@ -12,7 +12,7 @@ Built = works. Placeholder = honest "being built" page.
 | `/alerts` | Drafts to check (list) | Built (checking drafts in later phase) |
 | `/more` | Switch user, change-log check, reset practice | Built |
 | `/handover` | Ward handover | Placeholder (Phase 6) |
-| `/labs` | Labs | Placeholder (Phase 4) |
+| `/labs` | Ward labs, critical first (from More) | Built |
 | `/export` | Export | Placeholder (Phase 7) |
 | `/drill/compare` | Practice compare | Placeholder (Phase 7) |
 | `/setup` | First-time setup (real records) | Placeholder (Phase 7) |
@@ -26,14 +26,18 @@ Built = works. Placeholder = honest "being built" page.
 | `/patients/:id/meds/:order` | One order: details, today's times, history | Built |
 | `/patients/:id/meds/:order/record` | Record Given / Held / Refused / Rate change → review → second nurse PIN (high-alert) → save | Built |
 | `/patients/:id/orders` | All orders, read only | Built |
-| `/patients/:id/io` | Fluids | Placeholder (Phase 4) |
-| `/patients/:id/notes` | Notes | Placeholder (Phase 4) |
+| `/patients/:id/io` | Fluids: today's in / out / balance, list | Built |
+| `/patients/:id/io/record` | Add fluid → review → save | Built |
+| `/patients/:id/notes` | Notes list | Built |
+| `/patients/:id/notes/new` | New note (type, text, risk score as written) → review → save | Built |
+| `/patients/:id/labs` | Patient labs | Built (new route) |
+| `/patients/:id/labs/record` | Record lab event / critical result | Built (new route) |
 | `/patients/:id/capture` | Photo of paper | Placeholder (Phase 5) |
-| `/patients/:id/body` | Body map | Placeholder (Phase 6, waits on D-03) |
+| `/patients/:id/body` | Body map, 21 UI/UX regions (first model), medicine site markers | Built |
 | `/patients/:id/handoff` | Patient handover | Placeholder (Phase 6) |
 | `/entries/:entry` | Record details, Fix, Mistake | Built |
 | `/entries/:entry/history` | All versions | Built |
-| `/entries/:entry/correct` | Fix vitals or a medicine record, with reason | Built (vitals, medicines) |
+| `/entries/:entry/correct` | Fix any record type, reason required | Built (all 5 types) |
 | `/capture/:entry/confirm` | Check photo result | Placeholder (Phase 5) |
 
 Every patient page and every `/entries/*` page asks for the patient check (name, born, MRN) first.
