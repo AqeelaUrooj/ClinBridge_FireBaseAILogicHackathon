@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { createEntry, listPatientEntries, type EntryWithChild } from '../../db/repos/entries';
 import type { VitalSign } from '../../db/schema';
 import { useApp, useSession } from '../../state/app';
-import { VITAL_RULES, isOutsideNormal, type VitalKey } from '../../lib/vitals';
+import { VITAL_RULES, isUnusual, type VitalKey } from '../../lib/vitals';
 import { hm, dayLabel } from '../../lib/time';
 import { Badge, Breadcrumbs, ButtonLink, Card, EmptyState, Icon, SectionLabel } from '../../components/ui';
 import { useCurrentPatient } from '../patient/PatientLayout';
@@ -39,7 +39,7 @@ function Trend({ items, k }: { items: EntryWithChild[]; k: VitalKey }) {
         <polyline fill="none" stroke="#4A6078" strokeWidth="2" points={pts.map((p) => `${x(p.t)},${y(p.v)}`).join(' ')} />
         {pts.map((p) => (
           <g key={p.t}>
-            <circle cx={x(p.t)} cy={y(p.v)} r="4" fill={isOutsideNormal(k, p.v) ? '#C18A28' : '#1C2536'} />
+            <circle cx={x(p.t)} cy={y(p.v)} r="4" fill={isUnusual(k, p.v) ? '#C18A28' : '#1C2536'} />
             <text x={x(p.t)} y={y(p.v) - 8} textAnchor="middle" fontSize="11" fill="#1C2536" fontFamily="Inter">{p.v}</text>
             <text x={x(p.t)} y={H - 4} textAnchor="middle" fontSize="10" fill="#5A6E85" fontFamily="Inter">{p.label}</text>
           </g>
@@ -73,7 +73,7 @@ export function VitalsPage() {
               {CARDS.map((k) => {
                 const r = VITAL_RULES[k];
                 const n = lv?.[k];
-                const out = isOutsideNormal(k, n);
+                const out = isUnusual(k, n);
                 return (
                   <div key={k} className={`rounded-xl border p-space-md bg-surface-container-lowest ${out ? 'border-downtime-amber-border' : 'border-card-border'}`}>
                     <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">{k === 'bp_systolic' ? 'Blood pressure' : r.label}</span>
@@ -81,12 +81,13 @@ export function VitalsPage() {
                       {n == null ? '—' : k === 'bp_systolic' ? `${n}/${lv?.bp_diastolic ?? '?'}` : n}
                       <span className="text-body-sm font-normal text-secondary"> {n == null ? '' : r.unit}</span>
                     </span>
-                    {out && <Badge tone="amber" icon="warning">Outside usual range</Badge>}
+                    {out && <Badge tone="amber" icon="warning">Unusual</Badge>}
                   </div>
                 );
               })}
             </div>
           </div>
+          <p className="font-body-sm text-secondary -mt-space-sm">“Unusual” uses draft ranges that are not clinically approved yet.</p>
           <Card>
             <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Pulse over time</h2>
             <Trend items={items} k="heart_rate" />

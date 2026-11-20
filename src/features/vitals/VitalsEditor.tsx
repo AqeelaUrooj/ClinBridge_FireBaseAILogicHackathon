@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { VitalSign } from '../../db/schema';
 import { useApp } from '../../state/app';
-import { CONSCIOUSNESS_OPTIONS, VITAL_RULES, isOutsideNormal, validateVitals, type VitalKey, type VitalsForm, type VitalsValues } from '../../lib/vitals';
+import { CONSCIOUSNESS_OPTIONS, VITAL_RULES, isUnusual, validateVitals, type VitalKey, type VitalsForm, type VitalsValues } from '../../lib/vitals';
 import { dateTimeLabel, fromLocalInput, toLocalInput } from '../../lib/time';
 import { Badge, Button, Card, Icon, SectionLabel } from '../../components/ui';
 
@@ -53,6 +53,7 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
   const [errors, setErrors] = useState<ReturnType<typeof validateVitals>['errors'] & { care?: string; reason?: string }>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
   const v = validateVitals(form);
   const careIso = fromLocalInput(care, clock.offsetMinutes);
 
@@ -63,7 +64,7 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
     else if (minCareTime && Date.parse(careIso) < Date.parse(minCareTime)) e.care = 'Time is before this patient was admitted';
     if (requireReason && !reason.trim()) e.reason = 'Say why you are fixing this';
     setErrors(e);
-    if (Object.keys(e).length === 0) setStep('review');
+    if (Object.keys(e).length === 0) { setChecked(false); setStep('review'); }
     else document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }
 
@@ -88,22 +89,33 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
           {shown.map((k) => {
             const r = VITAL_RULES[k];
             const n = v.values[k] as number;
-            const out = isOutsideNormal(k, n);
+            const out = isUnusual(k, n);
             return (
               <div key={k} className={`rounded-lg border p-space-md ${out ? 'border-downtime-amber-border bg-downtime-amber-bg' : 'border-card-border bg-surface-container-low'}`}>
                 <dt className="font-label-uppercase text-label-uppercase text-secondary uppercase">{r.label}</dt>
                 <dd className="font-code-tabular text-[22px] font-bold text-primary">{n} <span className="text-body-sm font-normal text-secondary">{r.unit}</span></dd>
-                {out && <Badge tone="amber" icon="warning">Outside usual range</Badge>}
+                {out && <Badge tone="amber" icon="warning">Unusual — check</Badge>}
               </div>
             );
           })}
           {v.values.o2_device && <div className="rounded-lg border border-card-border bg-surface-container-low p-space-md"><dt className="font-label-uppercase text-label-uppercase text-secondary uppercase">Oxygen given by</dt><dd className="font-body-lg text-primary">{v.values.o2_device}</dd></div>}
           {v.values.consciousness && <div className="rounded-lg border border-card-border bg-surface-container-low p-space-md"><dt className="font-label-uppercase text-label-uppercase text-secondary uppercase">Awake?</dt><dd className="font-body-lg text-primary">{v.values.consciousness}</dd></div>}
         </dl>
+        {v.warnings.length > 0 && (
+          <div className="rounded-lg border border-downtime-amber-border bg-downtime-amber-bg p-space-md flex flex-col gap-space-sm" role="alert">
+            <p className="font-headline-sm text-headline-sm text-[#7a5410] flex items-center gap-2"><Icon name="warning" />Check these values</p>
+            <ul className="list-disc pl-6 font-body-md">{v.warnings.map((w) => <li key={w.key}>{w.text}</li>)}</ul>
+            <label className="flex items-center gap-2 min-h-11 font-body-md font-semibold cursor-pointer">
+              <input type="checkbox" className="w-5 h-5" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
+              I re-checked these values and they are right
+            </label>
+            <p className="font-body-sm text-secondary">Warning ranges are drafts awaiting clinical review. They never stop you saving a value you checked.</p>
+          </div>
+        )}
         {requireReason && <p className="font-body-md"><span className="text-secondary">Reason for fix: </span>{reason}</p>}
         {saveError && <p role="alert" className="text-error font-body-md flex items-center gap-1"><Icon name="error" />{saveError}</p>}
         <div className="flex gap-space-sm">
-          <Button onClick={save} disabled={saving}><Icon name="save" />{saving ? 'Saving…' : saveLabel}</Button>
+          <Button onClick={save} disabled={saving || (v.warnings.length > 0 && !checked)}><Icon name="save" />{saving ? 'Saving…' : saveLabel}</Button>
           <Button variant="secondary" onClick={() => setStep('fill')} disabled={saving}>Go back</Button>
         </div>
       </Card>
@@ -145,6 +157,7 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
                   className={`min-h-11 px-space-md rounded-lg border font-body-md ${form.consciousness === o ? 'bg-primary-container text-on-primary border-primary-container' : 'border-card-border bg-surface-container-lowest'}`}>{o}</button>
               ))}
             </div>
+            {errors.consciousness && <span className="text-error font-body-sm">{errors.consciousness}</span>}
           </fieldset>
         </>
       ) : (

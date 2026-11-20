@@ -28,10 +28,19 @@ test('record vitals, survive reload, then fix them', async ({ page }) => {
   await page.getByRole('link', { name: /Vitals/ }).first().click();
   await page.getByRole('link', { name: 'Record vitals' }).click();
 
-  // Validation: an impossible number is caught before review.
-  await page.getByLabel('Pulse').fill('900');
+  // Structural check blocks: text is not a number.
+  await page.getByLabel('Pulse').fill('7a');
   await page.getByRole('button', { name: 'Review' }).click();
-  await expect(page.getByText(/Check this: must be 20–250/)).toBeVisible();
+  await expect(page.getByText(/Numbers only/)).toBeVisible();
+
+  // Clinical warning never blocks, but needs a tick before Save.
+  await page.getByLabel('Pulse').fill('160');
+  await page.getByRole('button', { name: 'Review' }).click();
+  await expect(page.getByText('Pulse 160 /min is unusual')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await page.getByLabel('I re-checked these values and they are right').check();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Go back' }).click();
 
   await page.getByLabel('Top blood pressure').fill('128');
   await page.getByLabel('Bottom blood pressure').fill('82');

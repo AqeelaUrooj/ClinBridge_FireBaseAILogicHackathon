@@ -438,6 +438,142 @@ The app is not done until every line is true.
 - [ ] The audit log chain check passes on the fake data set
 - [ ] No real names, patients or keys anywhere
 
+## 17. Pages, not one long screen (fix for crowded pages)
+
+**The problem:** an AI-built app can easily put everything on one screen: the list, the details, the side panel and long explanations, all at once. That is hard to read, especially for a tired nurse at 4 am.
+
+**The fix:** every screen does **one job**, and details open on **their own page** with their own web address. Lists show only what you need to choose; you click a row to see the rest. This section **replaces the 320 px detail panel** in sections 7 and 9.
+
+### 17.1 Page map
+
+Each line is a separate page. Indented pages open from the page above them.
+
+```
+/sign-in                         Sign in
+/lock                            Lock screen
+/setup/1 … /setup/5              First-time setup, one step per page
+
+/ward                            Ward board (home)
+/patients/:id                    Patient summary (4 tiles, nothing else)
+   /patients/:id/timeline        Timeline (entry list)
+   /patients/:id/meds            Medication schedule (list)
+      /patients/:id/meds/:order          One medicine: order + dose history
+      /patients/:id/meds/:order/record   Record a dose (form)
+   /patients/:id/vitals          Vitals chart + table
+   /patients/:id/io              Intake/Output
+   /patients/:id/notes           Notes list
+   /patients/:id/orders          Orders and allergies
+   /patients/:id/handoff         Handoff note
+   /patients/:id/capture         Capture: pick a form, type or photo
+      /capture/:entry/confirm    Confirm the AI proposal
+/entries/:entry                  One entry: values + paper photo
+   /entries/:entry/history       All versions
+   /entries/:entry/correct       Correct it (form)
+/labs                            Labs list for the ward
+   /labs/:lab                    One lab result
+
+/recovery                        Recovery worklist
+   /recovery/:item               Review one item
+/recovery/gate                   Network gate (admin)
+/export                          Export (admin)
+
+/admin                           Admin home (7 tiles)
+   /admin/readiness   /admin/downtime   /admin/snapshot
+   /admin/staff       /admin/staff/:id
+   /admin/devices     /admin/devices/:id
+   /admin/audit       /admin/audit/:seq
+   /admin/settings/general | high-alert | units | roles | keys
+/drill/compare                   Compare (Drill only)
+```
+
+### 17.2 Rules for less text
+
+| Rule | Limit |
+| --- | --- |
+| One job per page | The page title says the job in 4 words or fewer |
+| One main button | Only one dark green button per page |
+| Short lists | Lists show 3 to 5 fields per row; tables at most 6 columns; 10 rows per page, then Next |
+| Short labels | Labels 3 words or fewer; helper text one line, 12 words or fewer |
+| No paragraphs | No explanation paragraphs inside the app. Longer help sits behind a small What is this? link |
+| Cards | Title + one value + one status chip + one link. Nothing more |
+| One banner | Only the most important banner shows; the rest sit behind a 2 more alerts link |
+| Short forms | At most 7 fields on screen; the rest behind More fields |
+| Compact patient banner | One line, 56 px tall: name, age, date of birth, MRN, bed, allergy chip. Full details live on the patient summary page |
+| Short mode bar | e.g. DOWNTIME · since 03:40 · Cloud blocked |
+| Short confirm boxes | One sentence + two named buttons |
+| Whitespace | At least 24 px between cards; never more than 3 cards in a row |
+
+**What never gets hidden to save space:** the mode bar, the patient banner with the allergy chip, the AI badge on an AI result, the high-alert banner and the Lock button. Safety always beats tidiness.
+
+### 17.3 Moving between pages
+
+- Clicking a row opens its own page. Every page has its own web address, so the browser's Back button, refresh and bookmarks all work.
+- Detail pages show a breadcrumb trail (the path back) at the top, e.g. Ward board › Sam Rivera › Medications › amLODIPine.
+- Going Back returns to the same list position, with the same filters (filters are kept in the web address).
+- A page opened from a link still asks for the PIN first if the app is locked, then opens that exact page.
+- Changing patient always goes through the name + date of birth + MRN check.
+
+## 18. Pictures and illustrations (body map, medicine pictures, icons)
+
+The app should explain itself with pictures first and words second, like the two reference dashboards: a body figure that shows where something is, picture cards for medicines, and small drawings beside every number. This section **changes one earlier decision**: the body figure, left out in section 2, is now in.
+
+### 18.1 Rules for every picture
+
+- **Drawn, not photographed.** Every picture is an SVG drawing (a picture made of shapes, so it stays sharp at any size and is very small) packed inside the app. No photos and nothing loaded from the internet, so it all works offline.
+- **One style:** flat shapes in the sage greens, 2 px rounded outlines, no gradients, no brand logos, no faces.
+- **A picture never replaces the words.** The drug name, dose and unit are always written out. Screen readers get a spoken label for every picture.
+- **Medicine pictures show the kind, not the real product.** A tablet drawing means this is a tablet. It does not show what the real pill looks like, so a small line under the picture says Picture shows the type only. Nurses must never identify a pill from the drawing.
+
+### 18.2 Body map
+
+A simple body outline, front and back views, split into 24 areas you can tap (head, chest, belly, left and right upper arm, forearm, hand, thigh, lower leg, foot, upper back, lower back, buttocks, heels).
+
+| Marker | Looks like | Comes from |
+| --- | --- | --- |
+| Injection site | Small forest dot with a syringe icon | `med_admin.site`, for example Abdomen, left side |
+| IV line (a drip tube in a vein) | Ocean dot with a drop icon | `med_admin.site`, for example Left forearm IV line |
+| Skin concern | Yellow area (red if serious) | Notes about skin, for example red heels on a pressure-sore check |
+| Pain | Area outlined in red with the score, e.g. 5/10 | Pain score in vitals plus the area the nurse taps |
+
+- **Where it shows:** a body tile on the patient summary page, and its own page, `/patients/:id/body`, with the front and back figures on the left and a short list of markers on the right. Tapping a marker opens that entry's page.
+- **It is also an input.** On the Record dose form, the nurse taps the body area instead of typing the site. The app writes the standard words (Abdomen, left side). For insulin it shows the last few injection sites, so the nurse can pick a different spot.
+- **One small database addition:** an optional `body_site` field on `note`, so a skin or pain note can be pinned to an area. Injection and IV sites already fit in `med_admin.site`.
+- **In the fake data:** Lena Ortiz has two insulin sites on the belly, Daniel Okoye and others have IV lines on the forearm or hand, and Tom Hale has red heels.
+
+### 18.3 Medicine pictures
+
+Every medicine row and medicine page gets a picture card, like the medication cards in the reference image. The picture is chosen from the order's route (how the drug is given), so no new data is needed.
+
+| Route in the data | Picture |
+| --- | --- |
+| PO (by mouth) | Tablet; a capsule or a medicine cup for liquids |
+| IV, one dose | Syringe with a vial |
+| IV, continuous infusion | IV bag on a pump, with the rate shown on the bag |
+| SC or IM (injection under the skin or into muscle) | Injection pen or syringe |
+| SL (under the tongue) | Small tablet with a tongue outline |
+| TOP (on the skin) | Cream tube |
+| PR (rectal) | Suppository |
+| NG (through a feeding tube) | Feeding tube |
+| Inhaled | Inhaler |
+
+High-alert drugs get a red ring around the picture plus the words High-alert. The picture card shows: picture, drug name in Tall Man letters, dose and route, next time due, status chip.
+
+### 18.4 Other pictures
+
+| Where | Picture |
+| --- | --- |
+| Vital sign cards | Heart (heart rate), lungs (breathing), thermometer (temperature), arm cuff (blood pressure), fingertip clip (oxygen level), blood drop (blood sugar), face scale (pain) |
+| Intake/Output | A glass and an IV bag for fluids in, a measuring jug for fluids out, and a balance drawing that tips to the heavier side |
+| Form tiles on Capture | A small drawing of each paper form |
+| Photo check | Drawing of a blurry page, a cut-off page, a dark page, a page with glare |
+| Labs | Test tube; red for a critical result |
+| Mode bar and mode pages | One drawing per mode: training cap, tick, unplugged cable, cloud |
+| Isolation and diet chips | Mask, gloves, plate with cutlery, crossed-out plate for nothing by mouth |
+| Empty states | A calm leaf drawing with one line of text |
+| Sign in, lock and setup | The layered leaf art |
+| Readiness | A drawing per check: chip (AI model), disk, laptop, clock |
+| Handoff | Two nurse figures (no faces) passing a clipboard |
+
 ## Sources
 
 - [Joint Commission: Facts about the Official Do Not Use List](https://www.jointcommission.org/facts_about_do_not_use_list/)
@@ -447,39 +583,40 @@ The app is not done until every line is true.
 - [Inter font](https://rsms.me/inter/) and [Lucide icons](https://lucide.dev)
 - The 4 reference images shared on Nov 18, 2026
 
-## 17. Master prompt
+## 19. Master prompt (all in one)
 
-**How to use it:** open your AI coding tool, attach the file `downtimekit-seed.json` and the 4 reference images, then paste everything in the box below as one message. The prompt is complete on its own: the AI does not need to see this document.
+**How to use it:** open your AI coding tool in a new chat, attach the file `downtimekit-seed.json` and the 4 reference images, then paste everything in the box below as one message. This one prompt replaces the three earlier prompts: it includes the full app, separate pages with little text (section 17), and the pictures and body map (section 18). It is complete on its own; the AI does not need this document.
 
 ```
 ROLE
-You are a senior front-end engineer and product designer who builds safety-critical hospital software. Build the complete DowntimeKit web app described below. This is a real product for daily use on a hospital ward, so build working screens with real state, validation, saving and error handling. Do not build a mock-up, a landing page or a marketing site.
+You are a senior front-end engineer and product designer who builds safety-critical hospital software. Build the complete DowntimeKit web app described below. This is a real product for daily use on a hospital ward, so build working pages with real state, validation, saving and error handling. Do not build a mock-up, a landing page or a marketing site.
 
 PRODUCT
 DowntimeKit is an offline-first web app for nurses. When the hospital's electronic record system goes down, nurses keep charting on a ward laptop: vital signs, medications given, fluid intake and output, notes and lab events. An on-device AI model reads photos of paper forms and proposes values; the nurse checks and confirms every value. When the network is declared safe again, an admin opens a gate, and a cloud AI helps staff review and export everything back to the hospital system.
 
 ATTACHED
 1. downtimekit-seed.json: a fully fake data set. Its top-level keys are the 19 database tables (snapshot, patient, encounter, allergy, active_order, snapshot_result, practitioner, device, downtime_event, entry, vital_sign, med_admin, intake_output, note, lab_event, worklist_item, handoff, audit_log, key_store). Treat its field names and values as the schema. Read _meta first.
-2. Four reference images for visual style only: a sage green palette, a dashboard with a left side menu and white rounded cards, a patient screen with a timeline list and pill tabs, and a sign-in screen with layered paper-cut leaves. Copy their calm mood, card style and spacing. Do not copy their body diagrams, product cards, face photos, social sign-in buttons or blur effects.
+2. Four reference images for visual style: a sage green palette, a dashboard with a left side menu and white rounded cards, a patient screen with a body figure, a timeline list and medication cards, and a sign-in screen with layered paper-cut leaves. Copy their calm mood, card style, spacing, the idea of a body figure with markers and the idea of medicine picture cards. Do not copy their face photos, product photos, social sign-in buttons or blur effects; draw everything new in our own style.
 
 TECH STACK
 - React 18 + TypeScript (strict) + Vite, React Router, installable PWA with a service worker so it runs fully offline.
-- Styling with plain CSS variables and CSS modules. No UI kit. No CDN: bundle the Inter font and Lucide icons locally. Zero requests to outside hosts at runtime except the AI cloud calls in Recovery.
+- Plain CSS variables and CSS modules. No UI kit. No CDN: bundle the Inter font and Lucide icons locally. Zero requests to outside hosts at runtime except the AI cloud calls in Recovery.
 - Data in IndexedDB (idb library), one object store per table, behind a typed repository layer. Encrypt record bodies with WebCrypto AES-GCM; the data key is wrapped by a key derived from the PIN (PBKDF2) and again by an admin recovery key.
-- Charts as hand-written SVG (no chart library).
-- Tests: Vitest for logic, Playwright for the 7 flows.
+- Charts and all illustrations as hand-written inline SVG React components (no chart or illustration library, no image files from the internet).
+- Tests: Vitest for logic, Playwright for the 8 flows under FLOWS.
 
 DATA RULES
 - Capture tables are append-only. Never update or delete an entry. A correction writes a new entry with supersedes_id and sets the old one to status corrected. Entered-in-error sets a status and a reason.
 - Save raw input (typed text or photo) before any AI call.
-- Every action writes an audit_log row: seq, time, user, device, action, entity, SHA-256 of before and after, and the hash of the previous row. Provide a verify function and show its result on the Audit log screen.
+- Every action writes an audit_log row: seq, time, user, device, action, entity, SHA-256 of before and after, and the hash of the previous row. Provide a verify function and show its result on the audit log page.
 - Snapshot tables (snapshot, patient, encounter, allergy, active_order, snapshot_result) are read-only in the app.
+- Add one optional field, body_site (string), to note, so skin and pain notes can be pinned to a body area. Injection and IV sites already live in med_admin.site.
 - Drill mode loads downtimekit-seed.json into a separate practice database, with the clock frozen at 2026-11-14T13:20-05:00 and every seed staff PIN set to 2468. Real modes start empty and get their patients from a snapshot import (same JSON shape).
 
-MODES (one full-width 44px bar on every screen: colour + icon + words)
+MODES (one full-width 44px bar on every page: colour + icon + short words)
 - DRILL #3F5F8A with diagonal stripes: practice on the seed data.
 - READY #4F6C62: standing by.
-- DOWNTIME #9A4A12: outage; on-device AI only; the cloud is blocked in code.
+- DOWNTIME #9A4A12: outage; on-device AI only; the cloud is blocked in code. Bar text like DOWNTIME · since 03:40 · Cloud blocked.
 - RECOVERY #245E7A: after an admin opens the network gate; cloud allowed.
 
 AI LAYER
@@ -492,76 +629,180 @@ Put all AI behind one interface, AiService, with: photoCheck(image), extractForm
    Ask for JSON output with a schema for every call. Keep all prompts in /src/shared/prompts. Show a Device or Cloud badge from the response's inference source, with the time taken.
 2. SeedAiService for Drill and tests: returns the ai_proposal, photo_check and second-look values already stored in the seed file, after a short realistic delay.
 Rules: in Downtime no code path may call the cloud. secondLook must never fall back to the device model; with no network it shows Not available yet and retries. If no model is available, every form still works by typing. The AI only proposes; nothing is saved as confirmed without a nurse action. The AI never gives medical advice.
+Sign-in is local (name + PIN checked on the device); do not use Firebase Authentication, because it needs the internet.
 
 DESIGN TOKENS (use exactly)
 --ink #12201A (text); --forest #294239 (headings, main buttons, side menu); --sage #4F6C62 (secondary text, icons); --moss #7D9A8E (borders and decoration only, never text); --mist #B7CEC2 (selected rows, chips); --fog #EEF5F0 (page background); --white #FFFFFF (cards); --muted #5C6B64 (helper text); --border #D5E2DA; --device #294239; --cloud #245E7A; --focus #245E7A; --check-bg #FFF1C2 with text #6B4E00 (drafts, unclear fields); --danger #B3261E with background #FDECEA.
-Font Inter 400/500/600/700 with tabular figures and slashed zero. Sizes: screen title 24/32 600; card title 18/26 600; body 16/24 400; table 14/20; label 13/18 500; vital and dose numbers 30/36 600. Spacing scale 4, 8, 12, 16, 24, 32, 48. Radius: cards 16, controls 12, pills full. One soft shadow: 0 1px 2px rgba(18,32,26,.06), 0 4px 16px rgba(18,32,26,.06). Minimum target 44x44. Motion 150ms fades at most, off under prefers-reduced-motion. No blur or glass.
+Font Inter 400/500/600/700 with tabular figures and slashed zero. Sizes: page title 24/32 600; card title 18/26 600; body 16/24 400; table 14/20; label 13/18 500; vital and dose numbers 30/36 600. Spacing scale 4, 8, 12, 16, 24, 32, 48. Radius: cards 16, controls 12, pills full. One soft shadow: 0 1px 2px rgba(18,32,26,.06), 0 4px 16px rgba(18,32,26,.06). Minimum target 44x44. Motion 150ms fades at most, off under prefers-reduced-motion. No blur or glass.
 
 LAYOUT
-Mode bar on top. Left side menu 240px (72px folded) in forest: Ward board, Labs, Handoff, Recovery (Recovery mode only), and an Admin group (Readiness, Downtime, Snapshot, Staff, Devices, Audit log, Settings). Lock button always visible at the bottom. Top row: search by name, MRN or bed; unit name; clock; signed-in user. Main area with a sticky patient banner on patient screens. Optional 320px detail panel on the right. Design for 1366x768 first, also 1920x1080 and 1024px tablets. Below 900px wide show one message asking for a laptop or tablet.
+Mode bar on top. Left side menu 240px (72px folded) in forest: Ward board, Labs, Recovery (Recovery mode only), and Admin (admins only). Lock button always visible at the bottom with the signed-in user's initials and role. Top row: search by name, MRN or bed; unit name; clock with a clock-check icon; device name. No right-hand detail panel anywhere. Design for 1366x768 first, also 1920x1080 and 1024px tablets. Below 900px wide show one message asking for a laptop or tablet.
+
+PAGES AND ROUTES (one URL per page; each page does one job; never show a list and an item's details together)
+/sign-in: pick name from active staff (initials in circles), PIN keypad (3x4, 64px keys), leaf art. 5 wrong tries gives a 1-minute wait.
+/lock: after 5 idle minutes or on Lock; keeps work in progress; Switch user.
+/setup/1 to /setup/5 (admin, one step per page): name device and unit; create admin PIN and recovery key; add staff; import snapshot; download and test the AI model.
+/ward (home): table with Bed, Patient (name, age), Next due, Alerts (one combined chip for overdue, drafts, critical). Filter chips My patients, Overdue, Drafts, Critical. Snapshot age banner. Opening a patient shows a confirm box with name + date of birth + MRN.
+/patients/:id: patient summary with 5 tiles only: Next medicine due, Latest vitals, Drafts waiting, Alerts, Body. Each tile links to its page. Chart tab links underneath: Timeline, Medicines, Vitals, Intake/Output, Notes, Body, Orders, Handoff.
+/patients/:id/timeline: entry cards newest first with time, form picture, 2 key values, status, AI badge; New entry button. A card opens /entries/:entry.
+/patients/:id/meds: medicine picture cards grouped Scheduled, As needed, Infusions, with drug, dose, route, next time, status (Due, Given, Held, Refused, Overdue).
+/patients/:id/meds/:order: one medicine: picture, order details, dose history.
+/patients/:id/meds/:order/record: record a dose, pre-filled from the order; site chosen on the body map.
+/patients/:id/vitals: SVG trend chart plus flowsheet table; out-of-range values marked; pre-outage values labelled Before downtime.
+/patients/:id/io: in and out lists, shift totals, balance graphic.
+/patients/:id/notes: notes and risk scores with a category filter.
+/patients/:id/body: body map front and back with markers, marker list beside it.
+/patients/:id/orders: orders and allergies, read-only, labelled with the snapshot time.
+/patients/:id/handoff: Situation, Background, Assessment, Open items drafted from confirmed entries only; each line links to its source entry; editable; print.
+/patients/:id/capture: form tiles (Vitals, Medication, Intake/Output, Note, Lab) with form drawings; Type it or Take photo; Saved message at once; photo check chip with Retake and Use anyway.
+/capture/:entry/confirm: paper photo left, field rows right; Reject, Edit, Confirm.
+/entries/:entry: values, paper photo, who, when, device, AI badge; links History, Correct, Mark entered in error (asks for a reason).
+/entries/:entry/history: all versions, old ones struck through. /entries/:entry/correct: correction form.
+/labs: Pending, Critical (who was told, when, read-back done), Overdue. /labs/:lab: one result.
+/drill/compare (Drill only): the same fake form read by device and by cloud side by side with times; differing fields highlighted; nothing saved.
+/recovery/gate (admin): checklist, admin PIN, one switch Network cleared · start Recovery, confirm box, audit entry; switches the app to Recovery.
+/recovery: progress (e.g. 11 of 45 signed off), filters, rows with priority, patient, entry, flag chip (Duplicate, Time conflict, Missing field, Recheck), status.
+/recovery/:item: paper photo, saved value and cloud reading side by side, differing fields in red; Keep saved value, Correct, Sign off; duplicates shown together.
+/export (admin): counts ready and not ready, FHIR R4 bundle download, encrypted backup, export history.
+/admin: 7 tiles (one word + one status each) linking to:
+/admin/readiness (AI model, disk space, device power, browser version, snapshot age, last backup, clock), /admin/downtime (declare, live status, end only when the worklist is finished, history), /admin/snapshot (last import, row counts, import new; blocked in Downtime), /admin/staff and /admin/staff/:id (add, deactivate, reset PIN; never delete), /admin/devices and /admin/devices/:id, /admin/audit and /admin/audit/:seq (read-only, filters, chain check result), /admin/settings/general, /high-alert, /units, /roles, /keys.
+Unknown URLs go to /ward with a short not-found message.
+Print styles for medicines, vitals, handoff and a patient summary: black on white, patient identifiers on every page, page numbers, printed by and when.
+
+NAVIGATION
+- Clicking a row or card opens its own page. Detail pages show a breadcrumb, e.g. Ward board > Sam Rivera > Medicines > amLODIPine.
+- Keep filters, sort and page number in the URL query, so Back returns to the same place. Browser Back, refresh and bookmarks work on every page.
+- If the app is locked, ask for the PIN, then open the requested URL.
+- Load each page's data only when the page opens.
+
+TEXT AND DENSITY LIMITS (hard limits)
+- Page title: 4 words or fewer. One primary (forest) button per page.
+- List rows: 3 to 5 fields. Tables: at most 6 columns. 10 rows per page, then Next and Previous.
+- Labels: 3 words or fewer. Helper text: one line, 12 words or fewer. No paragraphs inside the app; longer help behind a small What is this? link that opens a short popover.
+- Cards: picture, title, one value, one status chip, one link.
+- One banner at a time (the most important); others behind a 2 more alerts link.
+- Forms: at most 7 fields visible; the rest behind More fields; long forms become steps of one page each.
+- Patient banner: one line, 56px tall: name, age, date of birth, MRN, bed, allergy chip; code status and isolation as small chips only when they apply.
+- Confirm boxes: one sentence and two clearly named buttons. Empty states: one line, one button, one leaf drawing.
+- At least 24px between cards, at most 3 cards in a row. Show values, not sentences: Heart rate 78 /min.
+- Pictures replace helper sentences; they never add clutter.
 
 MEDICAL SAFETY DISPLAY RULES (must all hold)
 1. Doses: never a trailing zero (5 mg, not 5.0 mg), always a leading zero (0.5 mg). Lab results keep their reported precision.
 2. Units always shown beside the number and picked from a fixed list; write units, never U.
 3. Drug names keep the Tall Man capitals stored in the data (amLODIPine, HYDROmorphone).
-4. High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride; editable in Settings) show a red banner and cannot be confirmed until a second, different nurse enters their own PIN.
-5. Patient banner on every patient screen: name, age, sex, date of birth, MRN, bed, allergy chips (red; grey for No known allergies), code status, isolation.
-6. Opening a chart asks the nurse to confirm name + date of birth + MRN.
+4. High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride; editable in settings) show a red banner and a red ring on their picture, and cannot be confirmed until a second, different nurse enters their own PIN.
+5. The patient banner with the allergy chip (red; grey for No known allergies) is on every patient page.
+6. Opening a chart or switching patient asks the nurse to confirm name + date of birth + MRN.
 7. AI proposals look like drafts (dashed border, pale yellow, label AI proposal) with the paper photo beside them, until confirmed. Confirm stays disabled until every unclear field is checked.
 8. 24-hour times and written months (14:05, 14 Nov 2026).
 9. Entries from a device whose clock was not recently checked show a clock warning.
-10. Never rely on colour alone: every status has words and an icon.
+10. Never rely on colour or a picture alone: every status has words and an icon.
+
+NEVER HIDE (safety beats tidiness)
+The mode bar, the patient banner with the allergy chip, the Device or Cloud badge on every AI result, the high-alert banner and second-nurse PIN, unclear-field highlights on the confirm page, and the Lock button stay visible on every page where they apply.
+
+ILLUSTRATIONS
+- All pictures are inline SVG components in /src/illustrations: flat shapes using only the design tokens, 2px rounded strokes, no gradients, no photos, no faces, no brand logos. Every picture has an aria-label, or is aria-hidden when the same words are beside it.
+- BODY MAP: component BodyMap with neutral front and back outline figures, split into 24 tappable regions (head, chest, abdomen left, abdomen right, upper back, lower back, buttocks, and left and right upper arm, forearm, hand, thigh, lower leg, foot, heel), each at least 44px and reachable by keyboard. Markers: injection site (forest dot, syringe icon), IV line (cloud-blue dot, drop icon), skin concern (check-yellow fill, red if serious), pain (red outline with the score). Every marker is also listed in text beside the figure. Map med_admin.site text to regions with a fixed table (for example Abdomen, left side; Left forearm IV line; Right hand IV line) and use note.body_site. In the seed data show Lena Ortiz's two insulin sites, the IV line sites and red heels for Tom Hale. On the record-dose page, tapping a region writes the standard site text; for injections show the last 3 sites so the nurse can rotate.
+- MEDICINE PICTURES: component MedPicture chosen from the order's route and frequency: PO tablet (capsule or cup variants), IV single dose syringe and vial, continuous infusion IV bag on a pump with the rate, SC and IM injection pen or syringe, SL small tablet, TOP cream tube, PR suppository, NG feeding tube, inhaled inhaler. Under the picture on the medicine page show: Picture shows the type only. Pictures must never look like a specific real product, colour or imprint.
+- OTHER PICTURES: vitals (heart, lungs, thermometer, arm cuff, fingertip clip, blood drop, pain face scale) beside each number and trend line; intake/output (glass and IV bag in, measuring jug out, balance graphic); a drawing of each paper form on the capture tiles; photo check problems drawn as blurry, cut-off, dark and glare pages; labs test tube (red when critical); isolation and diet chips (mask, gloves, plate, crossed-out plate); mode drawings (training cap, tick, unplugged cable, cloud); readiness checks (chip, disk, laptop, clock); handoff (two figures without faces passing a clipboard); layered paper-cut leaf art on sign-in, lock and setup.
 
 ROLES (from practitioner.role; enforce in code; show blocked buttons greyed out with the reason)
 - RN and LPN: chart, confirm, correct own entries (RN can correct others with a reason), write handoffs, sign off worklist items. RN can be the second checker on high-alert drugs.
 - Admin: declare and end downtime, open the network gate, import snapshot, export, manage staff, devices and settings, read the audit log. Admins do not chart.
 
-SCREENS (build all)
-S1 Sign in: pick name, PIN keypad, leaf art. Inactive staff are not listed. 5 wrong tries gives a 1-minute wait.
-S2 Lock: after 5 idle minutes or on Lock; keeps work in progress; Switch user.
-S3 First-time setup (admin): name device and unit, create admin PIN and recovery key, add staff, import snapshot, download and test the AI model.
-S4 Ward board (home): one row per bed with patient, age, allergy marker, next medication due, overdue count, drafts, critical flag; filters My patients, Overdue, Drafts, Critical; snapshot age banner.
-S5 Patient chart, Timeline: entry cards newest first; latest vitals with small trend lines in the detail panel; New entry button.
-S6 Patient chart, Medications: orders grouped Scheduled, As needed, Infusions; status Due, Given, Held, Refused, Overdue; Record dose pre-fills from the order.
-S7 Patient chart, Vitals: SVG trend chart plus flowsheet table; out-of-range values marked; pre-outage values labelled Before downtime.
-S8 Patient chart, Intake/Output: in and out lists, shift totals, balance.
-S9 Patient chart, Notes: notes and risk scores with a category filter.
-S10 Patient chart, Orders and allergies: read-only, labelled with the snapshot time.
-S11 Labs (ward): Pending, Critical (who was told, when, read-back done), Overdue.
-S12 Capture: form tiles (Vitals, Medication, Intake/Output, Note, Lab); Type it or Take photo; Saved message at once; photo check chip with Retake and Use anyway.
-S13 Confirm: photo left, field rows right, rules 4 and 7 above; Reject, Edit, Confirm.
-S14 Entry detail and history: all versions, old ones struck through; Correct; Mark entered in error with a reason.
-S15 Compare (Drill only): same form read by device and by cloud, side by side with times; differing fields highlighted; nothing saved.
-S16 Handoff: Situation, Background, Assessment, Open items drafted from confirmed entries only; each line links to its source entry; editable; print.
-S17 Network gate (admin): checklist, admin PIN, one switch, confirm box, audit entry; switches the app to Recovery.
-S18 Recovery worklist: progress, filters, table sorted by priority with flags (Duplicate, Time conflict, Missing field, Recheck), second-look status, assignee, status.
-S19 Worklist item review: paper photo, saved value and cloud reading side by side; Keep saved value, Correct, Sign off; duplicates shown together.
-S20 Export (admin): counts ready and not ready, FHIR R4 bundle download, encrypted backup, export history.
-S21 Readiness: check cards for AI model, disk space, device power, browser version, snapshot age, last backup, clock.
-S22 Downtime (admin): declare, live status, end (only when the worklist is finished), history.
-S23 Snapshot (admin): last import, row counts, import new (blocked in Downtime).
-S24 Staff (admin): add, deactivate, reset PIN. Never delete.
-S25 Devices (admin): label, unit, model status, last clock check.
-S26 Audit log (admin): read-only table with filters and the chain verification result.
-S27 Settings (admin): auto-lock time, high-alert list, units, role rights, recovery key rotation.
-Print styles for Medications, Vitals, Handoff and a Patient summary: black on white, patient identifiers on every page, page numbers, printed by and when.
-
-STATES (every screen where they apply)
+STATES (every page where they apply)
 Loading skeletons; empty state with the next step; plain-language errors that say the data is safe and offer Try again; Saved with time; AI working with a Type it instead button; AI not available banner; old snapshot banner (yellow, red after 12 hours); clock not checked; storage low; second look not available; no permission; unsaved changes prompt; wrong PIN.
 
 ACCESSIBILITY
-WCAG 2.2 AA. Full keyboard use with a visible 2px focus ring; shortcuts / search, N new entry, L lock. Labels above fields, errors in words beside the field, aria labels on icon buttons, focus trapped in dialogs, live regions for toasts, works at 200% zoom. Plain words and sentence case; no unexplained abbreviations.
+WCAG 2.2 AA. Full keyboard use with a visible 2px focus ring; shortcuts / search, N new entry, L lock. Labels above fields, errors in words beside the field, aria labels on icon buttons, focus trapped in dialogs, live regions for messages, works at 200% zoom. Plain words and sentence case; no unexplained abbreviations.
+
+FLOWS (each must work end to end)
+1. Charting: sign in > ward > confirm patient > timeline > new entry > take photo > photo check clear > confirm > new card with Device badge. At most 3 taps after the photo.
+2. Giving a medicine: medicines > record dose > site on body map > (high-alert: second nurse PIN) > confirm > status Given.
+3. Blurry photo: photo check says Blurry > Retake or Use anyway; the first photo stays saved.
+4. Fixing a mistake: entry page > Correct > new value and reason > old version struck through.
+5. Shift handover: handoff page > review > print.
+6. Recovery: admin opens the gate > bar turns ocean blue > worklist > Recheck item > compare photo, saved value and cloud reading > correct > sign off > admin exports.
+7. Practice: Drill mode on the seed data, with Compare available.
+8. Body view: patient summary > Body tile > body page > tap a marker > its entry page.
 
 HOW TO WORK
-1. First reply: the file tree, the TypeScript types generated from the seed file, and the build order. Then carry on building without waiting for approval.
-2. Build in this order: tokens and base components, data layer with encryption and audit chain, sign in and lock, ward board and patient chart tabs, capture and confirm, entry history, handoff, network gate and recovery, admin screens, print styles, tests.
+1. First reply: the file tree, the TypeScript types generated from the seed file (plus note.body_site), the route table, the illustration component list, the body map region table and the build order. Then carry on building without waiting for approval.
+2. Build in this order: tokens and base components, illustration components, data layer with encryption and audit chain, sign in and lock, routing and layout, ward and patient pages, capture and confirm, entry pages, body map, handoff, recovery, admin pages, print styles, tests.
 3. Give complete files, never fragments or placeholders such as TODO. If a reply runs out of room, stop at a file boundary and continue in the next reply.
 4. Do not invent data: Drill uses only the seed file. Do not add features that are not listed.
 
 DONE WHEN
-- All 27 screens work in Drill mode on the seed data, including: the 50 mg vs 5 mg Recheck for Sam Rivera, the Duplicate acetaminophen for Grace Bell, the Time conflict from device dev-02, the Missing field for Rosa Santos, the corrected vitals for Mei Chen, two drafts, and the critical potassium for Arjun Mehta.
+- Every page in PAGES AND ROUTES works in Drill mode on the seed data, including: the 50 mg vs 5 mg Recheck for Sam Rivera, the Duplicate acetaminophen for Grace Bell, the Time conflict from device dev-02, the Missing field for Rosa Santos, the corrected vitals for Mei Chen, two drafts, the critical potassium for Arjun Mehta, and the body map markers.
+- No page shows a list and an item's details together, and every page meets the TEXT AND DENSITY LIMITS at 1366x768.
+- Back, refresh and bookmarks work on every route, including after the lock screen, and filters survive going into a detail page and back.
 - The audit chain verifies 153 of 153 seed records.
-- With the network off and the browser reopened, charting still works and no outside request is made.
-- No cloud call is possible in Downtime mode.
-- Every item under MEDICAL SAFETY DISPLAY RULES, ROLES, STATES and ACCESSIBILITY is met, at 1366x768 with no sideways scrolling.
+- With the network off and the browser reopened, charting and every picture still work and no outside request is made. No cloud call is possible in Downtime mode.
+- Every item under MEDICAL SAFETY DISPLAY RULES, NEVER HIDE, ROLES, STATES and ACCESSIBILITY is met.
+```
+
+## 20. Make it simple for nurses (change prompt)
+
+Nurses have no time to learn a big system. So the nurse side of the app is cut down to a few big buttons and everyday words. Details are hidden behind a **View details** button. Admin pages stay, but nurses never see them.
+
+**Word changes (what the nurse sees):**
+
+| Old word | New word |
+| --- | --- |
+| Ward board | My patients |
+| Timeline | History |
+| Capture / New entry | Add |
+| Confirm | Save |
+| Draft / AI proposal | Check this |
+| Intake/Output | Fluids |
+| Handoff | Handover |
+| Recovery worklist | To check |
+| Second look | Double check |
+| Entered in error | Wrong patient or mistake |
+| Snapshot | Patient list |
+| Drill / Ready / Downtime / Recovery | Practice / Normal / System down / Back online |
+
+**How to use it:** paste the box below into the same AI chat where your app is being built. It changes the app you already have; it does not start again.
+
+```
+CHANGE REQUEST: MAKE THE APP SIMPLE FOR NURSES
+Keep all data, safety rules, modes, AI rules and admin features you already built. Change only what nurses see and how they move around. Nurses are busy and will not learn a big system. A new nurse must be able to use it in 2 minutes with no training.
+
+1. NURSE MENU: ONLY 4 BUTTONS
+Nurses see only: My patients, Add, Handover, Alerts. Put everything else (Labs, Orders, Settings) under a More button. Admin pages are only shown to admins, in a separate Admin area.
+
+2. HOME = MY PATIENTS
+Big cards, one per patient, 2 or 3 per row. Each card shows only: bed, name, age, allergy chip, and one status line (for example Medicine due 14:00, or All done). Tap the card to open the patient.
+
+3. PATIENT PAGE: 4 BIG BUTTONS
+Top: the patient banner (name, age, date of birth, MRN, bed, allergy chip). Below it, 4 big picture buttons: Give medicine, Vitals, Fluids, Note. Next to them, one Photo of paper button. Under the buttons, only the last 3 records, each in one line. Everything else (full history, vitals chart, body map, orders, labs) sits behind one View details button.
+
+4. ADDING SOMETHING = SHORT STEPS
+One small question per screen with big buttons, like a phone app. Example for a medicine: pick the medicine (picture cards) > check the dose > tap where on the body > Save. Show a step counter (Step 2 of 4) and a Back button. Never show more than 5 fields at once.
+
+5. SIMPLE WORDS EVERYWHERE
+Use these words on screen: My patients, History, Add, Save, Check this, Fluids, Handover, To check, Double check, Wrong patient or mistake, Patient list. Modes: Practice, Normal, System down, Back online. Buttons: 1 to 3 words. No helper sentences on screen by default; a small ? button shows a one-line tip. No codes, no abbreviations a new nurse would not know.
+
+6. LESS ON SCREEN, MORE BEHIND BUTTONS
+Show the key number big (for example Heart rate 78). Hide who, when, which laptop, AI details and full history behind View details. Lists show 5 items, then Show more. Tables only inside View details.
+
+7. GUIDE THE NURSE
+- First sign-in: a 3-screen welcome tour with pictures (how to add, how to save, where alerts are). Skip button.
+- If something needs the nurse, show one clear banner with one button, for example: 2 records need checking > Check now.
+- After Save, show a big green tick and Saved for 2 seconds, then go back to the patient page.
+- Empty pages: one picture, one line, one button.
+
+8. KEEP SAFE (DO NOT REMOVE)
+The mode bar (with the new mode words), the patient banner with allergies, the confirm name + date of birth check, the yellow Check this highlight on AI values, the high-alert red banner and second nurse PIN, the Device/Cloud badge (small, on the result), the no-trailing-zero dose rule and the Lock button stay visible where they apply.
+
+HOW TO WORK
+First reply: list the pages and components that change. Then give the complete changed files only, no fragments or TODOs. Do not remove features; move them behind More or View details.
+
+DONE WHEN
+- A nurse can give a medicine in 4 taps or fewer after opening the patient.
+- The nurse menu has only 4 buttons, and nurses never see admin pages.
+- Every screen uses the simple words above, and no screen has a paragraph of text.
+- All safety items in point 8 still show where they apply.
 ```
