@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { buildAuditRow } from './audit';
-import { getVaultMode, isEncryptedRow, PLAIN_TABLES, setVaultMode } from './encryption';
+import { getVaultMode, isEncryptedRow, isLegacyRow, PLAIN_TABLES, setVaultMode } from './encryption';
+import { canonicalJson } from './audit';
 import type { DowntimeDB } from './db';
 import type { KeyStore } from './schema';
 import type { Clock } from '../lib/time';
@@ -63,13 +64,48 @@ export async function unlockFromRow(dbName: string, row: KeyStore, secret: Unloc
   setVaultMode(dbName, { mode: 'unlocked', key, allowPlain: false });
 }
 
-/** After open: allow plain rows only while an interrupted migration is unfinished. */
-export async function refreshPlainAllowance(db: DowntimeDB): Promise<number> {
+/** After open: allow plain rows only while a migration is unfinished, v1 rows only until they are resealed. */
+export async function refreshPlainAllowance(db: DowntimeDB): Promise<{ plain: number; legacy: number }> {
   const m = getVaultMode(db.name);
-  const plain = await rawPlainRowCount(db);
-  if (m?.mode === 'unlocked') setVaultMode(db.name, { ...m, allowPlain: plain > 0 });
-  return plain;
+  const c = await rawFormatCounts(db);
+  if (m?.mode === 'unlocked') setVaultMode(db.name, { ...m, allowPlain: c.plain > 0, allowLegacy: c.legacy > 0 });
+  return c;
 }
+
+/**
+ * Format upgrade v1 -> v2 for data that is ALREADY encrypted (same key, same content; no plain data involved).
+ * Each table: read (v1 still accepted), compare, write back (sealed as v2), check the content is unchanged and
+ * no v1 row is left. Photos the same way, each checked against its capture hash. Then v1 is refused.
+ */
+export async function resealLegacyRows(db: DowntimeDB, audit?: { clock: Clock; deviceId: string }): Promise<{ rows: number; photos: number }> {
+  const m = getVaultMode(db.name);
+  if (m?.mode !== 'unlocked') throw new Error('Unlock the records first.');
+  const before = await rawFormatCounts(db);
+  const { encryptLegacyPhotos } = await import('./photos');
+  let rows = 0;
+  if (before.legacy > 0) {
+    setVaultMode(db.name, { ...m, allowLegacy: true });
+    for (const t of db.tables) {
+      if (PLAIN_TABLES.has(t.name)) continue;
+      const snapBefore = canon((await t.toArray()) as Record<string, unknown>[]);
+      await db.transaction('rw', t, async () => {
+        const all = await t.toArray();
+        if (all.length) await t.bulkPut(all);
+      });
+      const snapAfter = canon((await t.toArray()) as Record<string, unknown>[]);
+      if (snapAfter !== snapBefore) throw new Error(`Format upgrade check failed for "${t.name}". Old copies were not removed; tell IT.`);
+    }
+    rows = before.legacy;
+  }
+  const photos = await encryptLegacyPhotos(db);
+  const after = await rawFormatCounts(db);
+  if (after.legacy > 0) throw new Error('Some records are still in the old format. Try unlocking again.');
+  setVaultMode(db.name, { ...(getVaultMode(db.name) as { mode: 'unlocked'; key: CryptoKey; allowPlain: boolean }), allowLegacy: false });
+  if (audit && (rows > 0 || photos > 0)) await appendAudit(db, audit.clock, audit.deviceId, 'vault_format_upgraded', { from: 1, to: 2, rows, photos });
+  return { rows, photos };
+}
+
+const canon = (rows: Record<string, unknown>[]) => [...rows].sort((a, b) => String(a.id).localeCompare(String(b.id))).map((r) => canonicalJson(r)).join('\n');
 
 export const auditVaultEvent = (db: DowntimeDB, clock: Clock, deviceId: string, action: string, after: Record<string, unknown>) => appendAudit(db, clock, deviceId, action, after);
 
@@ -78,23 +114,31 @@ export async function readVaultRow(db: DowntimeDB): Promise<KeyStore | undefined
   return rows.find((r) => r.id === VAULT_ROW_ID && isVaultString(r.wrapped_key_pin));
 }
 
-/** Raw IndexedDB scan (no middleware): does any non-key_store row lack encryption? */
-export async function rawPlainRowCount(db: DowntimeDB): Promise<number> {
+/** Raw IndexedDB scan (no middleware): rows not encrypted, and rows still in the v1 format. */
+export async function rawFormatCounts(db: DowntimeDB): Promise<{ plain: number; legacy: number }> {
   const idb = db.backendDB();
   const names = Array.from(idb.objectStoreNames).filter((n) => !PLAIN_TABLES.has(n));
-  if (!names.length) return 0;
+  if (!names.length) return { plain: 0, legacy: 0 };
   return new Promise((resolve, reject) => {
     const tx = idb.transaction(names, 'readonly');
     let plain = 0;
+    let legacy = 0;
     for (const n of names) {
       const req = tx.objectStore(n).getAll();
       req.onsuccess = () => {
-        for (const row of req.result as unknown[]) if (!isEncryptedRow(row)) plain++;
+        for (const row of req.result as unknown[]) {
+          if (!isEncryptedRow(row)) plain++;
+          else if (isLegacyRow(row)) legacy++;
+        }
       };
     }
-    tx.oncomplete = () => resolve(plain);
+    tx.oncomplete = () => resolve({ plain, legacy });
     tx.onerror = () => reject(tx.error);
   });
+}
+
+export async function rawPlainRowCount(db: DowntimeDB): Promise<number> {
+  return (await rawFormatCounts(db)).plain;
 }
 
 async function hasAnyRecords(db: DowntimeDB): Promise<boolean> {
@@ -180,9 +224,9 @@ export async function unlockVault(db: DowntimeDB, secret: UnlockSecret, audit?: 
   const row = await readVaultRow(db);
   if (!row) throw new Error('There is no encrypted vault on this laptop for these records.');
   const key = 'passphrase' in secret ? await unlockWithPassphrase(row, secret.passphrase) : await unlockWithRecovery(row, secret.recovery);
-  // Plain rows are allowed only while a migration is unfinished (it is resumed straight after unlock).
-  const plain = await rawPlainRowCount(db);
-  setVaultMode(db.name, { mode: 'unlocked', key, allowPlain: plain > 0 });
+  // Plain rows are allowed only while a migration is unfinished, v1 rows only until resealLegacyRows ran.
+  const c = await rawFormatCounts(db);
+  setVaultMode(db.name, { mode: 'unlocked', key, allowPlain: c.plain > 0, allowLegacy: c.legacy > 0 });
   if (audit) await appendAudit(db, audit.clock, audit.deviceId, 'vault_unlocked', { method: 'passphrase' in secret ? 'passphrase' : 'recovery' });
 }
 
@@ -197,8 +241,8 @@ export async function recoverVault(db: DowntimeDB, recoveryCode: string, newPass
   else if (newPassphrase !== PUBLIC_PRACTICE_PASSPHRASE) throw new Error('Practice uses the published practice passphrase only.');
   const next = await rewrapAfterRecovery(row, recoveryCode, newPassphrase, db.dataset === 'practice' ? { newRecoveryCode: PUBLIC_PRACTICE_RECOVERY_CODE } : {});
   await db.key_store.put({ ...row, ...next.keys, rotated_at: new Date().toISOString() });
-  const plain = await rawPlainRowCount(db);
-  setVaultMode(db.name, { mode: 'unlocked', key: next.key, allowPlain: plain > 0 });
+  const c = await rawFormatCounts(db);
+  setVaultMode(db.name, { mode: 'unlocked', key: next.key, allowPlain: c.plain > 0, allowLegacy: c.legacy > 0 });
   if (audit) await appendAudit(db, audit.clock, audit.deviceId, 'vault_recovered', { new_passphrase: true, new_recovery_key: true });
   return next.recoveryCode;
 }

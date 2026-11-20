@@ -4,7 +4,7 @@ import { getDb, requestPersistentStorage, type Dataset, type DowntimeDB } from '
 import { setVaultMode } from '../db/encryption';
 import { migrateToEncrypted } from '../db/encryptMigration';
 import {
-  auditVaultEvent, createVault, detectVault, isUnlocked, lockVault, peekVault, readVaultRow, recoverVault, refreshPlainAllowance,
+  auditVaultEvent, createVault, detectVault, isUnlocked, lockVault, peekVault, readVaultRow, recoverVault, refreshPlainAllowance, resealLegacyRows,
   unlockFromRow, type UnlockSecret,
 } from '../db/vault';
 import { PUBLIC_PRACTICE_PASSPHRASE, SECURITY_POLICY } from '../config/securityPolicy';
@@ -72,9 +72,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (peek) {
       // A Practice vault whose seed load was cut off (e.g. reload during the first start): load it now.
       if (db.dataset === 'practice' && (await db.patient.count()) === 0) await importPracticeSeed(db);
-      const plainLeft = await refreshPlainAllowance(db);
+      const left = await refreshPlainAllowance(db);
       // An interrupted Practice encryption is finished straight after unlock (Real records never get here).
-      if (plainLeft > 0 && db.dataset === 'practice') await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: bootDevice });
+      if (left.plain > 0 && db.dataset === 'practice') await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: bootDevice });
+      // Already-encrypted rows/photos from the first format (v1) are re-sealed as v2 (index fields authenticated).
+      await resealLegacyRows(db, { clock, deviceId: bootDevice });
       return 'unlocked';
     }
     return (await detectVault(db)) as VaultView;

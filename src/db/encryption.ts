@@ -1,5 +1,6 @@
 import type { DBCore, DBCoreCursor, DBCoreTable, DBCoreTransaction, Middleware } from 'dexie';
 import { isSealed, openJson, sealJson, type Sealed } from '../lib/vaultCrypto';
+import { canonicalJson } from './audit';
 
 /**
  * Transparent per-row encryption for the clinical databases (P-04).
@@ -8,7 +9,12 @@ import { isSealed, openJson, sealJson, type Sealed } from '../lib/vaultCrypto';
  * Dexie's cache) only sees plain values in memory, and only plain values exist while the vault is unlocked.
  *
  * Stored form of a row: its INDEX fields stay plain (needed for lookups) + `_enc` = AES-256-GCM of all other
- * fields, with associated data "<table>|<primary key>" so a ciphertext copied onto another row fails.
+ * fields. Format v2 binds EVERY plain index field into the GCM associated data:
+ *     "cb2|<table>|" + canonical JSON of { <each index field>: value or null }
+ * so changing any plain index value (MRN, patient_id, care_time, status, seq, ...) without the key, or copying a
+ * ciphertext onto another row, makes decryption fail (IntegrityError). Legitimate changes go through the app,
+ * which re-seals the row with the new values. Format v1 (associated data "<table>|<primary key>") is read only
+ * while a database still has v1 rows; resealLegacyRows() upgrades them after unlock.
  * `key_store` is never encrypted (it holds only wrapped keys).
  *
  * WebCrypto is async; awaiting it inside an IndexedDB transaction would let the transaction auto-commit.
@@ -28,7 +34,7 @@ import { isSealed, openJson, sealJson, type Sealed } from '../lib/vaultCrypto';
 export type VaultMode =
   | { mode: 'pending' }
   | { mode: 'locked' }
-  | { mode: 'unlocked'; key: CryptoKey; allowPlain: boolean }
+  | { mode: 'unlocked'; key: CryptoKey; allowPlain: boolean; allowLegacy?: boolean }
   | { mode: 'plain' };
 
 export class VaultLockedError extends Error {
@@ -39,8 +45,8 @@ export class VaultLockedError extends Error {
 }
 
 export class IntegrityError extends Error {
-  constructor(table: string) {
-    super(`A record in "${table}" is not encrypted although this laptop's records are. It may have been changed outside ClinBridge. Tell IT.`);
+  constructor(table: string, message?: string) {
+    super(message ?? `A record in "${table}" is not in the current protected format although this laptop's records are. It may have been changed outside ClinBridge. Tell IT.`);
     this.name = 'IntegrityError';
   }
 }
@@ -73,7 +79,12 @@ export function indexFieldsFromSpec(spec: string): string[] {
   return [...out];
 }
 
-const aadFor = (table: string, pk: unknown) => `${table}|${JSON.stringify(pk)}`;
+const aadV1 = (table: string, pk: unknown) => `${table}|${JSON.stringify(pk)}`;
+export function aadV2(table: string, indexFields: string[], row: Row): string {
+  const idx: Row = {};
+  for (const f of indexFields) idx[f] = row[f] ?? null;
+  return `cb2|${table}|${canonicalJson(idx)}`;
+}
 /**
  * Run `p` while keeping `trans` alive; settle from inside an IDB success callback. If the transaction is
  * already inactive (nothing more will be done in it), settle normally.
@@ -123,15 +134,24 @@ export async function encryptRow(key: CryptoKey, table: string, indexFields: str
   const plain: Row = {};
   const secret: Row = {};
   for (const [k, v] of Object.entries(row)) (indexFields.includes(k) ? plain : secret)[k] = v;
-  plain._enc = await sealJson(key, secret, aadFor(table, row[indexFields[0] ?? 'id']));
+  plain._enc = await sealJson(key, secret, aadV2(table, indexFields, plain), 2);
   return plain;
 }
 
 export async function decryptRow(key: CryptoKey, table: string, indexFields: string[], row: Row): Promise<Row> {
   const { _enc, ...plain } = row;
-  const secret = await openJson<Row>(key, _enc as Sealed, aadFor(table, row[indexFields[0] ?? 'id']));
+  const sealed = _enc as Sealed;
+  const aad = sealed.v === 2 ? aadV2(table, indexFields, plain) : aadV1(table, row[indexFields[0] ?? 'id']);
+  let secret: Row;
+  try {
+    secret = await openJson<Row>(key, sealed, aad);
+  } catch {
+    throw new IntegrityError(table, `Record ${String(row[indexFields[0] ?? 'id'])} in "${table}" failed its integrity check: its stored values or lookup fields were changed outside ClinBridge, or it is damaged. Tell IT.`);
+  }
   return { ...plain, ...secret };
 }
+
+export const isLegacyRow = (v: unknown): boolean => isEncryptedRow(v) && ((v as Row)._enc as Sealed).v === 1;
 
 /**
  * Middleware for one database. `specs` = Dexie store spec per table (first field = primary key).
@@ -172,6 +192,8 @@ function wrapTable(t: DBCoreTable, name: string, idx: string[], dbName: string):
     }
     const key = keyOrThrow();
     if (!key) throw new VaultLockedError();
+    const m = mode();
+    if (isLegacyRow(v) && !(m.mode === 'unlocked' && m.allowLegacy)) throw new IntegrityError(name);
     return decryptRow(key, name, idx, v as Row);
   };
   const decAll = (trans: DBCoreTransaction, vs: unknown[]) => keepAlive(trans, Promise.all(vs.map(dec)));

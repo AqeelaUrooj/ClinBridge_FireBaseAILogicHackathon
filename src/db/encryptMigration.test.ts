@@ -18,8 +18,8 @@ const clock = practiceClock();
 const dbs: DowntimeDB[] = [];
 
 afterEach(async () => {
-  await clearPhotos('practice');
   for (const db of dbs.splice(0)) {
+    await clearPhotos(db);
     clearVaultMode(db.name);
     db.close();
   }
@@ -181,11 +181,11 @@ describe('photos', () => {
     clearVaultMode(db.name);
     const saved = await savePhoto(db, clock, { userId: 'pr-okafor', deviceId: 'dev-01' }, 'pt-08', png);
     setVaultMode(db.name, { mode: 'pending' });
-    expect('blob' in (await rawPhotos('practice'))[0]!).toBe(true);
+    expect('blob' in (await rawPhotos(db))[0]!).toBe(true);
     await detectVault(db);
     const r = await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: 'dev-01', iterations: FAST });
     expect(r.photosEncrypted).toBe(1);
-    const raw = (await rawPhotos('practice'))[0] as unknown as Record<string, unknown>;
+    const raw = (await rawPhotos(db))[0] as unknown as Record<string, unknown>;
     expect(raw.blob).toBeUndefined();
     expect(raw.sha256).toBeUndefined();
     expect(Object.keys(raw).sort()).toEqual(['_bytes', '_enc', 'patient_id', 'ref', 'saved_at']);
@@ -200,7 +200,7 @@ describe('photos', () => {
     await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: 'dev-01', iterations: FAST });
     const png = new Blob([new Uint8Array([137, 80, 78, 71, 9, 9, 9])], { type: 'image/png' });
     const p = await savePhoto(db, clock, { userId: 'pr-okafor', deviceId: 'dev-01' }, 'pt-02', png);
-    expect('_bytes' in (await rawPhotos('practice'))[0]!).toBe(true);
+    expect('_bytes' in (await rawPhotos(db))[0]!).toBe(true);
     expect(await verifyPhoto((await getPhoto(db, p.ref))!)).toBe(true);
     setVaultMode(db.name, { mode: 'locked' });
     await expect(getPhoto(db, p.ref)).rejects.toThrow(/locked/);

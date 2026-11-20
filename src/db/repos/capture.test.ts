@@ -18,7 +18,7 @@ describe('paper capture', () => {
     const blob = new Blob([new Uint8Array([137, 80, 78, 71, 1, 2, 3])], { type: 'image/png' });
     const p = await savePhoto(db, clock, actor, 'pt-08', blob);
     expect(p.ref).toMatch(/^vault\/raw\/.+\.png$/);
-    const stored = await getPhoto('practice', p.ref);
+    const stored = await getPhoto(db, p.ref);
     expect(stored?.sha256).toBe(p.sha256);
     // Blob contents do not survive the IndexedDB emulator in jsdom; the real-browser test checks the hash.
     expect(await verifyPhoto({ ...stored!, blob })).toBe(true);

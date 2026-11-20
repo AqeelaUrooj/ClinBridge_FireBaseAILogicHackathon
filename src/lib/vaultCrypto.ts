@@ -236,16 +236,21 @@ export async function rewrapPassphrase(keys: WrappedKeys, current: string, next:
 
 /* ---------- authenticated encryption ---------- */
 
+/**
+ * v: 1 = first format (associated data was "<table>|<primary key>" only). Still readable for compatibility.
+ * v: 2 = current format: callers bind ALL plain index fields into the associated data (see encryption.ts).
+ * The version itself is not trusted: changing it changes the associated data, so decryption fails.
+ */
 export interface Sealed {
-  v: 1;
+  v: 1 | 2;
   iv: Uint8Array;
   ct: ArrayBuffer;
 }
 
-export async function sealBytes(key: CryptoKey, data: Uint8Array, aad: string): Promise<Sealed> {
+export async function sealBytes(key: CryptoKey, data: Uint8Array, aad: string, v: 1 | 2 = 2): Promise<Sealed> {
   const iv = randomBytes(12);
   const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(aad) }, key, buf(data));
-  return { v: 1, iv, ct };
+  return { v, iv, ct };
 }
 
 export async function openBytes(key: CryptoKey, s: Sealed, aad: string): Promise<Uint8Array> {
@@ -257,8 +262,8 @@ export async function openBytes(key: CryptoKey, s: Sealed, aad: string): Promise
   }
 }
 
-export async function sealJson(key: CryptoKey, value: unknown, aad: string): Promise<Sealed> {
-  return sealBytes(key, new TextEncoder().encode(JSON.stringify(value)), aad);
+export async function sealJson(key: CryptoKey, value: unknown, aad: string, v: 1 | 2 = 2): Promise<Sealed> {
+  return sealBytes(key, new TextEncoder().encode(JSON.stringify(value)), aad, v);
 }
 
 export async function openJson<T = unknown>(key: CryptoKey, s: Sealed, aad: string): Promise<T> {
@@ -267,7 +272,7 @@ export async function openJson<T = unknown>(key: CryptoKey, s: Sealed, aad: stri
 
 export function isSealed(v: unknown): v is Sealed {
   const s = v as Sealed | null;
-  return !!s && typeof s === 'object' && s.v === 1 && ArrayBuffer.isView(s.iv) && !!s.ct && typeof (s.ct as ArrayBuffer).byteLength === 'number';
+  return !!s && typeof s === 'object' && (s.v === 1 || s.v === 2) && ArrayBuffer.isView(s.iv) && !!s.ct && typeof (s.ct as ArrayBuffer).byteLength === 'number';
 }
 
 /* ---------- passphrase-only encryption (backup files) ---------- */

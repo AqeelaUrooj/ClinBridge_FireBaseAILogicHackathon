@@ -92,7 +92,7 @@ export async function createEncryptedBackup(db: DowntimeDB, passphrase: string, 
     manifestTables[t.name] = { count: rows.length, sha256: await tableHash(rows) };
   }
   const photos: BackupPhoto[] = [];
-  for (const raw of await photoDb(db.dataset).photos.toArray()) {
+  for (const raw of await photoDb(db).photos.toArray()) {
     const p = await getPhoto(db, raw.ref);
     if (p) photos.push({ ref: p.ref, patient_id: p.patient_id, saved_at: p.saved_at, type: p.type, size: p.size, sha256: p.sha256, data: await photoToB64(p) });
   }
@@ -159,7 +159,7 @@ export async function restoreEncryptedBackup(db: DowntimeDB, fileText: string, p
     if (PLAIN_TABLES.has(t.name)) continue;
     if ((await t.count()) > 0) throw new Error('Restore only into empty records. Nothing was restored.');
   }
-  if ((await photoDb(db.dataset).photos.count()) > 0) throw new Error('Restore only into empty records (photos exist). Nothing was restored.');
+  if ((await photoDb(db).photos.count()) > 0) throw new Error('Restore only into empty records (photos exist). Nothing was restored.');
   const key = requireKey(db.name); // throws if locked; null = plain database (allowed only for unregistered/plain mode)
 
   const names = Object.keys(content.tables).filter((n) => db.tables.some((t) => t.name === n) && !PLAIN_TABLES.has(n));
@@ -169,7 +169,7 @@ export async function restoreEncryptedBackup(db: DowntimeDB, fileText: string, p
 
   const rollback = async () => {
     await db.transaction('rw', names.map((n) => db.table(n)), async () => { for (const n of names) await db.table(n).clear(); });
-    await photoDb(db.dataset).photos.clear();
+    await photoDb(db).photos.clear();
   };
 
   try {
@@ -178,7 +178,7 @@ export async function restoreEncryptedBackup(db: DowntimeDB, fileText: string, p
       const bytes = fromB64u(p.data);
       if ((await sha256Hex(bytes)) !== p.sha256) throw new BackupDamagedError(`photo ${p.ref} does not match its hash`);
       const stored: StoredPhoto = { ref: p.ref, patient_id: p.patient_id, saved_at: p.saved_at, type: p.type, size: p.size, sha256: p.sha256, blob: new Blob([new Uint8Array(bytes)], { type: p.type }) };
-      await photoDb(db.dataset).photos.add(key ? await sealPhoto(key, stored) : stored);
+      await photoDb(db).photos.add(key ? await sealPhoto(key, stored) : stored);
     }
     // verify what is now stored against the manifest
     for (const n of names) {

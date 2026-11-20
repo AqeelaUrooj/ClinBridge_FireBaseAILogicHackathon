@@ -19,9 +19,8 @@ const BACKUP_PASS = 'quartz orchard bicycle eleven';
 const dbs: DowntimeDB[] = [];
 
 afterEach(async () => {
-  await clearPhotos('practice');
-  await clearPhotos('live');
   for (const db of dbs.splice(0)) {
+    await clearPhotos(db);
     clearVaultMode(db.name);
     db.close();
   }
@@ -81,7 +80,6 @@ describe('restore', () => {
     const { fileText } = await createEncryptedBackup(src, BACKUP_PASS, { clock, actor, iterations: FAST });
     const before: Record<string, string> = {};
     for (const t of src.tables) if (t.name !== 'key_store') before[t.name] = canon((await t.toArray()) as Record<string, unknown>[]);
-    await clearPhotos('practice'); // same photo store name in tests: empty it like a new laptop
 
     const dst = await practiceVault(false);
     const r = await restoreEncryptedBackup(dst, fileText, BACKUP_PASS, { clock, deviceId: 'dev-02' });
@@ -95,7 +93,7 @@ describe('restore', () => {
     expect((await verifyChain(audit)).ok).toBe(true);
     const back = await getPhoto(dst, photo.ref);
     expect(await verifyPhoto(back!)).toBe(true);
-    expect('_bytes' in (await rawPhotos('practice'))[0]!).toBe(true); // re-sealed with the new key
+    expect('_bytes' in (await rawPhotos(dst))[0]!).toBe(true); // re-sealed with the new key
     // the two laptops' vault rows differ: the backup did not carry the data key
     const k1 = (await src.key_store.toArray())[0]!.wrapped_key_pin;
     const k2 = (await dst.key_store.toArray())[0]!.wrapped_key_pin;

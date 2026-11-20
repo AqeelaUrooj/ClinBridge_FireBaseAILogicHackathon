@@ -186,7 +186,7 @@ describe('tampering', () => {
     await raw.table('patient').put({ ...b, _enc: a._enc });
     raw.close();
     await db.open();
-    await expect(db.patient.get('pt-02')).rejects.toThrow(/could not be decrypted/);
+    await expect(db.patient.get('pt-02')).rejects.toThrow(/failed its integrity check/);
     expect((await db.patient.get('pt-01'))?.id).toBe('pt-01');
   });
 });
@@ -229,7 +229,7 @@ describe('datasets stay apart', () => {
     await r2.table('patient').put(row);
     r2.close();
     await prac.open();
-    await expect(prac.patient.get('pt-01')).rejects.toThrow(/could not be decrypted/);
+    await expect(prac.patient.get('pt-01')).rejects.toThrow(/failed its integrity check/);
   });
 });
 

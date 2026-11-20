@@ -158,7 +158,7 @@ export async function migrateToEncrypted(db: DowntimeDB, opts: MigrationOptions)
 
   // 4. verify, then stop accepting plain rows
   const counts = await verifyAgainstCheckpoint(db, checkpoint);
-  for (const p of await rawPhotos(db.dataset)) {
+  for (const p of await rawPhotos(db)) {
     if (!('_bytes' in p)) throw new MigrationVerifyError(`photo ${p.ref} is still plain`);
     const open = await getPhoto(db, p.ref);
     if (!open || !(await verifyPhoto(open))) throw new MigrationVerifyError(`photo ${p.ref} does not match its saved hash`);
