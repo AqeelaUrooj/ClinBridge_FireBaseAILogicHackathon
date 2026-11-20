@@ -62,7 +62,7 @@ export function buildBundle(input: ExportInput): R {
   for (const pr of input.practitioners) add({ resourceType: 'Practitioner', id: pr.id, name: [{ text: pr.name }], active: pr.active });
   for (const a of input.allergies) {
     if (/^no known/i.test(a.substance)) continue;
-    add({ resourceType: 'AllergyIntolerance', id: a.id, patient: ref('Patient', a.patient_id), code: textCode(a.substance), ...(a.reaction ? { reaction: [{ manifestation: [textCode(a.reaction)] }] } : {}) });
+    add({ resourceType: 'AllergyIntolerance', id: a.id, clinicalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical', code: a.status }] }, patient: ref('Patient', a.patient_id), code: textCode(a.substance), ...(a.reaction ? { reaction: [{ manifestation: [textCode(a.reaction)], ...(a.severity ? { severity: a.severity } : {}) }] } : {}) });
   }
   for (const o of input.orders) {
     if (o.type !== 'med' && o.type !== 'iv') continue;
@@ -102,9 +102,7 @@ export function buildBundle(input: ExportInput): R {
         medicationCodeableConcept: textCode(m.drug_name), subject: common.subject, ...(enc ? { context: ref('Encounter', enc.id) } : {}),
         effectiveDateTime: e.care_time, performer: [{ actor: ref('Practitioner', e.performer_id) }], ...(m.order_id && input.orders.some((o) => o.id === m.order_id) ? { request: ref('MedicationRequest', m.order_id) } : {}),
         ...(m.double_checked_by ? { note: [{ text: `Second nurse check: ${m.double_checked_by}` }] } : {}),
-        dosage: { ...(m.route ? { route: textCode(m.route) } : {}), ...(m.site ? { site: textCode(m.site) } : {}),
-          ...(m.dose_given != null && m.dose_given_unit ? { dose: { value: m.dose_given, unit: m.dose_given_unit } } : {}),
-          ...(m.infusion_rate != null && m.infusion_rate_unit ? { rateQuantity: { value: m.infusion_rate, unit: m.infusion_rate_unit } } : {}) } });
+        ...dosageOf(m) });
       target = { type: 'MedicationAdministration', id: e.id };
     } else if (e.type === 'intake_output') {
       const io = child as IntakeOutput;
@@ -215,4 +213,15 @@ export function validateBundle(b: R): string[] {
     });
   }
   return errs;
+}
+
+/**
+ * FHIR mad-1: a dosage block needs a dose or a rate. A dose that was held or refused has
+ * neither, so its dosage block (route/site only) is left out rather than sent invalid.
+ */
+function dosageOf(m: MedAdmin): { dosage?: Record<string, unknown> } {
+  const dose = m.dose_given != null && m.dose_given_unit ? { dose: { value: m.dose_given, unit: m.dose_given_unit } } : {};
+  const rate = m.infusion_rate != null && m.infusion_rate_unit ? { rateQuantity: { value: m.infusion_rate, unit: m.infusion_rate_unit } } : {};
+  if (!('dose' in dose) && !('rateQuantity' in rate)) return {};
+  return { dosage: { ...(m.route ? { route: textCode(m.route) } : {}), ...(m.site ? { site: textCode(m.site) } : {}), ...dose, ...rate } };
 }

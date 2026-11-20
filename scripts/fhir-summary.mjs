@@ -8,7 +8,7 @@ const issues = (r.issue || []).concat(...(r.entry || []).map((e) => e.resource?.
 const where = (i) => (i.expression || i.location || [''])[0];
 const text = (i) => i.details?.text || i.diagnostics || '';
 // Collapse entry indexes and quoted values so repeated warnings group together.
-const norm = (s) => s.replace(/\[\d+\]/g, '[n]').replace(/'[^']*'/g, "'…'");
+const norm = (s) => s.replace(/\/\*[^*]*\*\//g, '').replace(/\[\d+\]/g, '[n]').replace(/'[^']*'/g, "'…'");
 
 const counts = {};
 for (const i of issues) counts[i.severity] = (counts[i.severity] || 0) + 1;
