@@ -202,19 +202,54 @@ export interface VitalsProposal {
 }
 
 export const VITALS_PROMPT =
-  'You are reading a nurse\'s handwritten or typed vital-signs record. Return ONLY a JSON object. ' +
-  'Copy a value only if it is clearly written; leave a field out if it is missing, unclear or crossed out. ' +
+  'You are reading a nurse\'s handwritten or typed vital-signs record. Return ONLY a JSON object with every field. ' +
+  'Copy a value only if it is clearly written; use null if it is missing, unclear or crossed out. ' +
+  'Nurses use short words (pulse, resps, sats, temp, BP 128/80): map them to the fields as described. ' +
   'Do not guess, calculate, convert units or add anything that is not written. ' +
   'Fields: bp_systolic, bp_diastolic (mmHg), heart_rate (/min), resp_rate (/min), temp_c (Celsius), spo2 (%), ' +
   'pain_0_10, glucose_mgdl, o2_flow_lpm (L/min), consciousness (one of: Alert, Responds to voice, Responds to pain, Unresponsive).';
 
-/** JSON schema used as the on-device responseConstraint and the cloud responseSchema. */
+/**
+ * What each field is and the words nurses write for it. Mapping a written synonym ("pulse" -> heart_rate) is reading,
+ * not guessing. Found live (20 Nov 2026, gemini-3.5-flash-lite): without these and with optional fields, the model
+ * returned only 3-4 of 7 clearly written values (pulse, sats and diastolic were left out).
+ */
+export const VITALS_FIELD_DESCRIPTIONS: Record<VitalKey, string> = {
+  bp_systolic: 'Systolic blood pressure in mmHg: the first number of "BP 128/80" or "128 over 80"',
+  bp_diastolic: 'Diastolic blood pressure in mmHg: the second number of "BP 128/80" or "128 over 80"',
+  heart_rate: 'Heart rate per minute; written as pulse, P, HR or heart rate',
+  resp_rate: 'Respiratory rate per minute; written as resps, RR, resp rate or respirations',
+  temp_c: 'Temperature in Celsius; written as temp, T or temperature',
+  spo2: 'Oxygen saturation in %; written as sats, SpO2, O2 sat or oxygen saturation',
+  pain_0_10: 'Pain score 0-10; written as pain',
+  glucose_mgdl: 'Blood glucose in mg/dL; written as glucose, BG or BGL',
+  o2_flow_lpm: 'Supplemental oxygen flow in L/min; written as O2 or oxygen flow',
+};
+const CONSCIOUSNESS_DESCRIPTION = 'Level of consciousness (ACVPU/AVPU); "alert" or "A" means Alert';
+
+/**
+ * On-device responseConstraint (JSON Schema for the Chrome Prompt API). Fields stay optional here: union/nullable types
+ * in Prompt API constraints have not been tested on a real model yet.
+ */
 export const VITALS_JSON_SCHEMA = {
   type: 'object',
   properties: {
-    ...Object.fromEntries(PROPOSAL_KEYS.map((k) => [k, { type: 'number' }])),
-    consciousness: { type: 'string', enum: [...CONSCIOUSNESS_OPTIONS] },
+    ...Object.fromEntries(PROPOSAL_KEYS.map((k) => [k, { type: 'number', description: VITALS_FIELD_DESCRIPTIONS[k] }])),
+    consciousness: { type: 'string', enum: [...CONSCIOUSNESS_OPTIONS], description: CONSCIOUSNESS_DESCRIPTION },
   },
+};
+
+/**
+ * Cloud responseSchema (Gemini OpenAPI-subset schema): every field required and nullable, so the model answers each
+ * one (null = not written) instead of skipping it. Verified live on gemini-3.5-flash-lite via Firebase AI Logic.
+ */
+export const VITALS_CLOUD_SCHEMA = {
+  type: 'object',
+  properties: {
+    ...Object.fromEntries(PROPOSAL_KEYS.map((k) => [k, { type: 'number', nullable: true, description: VITALS_FIELD_DESCRIPTIONS[k] }])),
+    consciousness: { type: 'string', nullable: true, enum: [...CONSCIOUSNESS_OPTIONS], description: CONSCIOUSNESS_DESCRIPTION },
+  },
+  required: [...PROPOSAL_KEYS, 'consciousness'],
 };
 
 /** Parse model text into a proposal. Structural checks only (type, scale edges); never clinical judgement. */
@@ -269,6 +304,6 @@ export async function proposeVitalsOnDevice(ctx: AiCtx, input: AiInput): Promise
 }
 
 export async function proposeVitalsInCloud(ctx: AiCtx, purpose: CloudPurpose, input: AiInput): Promise<{ proposal: VitalsProposal; raw: AiRaw }> {
-  const raw = await runInCloud(ctx, purpose, { ...input, prompt: `${VITALS_PROMPT}\n\n${input.prompt}` }, VITALS_JSON_SCHEMA);
+  const raw = await runInCloud(ctx, purpose, { ...input, prompt: `${VITALS_PROMPT}\n\n${input.prompt}` }, VITALS_CLOUD_SCHEMA);
   return { proposal: parseVitalsProposal(raw.text), raw };
 }
