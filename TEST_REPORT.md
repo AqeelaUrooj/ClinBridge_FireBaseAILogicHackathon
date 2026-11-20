@@ -1,15 +1,69 @@
 # Test report
 
-Run: 20 Nov 2026 (round 6), local (Linux, Node 22, Chrome) on branch `feat/reliability`. All runs below happened after the last code change.
+Run: 20 Nov 2026 (round 7), local (Linux, Node 22, Chrome) on branch `feat/encryption` (PR #4). All runs below happened after the last code change, and GitHub Actions ran the same checks on the PR.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | Pass (exit 0) |
 | `npm run lint` | Pass (exit 0) |
-| `npm test` (Vitest) | **82 pass, 1 skipped** (16 files + 1 skipped). The skipped file only writes the export for CI. |
-| `npm run build` | Pass (PWA, 22 files precached incl. illustrations) |
-| `npm run test:e2e` (Playwright) | **24 / 24 pass** |
-| HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors** (was 10), 254 warnings (was 264), 418 information. See docs/FHIR_VALIDATION.md |
+| `npm test` (Vitest) | **142 pass, 1 skipped** (20 files + 1 skipped). The skipped file only writes the export for CI. |
+| `npm run build` | Pass (PWA, 22 files precached) |
+| `npm run test:e2e` (Playwright) | **25 / 25 pass** (the offline test also passed 3 runs in a row) |
+| HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors, 11 warnings** (was 254), 418 information |
+
+## Round 7 additions: encryption at rest (P-04)
+
+Crypto, `src/lib/vaultCrypto.test.ts` (23 tests):
+- Default 600,000 PBKDF2 iterations.
+- The working key is non-extractable (`exportKey` refused).
+- Stored strings hold no passphrase, recovery code or raw key.
+- Wrong passphrase, wrong recovery code and a tampered wrapped key are all refused.
+- Recovery issues a new code and voids the old one; changing the passphrase keeps the data key.
+- 1,000 encryptions → 1,000 different nonces.
+- A changed byte, changed nonce, or data moved to another row are all detected.
+- Recovery-code format; passphrase rules.
+
+Storage, `src/db/encryption.test.ts` (15 tests):
+- On disk only index fields are readable (names, values, PIN hashes are not). A nurse save through the normal repository is encrypted. The audit chain verifies.
+- Locked: every read and write is refused.
+- A reload starts locked; the right passphrase unlocks; the recovery code unlocks.
+- A plain row slipped in → IntegrityError. Ciphertext copied between rows → refused.
+- Real records refuse the public practice passphrase/recovery key and weak passphrases. Practice and Real keys can't read each other's data.
+- Practice reset keeps the vault.
+
+Migration, `src/db/encryptMigration.test.ts` (11 tests):
+- Checkpoint → vault → encrypt → verify: every row is identical to the original, and the chain is valid.
+- A failure before any change leaves the database as it was.
+- Interrupted half-way → still readable → after restart, wrong passphrase refused → unlock → resume finishes and verifies.
+- Resume without unlock is refused. The verify step catches a changed or missing row.
+- Plain copies left afterwards: only the kept checkpoint.
+- Photos: sealed only after their capture hash checks out; unreadable when locked.
+- Real records refused without approval, with nothing changed.
+
+Backup, `src/db/encryptedBackup.test.ts` (10 tests):
+- No readable data or secrets in the file. Fresh salt and nonce each time.
+- Weak passphrase and the unit passphrase are refused.
+- Restore into an empty database with its own new key: every table matches, photos match their hashes, chain valid, the data key is not carried over.
+- Wrong passphrase → nothing written. Changed byte, edited header or cut-off file → "damaged".
+- A non-empty target, the other dataset, or a locked target are refused.
+- A broken chain in the backup → rolled back.
+
+FHIR (`fhir.test.ts`): the narrative is generated XHTML from the resource's own fields, HTML-escaped.
+
+Browser:
+- Every reload or restart shows the unlock screen first. Unlocking works with the network off (`vitals-slice`, `restart`, `admin-recovery` offline).
+- Real-records setup (`admin-recovery`):
+  - A weak passphrase is refused.
+  - The recovery key is shown once and its last group must be typed back.
+  - Raw IndexedDB holds no admin name, PIN hash, passphrase or recovery key.
+  - After a reload the practice passphrase is refused and the unit passphrase opens.
+  - The recovery key + a new passphrase give a new key; the old key is refused.
+- Backup (`backup.spec`, two fresh browsers):
+  - The unit passphrase is refused as backup passphrase.
+  - The file holds no names or secrets.
+  - Restoring with a wrong backup passphrase creates nothing; the right one restores staff.
+  - Laptop B's own passphrase opens it; laptop A's doesn't.
+- FHIR export: needs the "sensitive, not encrypted" tick box; the file name starts with `SENSITIVE-`.
 
 ## Round 6 additions
 

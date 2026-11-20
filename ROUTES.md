@@ -22,7 +22,8 @@ Built = works. Placeholder = honest "being built" page.
 | `/admin/staff` | Add, switch off/on, new PIN | Built |
 | `/admin/devices` | Laptops, last clock check, record counts | Built |
 | `/admin/audit` | Change log, chain check, filter | Built |
-| `/admin/settings` | Clinical settings (read only, marked not approved) | Built |
+| `/admin/backup` | Encrypted backup file (separate backup passphrase) | Built |
+| `/admin/settings` | Clinical and security settings (read only, marked not approved) | Built |
 | `/recovery` | Worklist: progress, filters, add new downtime records (rules only) | Built |
 | `/recovery/:item` | Why flagged, compare with related record, versions, fix / confirm, sign off | Built |
 | `/patients/:id` | Patient summary | Built |

@@ -113,6 +113,7 @@ test('app works offline after first load: sign in, illustrations, body map, save
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved on this laptop.')).toBeVisible();
+  await expect(page.locator('img[data-asset]').first()).toBeVisible(); // page content loads after decryption
   const vitalsImgs = await page.locator('img[data-asset]').evaluateAll((els) => els.map((e) => (e as HTMLImageElement).naturalWidth));
   expect(vitalsImgs.length).toBeGreaterThan(0);
   expect(vitalsImgs.every((w) => w > 0)).toBe(true);

@@ -1,6 +1,6 @@
 # P-04 — Encryption at rest
 
-Status: **decisions made 20 Nov 2026 (owner).** Implementation is in progress on synthetic data only. **No irreversible step is approved:** the Real-records migration and deleting any plain copy each need a separate, explicit approval.
+Status: **decisions made 20 Nov 2026 (owner). Reversible parts implemented on branch `feat/encryption` (PR #4), tested on synthetic data.** **No irreversible step is approved:** the Real-records migration and deleting any plain copy each need a separate, explicit approval.
 
 ## Decisions
 
@@ -111,3 +111,43 @@ Status: **decisions made 20 Nov 2026 (owner).** Implementation is in progress on
 - A shared unit passphrase can leak socially.
 - The browser can evict storage if persistence isn't granted.
 - Not a certified medical-device design. Hospital IT/security review is required.
+
+## Implementation status (PR #4)
+
+| Stage (owner's list, D) | Done | Evidence |
+|---|---|---|
+| 1. Test on synthetic Practice data | Yes | `encryptMigration.test.ts`; app migrates old plain Practice databases on start |
+| 2. Verified recovery checkpoint | Yes | Checkpoint written, read back, SHA-256 per table compared; a bad copy is refused |
+| 3. Encrypt records and photos | Yes | Middleware for records; `encryptPlainPhotos` checks each photo's capture hash before replacing it |
+| 4. Every record decrypts and matches the original | Yes | `verifyAgainstCheckpoint` (canonical JSON per row) |
+| 5. Audit integrity and relationships | Yes | Chain verified; row counts per table and per-row equality keep all links |
+| 6. Interruption and recovery | Yes | Interrupted after a table; restart; wrong passphrase; resume finishes and verifies |
+| 7. Wrong secrets, missing recovery key | Yes | Unit tests + browser tests (wrong passphrase, wrong/old recovery key) |
+| 8. Backup and restore | Yes | `encryptedBackup.test.ts` + `e2e/backup.spec.ts` (two fresh browsers) |
+| 9. No unexpected plain copies | Yes | Test lists the databases: plain data only in the kept checkpoint/safety copies (below) |
+| 10. Cleanup step | **Proposed below, not done** | Needs approval |
+| Real-records migration | **Not done** | Function refuses without an approval flag; no screen passes it |
+
+**Where plain data can still exist after this PR:**
+1. `downtimekit-backups`: the pre-encryption checkpoint, and any v1→v2 safety copy from earlier builds (More shows them as "not encrypted").
+2. A Real-records database created before this build (red banner).
+3. FHIR export files the user downloaded (plain by design, with a confirmation).
+4. Old plain JSON safety-copy downloads made with earlier builds. The download button is removed in this PR, but files saved before are outside the app.
+5. Deleted rows' old bytes inside the browser's storage files until the browser compacts them, and old SSD blocks. Browsers give no secure-erase API.
+
+## Proposal: cleanup step (needs approval, irreversible)
+
+On a dataset whose vault is complete, an admin action **"Remove plain safety copies"** would:
+1. Check that the database has no plain rows (`rawPlainRowCount = 0`), that the audit chain is valid, and that every photo is sealed.
+2. Require a **new encrypted backup file made in the same session** and successfully opened (test-decrypted) with its passphrase. That way the checkpoint is never the only recoverable copy.
+3. Delete only `downtimekit-backups` rows for this dataset that are not encrypted (`pre-encryption` and old `schema-upgrade` copies). An audit row `plain_copies_removed` records counts and the backup's fingerprint.
+4. Say plainly on screen: this removes the copies from the app's storage; it can't guarantee the disk is wiped, and it can't reach files already downloaded.
+
+## Proposal: Real-records migration (needs approval, irreversible)
+
+Same staged migration as Practice, started only by an admin from Admin → Settings, after:
+- typing a new unit passphrase,
+- confirming the new recovery key,
+- making an encrypted backup first.
+
+The checkpoint stays until the cleanup above is approved separately.

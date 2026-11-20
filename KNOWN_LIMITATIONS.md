@@ -1,7 +1,17 @@
 # Known limitations
 
 - **Not for real patients yet.** Practice mode only until clinical review (D-17) and security work below are done.
-- **No encryption at rest yet.** Data in IndexedDB, the photo store, the safety copies and exported files are not encrypted. The design is in `docs/proposals/P-04-encryption-at-rest.md` and waits for approval. Laptop disk encryption is required meanwhile.
+- **Encryption at rest (P-04) is a prototype.** Not reviewed by hospital IT/security. Keep full-disk encryption on. What stays readable or unprotected:
+  - **Index fields are plain** in every table: ids, `patient.mrn`, record times, statuses, links between records. Names, values, notes, staff names and PIN hashes are encrypted.
+  - **Practice gives no secrecy:** its passphrase and recovery key are public on purpose (fake data only).
+  - **Existing plain Real records are not encrypted.** A database that held Real records before this build stays plain (red banner) until the migration is approved.
+  - **Plain copies that still exist:** the pre-encryption checkpoint and older safety copies in `downtimekit-backups` (listed on More, marked "not encrypted"). Removing them needs approval. A FHIR export file is plain by design.
+  - **Deleting is not wiping.** Browsers don't promise that deleted IndexedDB data is erased from the disk, and SSDs keep old blocks. Downloaded files are outside the app.
+  - **Memory:** the key stays in browser memory while unlocked. JavaScript can't force the browser to wipe it at once after locking.
+  - **While unlocked**, a malicious extension or injected script could read records. There are no third-party scripts in the app.
+  - **One shared unit passphrase** can leak socially. Losing both the passphrase and the recovery key makes the records unreadable (paper stays the source).
+  - **Rollback is not detected:** someone with the files could put back an older copy of a whole row. Swapping ciphertext between rows and adding plain rows are detected.
+  - **Passphrase rules are guidance** (length, common words, patterns), not a strength guarantee.
 - **Session is in memory.** Reloading the page signs you out (records stay saved). This is on purpose for shared laptops.
 - **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
 - **No Overdue status** for medicines until the hospital time window is given (D-18).
@@ -18,7 +28,7 @@
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).
 - **Labs are typed in by nurses** as phoned/printed by the lab; no lab interface.
 - **AI not integrated.** Needs Chrome desktop 139+ with Gemini Nano downloaded and Firebase config (docs/AI_INTEGRATION.md).
-- **Photos are not encrypted** and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
+- **Photos** are encrypted with the records' key and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.
 - **The safety copy before a DB upgrade** is a local copy on the same laptop. It is not disaster recovery or a backup system.
 - **FHIR export passes the official HL7 validator (R4) with 0 errors**, but that is not EHR interoperability. Medicines, allergies, fluids, risk scores, most labs and notes are free text with no standard code; the route of a held or refused dose is not exported. Full list in docs/FHIR_VALIDATION.md. Loading it into an EHR needs the hospital EHR team.

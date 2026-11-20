@@ -15,6 +15,7 @@ npm run dev          # http://localhost:5173
 ```
 
 Sign in to Practice: pick any person, PIN **2468** (practice only).
+Records are encrypted at rest. After a reload or restart the app asks for the unit passphrase first; for Practice press **Use practice passphrase** (`practice only fake patients`, public on purpose: it protects nothing and is only for fake data). Real records get their own passphrase and a recovery key at first-time setup.
 
 ## Scripts
 
