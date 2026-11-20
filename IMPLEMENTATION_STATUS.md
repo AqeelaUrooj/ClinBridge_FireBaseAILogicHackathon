@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 4)
+Last updated: 20 Nov 2026 (round 5)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -11,7 +11,7 @@ Last updated: 20 Nov 2026 (round 4)
 | 4 | Fluids (intake/output), notes, labs | **Done** |
 | 5 | Photo of paper form (on-device AI) | **Manual capture done**; AI not integrated (see docs/AI_INTEGRATION.md) |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
-| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Not started |
+| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | **Done** except practice compare (needs AI) |
 | 8 | Offline/security hardening, encryption at rest, deploy | Partly (offline shell works) |
 
 ## Phase 2 slice — working end to end
@@ -34,6 +34,24 @@ Also working:
 - High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride): red bar, and Save stays locked until a **different** eligible nurse picks their name and enters their own PIN. The database layer refuses the save too, so the rule cannot be skipped from the screen.
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
+
+## Round 5
+
+- **GitHub:** history re-authored as the owner (content unchanged) and pushed to `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`.
+- **Admin:**
+  - Screens: readiness, downtime lifecycle, patient list, staff, laptops, change log and settings.
+  - First-time setup for Real records.
+  - Every admin action is checked in the database layer and audited.
+- **Network clearance (Back online):** needs every checklist item ticked plus the admin's PIN again. Ending the downtime needs every worklist item signed off.
+- **Recovery:**
+  - Rules-only worklist: possible duplicate, missing field, time conflict. Every rule is definitional or comes from the order's own wording.
+  - Review page with the reasons, a related record to compare, versions, and fix / confirm links.
+  - Sign-off is recorded once and audited.
+- **FHIR R4 export:**
+  - A collection Bundle with Patient, Encounter, Practitioner, AllergyIntolerance, MedicationRequest, MedicationAdministration, Observation, DocumentReference and Provenance resources.
+  - LOINC and UCUM codes for vitals. Corrected or mistaken versions are exported as entered-in-error; drafts and proposals are never exported.
+  - Structural validator; download; fingerprint written to the change log.
+  - File only, no live EHR link.
 
 ## Round 4
 
@@ -58,4 +76,5 @@ Also working:
 
 ## Next
 
-Phase 7: admin (readiness, snapshot, staff, devices, downtime lifecycle, audit log, settings, network clearance), recovery worklist, FHIR R4 export. Not started yet.
+- Phase 8: encryption at rest (AES-GCM + key_store), print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
+- On-device AI once Firebase config and a Chrome desktop test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.

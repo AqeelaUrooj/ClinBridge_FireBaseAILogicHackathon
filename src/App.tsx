@@ -13,6 +13,8 @@ import { BodyMapPage } from './features/body/BodyMapPage';
 import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
+import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage } from './features/admin/AdminPages';
+import { RecoveryListPage, RecoveryItemPage, ExportPage } from './features/recovery/RecoveryPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
 function RequireAuth() {
@@ -46,6 +48,8 @@ export function App() {
     <Routes>
       <Route path="/sign-in" element={<SignIn />} />
       <Route path="/lock" element={<LockScreen />} />
+      {/* Reachable before anyone exists: the page itself only works while Real records has no staff. */}
+      <Route path="/setup" element={<main className="min-h-screen bg-background p-space-xl flex flex-col gap-space-lg"><SetupPage /></main>} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route index element={<Home />} />
@@ -55,11 +59,19 @@ export function App() {
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/labs" element={<WardLabsPage />} />
-          <Route path="/export" element={<NotBuilt title="Export" phase="Phase 7" />} />
+          <Route path="/export" element={<ExportPage />} />
           <Route path="/drill/compare" element={<NotBuilt title="Practice compare" phase="Phase 7" />} />
-          <Route path="/setup" element={<NotBuilt title="First-time setup" phase="Phase 7" />} />
-          <Route path="/admin/*" element={<NotBuilt title="Admin" phase="Phase 7" />} />
-          <Route path="/recovery/*" element={<NotBuilt title="To check (recovery)" phase="Phase 7" />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<ReadinessPage />} />
+            <Route path="downtime" element={<DowntimePage />} />
+            <Route path="snapshot" element={<SnapshotPage />} />
+            <Route path="staff" element={<StaffPage />} />
+            <Route path="devices" element={<DevicesPage />} />
+            <Route path="audit" element={<AuditPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="/recovery" element={<RecoveryListPage />} />
+          <Route path="/recovery/:item" element={<RecoveryItemPage />} />
           <Route path="/patients/:id" element={<PatientLayout />}>
             <Route index element={<PatientSummary />} />
             <Route path="timeline" element={<Timeline />} />

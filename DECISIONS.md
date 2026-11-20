@@ -30,6 +30,11 @@
 | D-31 | Body map artwork: original Theme 2 vector drawing; reference figures not extracted (baked highlights, callout lines, low resolution); same 21 region ids | See docs/ASSETS.md and P-01 |
 | D-32 | Icons cut from the reference sheet; sheet's "Tablet" (a tablet computer) not used; "Inhaler" (a tube) used only for creams | Do not mislead |
 | D-33 | Photo quality hints are technical (light, sharpness, size) and never block; the nurse's override is stored in `photo_check` | Not a clinical rule |
+| D-34 | Recovery rules: duplicate = same order + same scheduled time, or closer than the order's own "every N hours"; time conflict = care time after typed time, or counter order ≠ clock order on a laptop; missing field = given dose without route/dose/unit | No invented clinical numbers |
+| D-35 | Worklist queue order = prototype category rank (meds first, per Data plan) + number of flags; marked not approved | Queue order only, not a clinical score |
+| D-36 | Network clearance = prototype checklist (3 items, wording not approved) + admin PIN re-entry; end downtime only when the worklist is signed off | Implementation Plan gate; UI/UX "end only when the worklist is finished" |
+| D-37 | FHIR export: collection Bundle; text-only codes where no code is agreed (fluids, risk scores, labs, consciousness); `https://clinbridge.example/fhir` as placeholder base URL; handoff/audit not exported (post-hackathon list) | Data plan §7 |
+| D-38 | Snapshot import only into Real records; files marked fake are refused; only the 6 patient-list tables are accepted | Keeps practice and real data apart |
 
 ## Open — need an answer
 

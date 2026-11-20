@@ -102,6 +102,19 @@ Medicine slot status is worked out, not stored: the live entry (confirmed or dra
 | Typed values | child table as for typed entries |
 | Draft / Confirm | `entry.status` draft → confirmed; `confirmed`, `confirmed_by`, `confirmed_at`; `ai_proposal` kept; audit `entry_confirmed` with before/after |
 
+## Admin and recovery
+
+| Screen | Field / table |
+|---|---|
+| Declare System down | `downtime_event.id`, `declared_at`, `declared_by` |
+| Clear network (Back online) | `downtime_event.network_cleared_at`, `cleared_by` (+ audit `network_cleared` with the ticked checklist) |
+| End downtime | `downtime_event.ended_at` |
+| Staff add / switch off / new PIN | `practitioner` (`name`, `initials`, `role`, `pin_hash`, `active`) |
+| First-time setup | first `practitioner` (admin) + `device` |
+| Patient list import | `snapshot`, `patient`, `encounter`, `allergy`, `active_order`, `snapshot_result` |
+| Worklist item | `worklist_item` (`entry_id`, `patient_id`, `category`, `priority`, `flags`, `signed_off_by`, `signed_off_at`, `exported_at`) |
+| Export | audit `fhir_export` (SHA-256 of the file); `worklist_item.exported_at` |
+
 ## Body map (no new fields)
 
 Medicine markers come from `med_admin.site` via a fixed table (`src/features/body/regions.ts`). Region ids are drafts and are not stored. `note.body_site` is prepared but not applied (P-03).

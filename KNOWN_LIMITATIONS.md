@@ -21,3 +21,8 @@
 - **Photos are not encrypted** and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.
 - **The safety copy before a DB upgrade** is a local copy on the same laptop. It is not disaster recovery or a backup system.
+- **FHIR export is checked by our own structural validator**, not the official HL7 validator. Some codes are text-only (see D-37). Loading it into an EHR needs the hospital EHR team.
+- **No live EHR connection.** Export is a file.
+- **Recovery uses rules only.** The cloud second look / "recheck" needs Firebase. Practice data shows simulated second-look results, labelled as such.
+- **Settings are read only.** Clinical settings live in `src/config/clinicalPolicy.ts` until an approved admin settings store exists (needs a schema decision).
+- **Device registration:** Practice uses the seed laptops; Real records registers one laptop at first-time setup. There is no screen yet to register a second laptop.

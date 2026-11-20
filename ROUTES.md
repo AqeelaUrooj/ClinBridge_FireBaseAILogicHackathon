@@ -13,11 +13,18 @@ Built = works. Placeholder = honest "being built" page.
 | `/more` | Switch user, change-log check, reset practice | Built |
 | `/handover` | Ward handover: latest handover per bed | Built |
 | `/labs` | Ward labs, critical first (from More) | Built |
-| `/export` | Export | Placeholder (Phase 7) |
-| `/drill/compare` | Practice compare | Placeholder (Phase 7) |
-| `/setup` | First-time setup (real records) | Placeholder (Phase 7) |
-| `/admin/*` | Admin | Placeholder (Phase 7) |
-| `/recovery/*` | To check / recovery | Placeholder (Phase 7) |
+| `/export` | FHIR R4 export: prepare, structure check, download, fingerprint in change log (file only, no EHR link) | Built |
+| `/drill/compare` | Practice compare (needs AI) | Placeholder |
+| `/setup` | First-time setup for Real records (first admin + this laptop); reachable before sign-in, works only while no staff exist | Built |
+| `/admin` | Readiness (offline storage, network, storage space, laptop, AI availability, patient list age, change log, drafts, worklist) | Built |
+| `/admin/downtime` | Declare System down → checklist + admin PIN → Back online → end (only when worklist done) | Built |
+| `/admin/snapshot` | Current patient list; import (Real records only, fake files refused) | Built |
+| `/admin/staff` | Add, switch off/on, new PIN | Built |
+| `/admin/devices` | Laptops, last clock check, record counts | Built |
+| `/admin/audit` | Change log, chain check, filter | Built |
+| `/admin/settings` | Clinical settings (read only, marked not approved) | Built |
+| `/recovery` | Worklist: progress, filters, add new downtime records (rules only) | Built |
+| `/recovery/:item` | Why flagged, compare with related record, versions, fix / confirm, sign off | Built |
 | `/patients/:id` | Patient summary | Built |
 | `/patients/:id/timeline` | History | Built |
 | `/patients/:id/vitals` | Vitals: latest, trend, list | Built |

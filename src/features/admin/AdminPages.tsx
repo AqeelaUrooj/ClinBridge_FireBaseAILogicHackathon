@@ -1,0 +1,368 @@
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { isAdmin, useApp, useSession } from '../../state/app';
+import { verifyChain } from '../../db/audit';
+import { addStaff, clearNetwork, declareDowntime, endDowntime, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
+import type { Role } from '../../db/schema';
+import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
+import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
+import { PHASE_LABEL } from '../../lib/phase';
+import { dateTimeLabel } from '../../lib/time';
+import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
+import { MedIllustration } from '../../components/MedIllustration';
+import { fieldCls, labelCls } from '../charting/TwoStepEditor';
+
+const Err = ({ e }: { e: string | null }) => (e ? <p role="alert" className="text-error font-body-md">{e}</p> : null);
+const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
+
+/** Admin area: screens check the role here, and every action checks it again in the database layer. */
+export function AdminLayout() {
+  const { user } = useSession();
+  if (!isAdmin(user)) return <EmptyState icon="lock" text="Admins only." />;
+  const tabs: [string, string][] = [['/admin', 'Readiness'], ['/admin/downtime', 'Downtime'], ['/admin/snapshot', 'Patient list'], ['/admin/staff', 'Staff'], ['/admin/devices', 'Laptops'], ['/admin/audit', 'Change log'], ['/admin/settings', 'Settings']];
+  return (
+    <>
+      <PageTitle>Admin</PageTitle>
+      <nav aria-label="Admin sections" className="flex flex-wrap gap-1 border-b border-card-border">
+        {tabs.map(([to, label]) => (
+          <NavLink key={to} to={to} end className={({ isActive }) => `min-h-11 px-4 flex items-center font-body-md border-b-2 -mb-px ${isActive ? 'border-primary text-primary font-semibold' : 'border-transparent text-on-surface-variant hover:text-primary'}`}>{label}</NavLink>
+        ))}
+      </nav>
+      <Outlet />
+    </>
+  );
+}
+
+/* ------------------------------ Readiness ------------------------------ */
+
+function Check({ ok, label, detail }: { ok: boolean | null; label: string; detail: ReactNode }) {
+  return (
+    <li className="flex items-start gap-space-sm py-space-sm border-b border-card-border last:border-0">
+      <Icon name={ok === null ? 'help' : ok ? 'check_circle' : 'warning'} filled className={ok === null ? 'text-outline' : ok ? 'text-sync-green' : 'text-downtime-amber'} />
+      <div className="flex-1"><p className="font-semibold text-primary">{label}</p><p className="font-body-sm text-on-surface-variant">{detail}</p></div>
+    </li>
+  );
+}
+
+export function ReadinessPage() {
+  const { db, clock, phase, snapshot, deviceId } = useApp();
+  const [online, setOnline] = useState(navigator.onLine);
+  const [sw, setSw] = useState<boolean | null>(null);
+  const [persisted, setPersisted] = useState<boolean | null>(null);
+  const [quota, setQuota] = useState<{ used: number; total: number } | null>(null);
+  const ai = typeof (globalThis as { LanguageModel?: unknown }).LanguageModel !== 'undefined';
+  useEffect(() => {
+    const on = () => setOnline(navigator.onLine);
+    addEventListener('online', on); addEventListener('offline', on);
+    void navigator.serviceWorker?.getRegistration().then((r) => setSw(!!r?.active)).catch(() => setSw(false));
+    void navigator.storage?.persisted?.().then(setPersisted).catch(() => setPersisted(null));
+    void navigator.storage?.estimate?.().then((e) => setQuota({ used: e.usage ?? 0, total: e.quota ?? 0 })).catch(() => undefined);
+    return () => { removeEventListener('online', on); removeEventListener('offline', on); };
+  }, []);
+  const data = useLiveQuery(async () => ({
+    chain: await verifyChain(await db.audit_log.orderBy('seq').toArray()),
+    device: await db.device.get(deviceId),
+    staff: await db.practitioner.filter((p) => p.active).count(),
+    drafts: await db.entry.where('status').equals('draft').count(),
+    open: await db.worklist_item.filter((w) => !w.signed_off_at).count(),
+  }), [db, deviceId]);
+  const ageH = snapshot ? (clock.now() - Date.parse(snapshot.taken_at)) / 3_600_000 : null;
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-space-lg">
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name="workflows/device" size={28} />This laptop</h2>
+        <ul>
+          <Check ok={sw} label="Works offline" detail={sw ? 'App is stored on this laptop (service worker active).' : 'Open the app once while online to store it.'} />
+          <Check ok={online} label={online ? 'Network: connected' : 'Network: offline'} detail={online ? 'Cloud features are still only allowed in Back online.' : 'Offline work is fine; everything saves on this laptop.'} />
+          <Check ok={persisted} label="Storage kept by the browser" detail={persisted ? 'The browser will not clear this data on its own.' : 'Not guaranteed. Avoid clearing browser data.'} />
+          <Check ok={quota ? quota.used / Math.max(quota.total, 1) < 0.8 : null} label="Storage space" detail={quota ? `${(quota.used / 1e6).toFixed(1)} MB used of ${(quota.total / 1e9).toFixed(1)} GB` : 'Not reported by this browser.'} />
+          <Check ok={data?.device ? true : null} label="Laptop registered" detail={data?.device ? `${data.device.label} · last clock check ${dateTimeLabel(data.device.last_clock_sync)}` : 'This laptop is not in the device list.'} />
+          <Check ok={ai ? true : null} label="On-device AI" detail={ai ? 'Chrome built-in AI found. Not used yet in this build.' : 'Not available here. Manual capture works without it.'} />
+        </ul>
+      </Card>
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name="workflows/checklist" size={28} />Records</h2>
+        <ul>
+          <Check ok={phase !== 'down' ? true : null} label={`Mode: ${PHASE_LABEL[phase]}`} detail={phase === 'down' ? 'Cloud blocked. Nurses chart on this laptop.' : phase === 'online' ? 'Recovery and export allowed.' : 'No downtime open.'} />
+          <Check ok={ageH != null && ageH < 24} label="Patient list" detail={snapshot ? `Taken ${dateTimeLabel(snapshot.taken_at)} (${ageH!.toFixed(0)} h old) from ${snapshot.source_system}` : 'No patient list loaded.'} />
+          <Check ok={data?.chain.ok ?? null} label="Change log" detail={data ? `${data.chain.verified} of ${data.chain.total} rows verified` : 'Checking…'} />
+          <Check ok={(data?.staff ?? 0) > 0} label="Active staff" detail={`${data?.staff ?? 0} people can sign in`} />
+          <Check ok={data ? data.drafts === 0 : null} label="Drafts waiting" detail={`${data?.drafts ?? 0} records still need checking`} />
+          <Check ok={data ? data.open === 0 : null} label="Worklist" detail={`${data?.open ?? 0} items not signed off`} />
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------ Downtime lifecycle ------------------------------ */
+
+export function DowntimePage() {
+  const { db, clock, deviceId, phase, event } = useApp();
+  const { user } = useSession();
+  const [ticked, setTicked] = useState<string[]>([]);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const names = useLiveQuery(async () => new Map((await db.practitioner.toArray()).map((p) => [p.id, p.name])), [db]) ?? new Map();
+  const history = useLiveQuery(() => db.downtime_event.orderBy('declared_at').reverse().toArray(), [db]);
+  const actor = { userId: user!.id, deviceId };
+  const run = async (f: () => Promise<unknown>) => { setBusy(true); setError(null); try { await f(); setPin(''); setTicked([]); } catch (e) { setError(msg(e)); } setBusy(false); };
+  return (
+    <div className="flex flex-col gap-space-lg">
+      <Card className="flex flex-col gap-space-md">
+        <h2 className="font-headline-sm text-headline-sm text-primary">Now: {PHASE_LABEL[phase]}</h2>
+        {phase === 'ready' && (
+          <>
+            <p className="text-on-surface-variant">Declare a downtime when the main EHR is down. Nurses then chart here; cloud is blocked.</p>
+            <Button variant="danger" className="self-start" disabled={busy} onClick={() => run(() => declareDowntime(db, clock, actor))}><Icon name="power_off" />Declare System down</Button>
+          </>
+        )}
+        {phase === 'down' && event && (
+          <>
+            <p className="text-on-surface-variant">System down since {dateTimeLabel(event.declared_at)} (declared by {names.get(event.declared_by) ?? event.declared_by}).</p>
+            <fieldset className="flex flex-col gap-1 rounded-lg border border-card-border p-space-md">
+              <legend className={labelCls}>Before Back online (network clearance)</legend>
+              {POLICY.recovery.networkChecklist.map((c) => (
+                <label key={c} className="flex items-center gap-2 min-h-11 cursor-pointer">
+                  <input type="checkbox" className="w-5 h-5" checked={ticked.includes(c)} onChange={(e) => setTicked(e.target.checked ? [...ticked, c] : ticked.filter((x) => x !== c))} />{c}
+                </label>
+              ))}
+              <p className="font-body-sm text-secondary">Checklist wording is a prototype setting, not approved hospital policy.</p>
+            </fieldset>
+            <div className="flex items-end gap-space-sm">
+              <label className="flex flex-col gap-1"><span className={labelCls}>Your PIN again</span>
+                <input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value)} className={`${fieldCls()} w-40 font-code-tabular`} aria-label="Your PIN again" /></label>
+              <Button disabled={busy || ticked.length !== POLICY.recovery.networkChecklist.length || pin.length !== 4} onClick={() => run(() => clearNetwork(db, clock, actor, ticked, pin))}><Icon name="wifi" />Clear network — Back online</Button>
+            </div>
+          </>
+        )}
+        {phase === 'online' && event && (
+          <>
+            <p className="text-on-surface-variant">Back online since {dateTimeLabel(event.network_cleared_at)} (cleared by {names.get(event.cleared_by ?? '') ?? event.cleared_by}). Finish the worklist, export, then end the downtime.</p>
+            <Button variant="secondary" className="self-start" disabled={busy} onClick={() => run(() => endDowntime(db, clock, actor))}><Icon name="task_alt" />End downtime</Button>
+          </>
+        )}
+        <Err e={error} />
+      </Card>
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">History</h2>
+        <ul>{(history ?? []).map((h) => (
+          <li key={h.id} className="py-space-sm border-b border-card-border last:border-0 font-body-md">
+            <strong className="text-primary">{h.id}</strong> · down {dateTimeLabel(h.declared_at)} · back online {h.network_cleared_at ? dateTimeLabel(h.network_cleared_at) : '—'} · ended {h.ended_at ? dateTimeLabel(h.ended_at) : '—'}
+          </li>
+        ))}</ul>
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------ Patient list (snapshot) ------------------------------ */
+
+export function SnapshotPage() {
+  const { db, clock, deviceId, dataset, snapshot } = useApp();
+  const { user } = useSession();
+  const [error, setError] = useState<string | null>(null);
+  const [report, setReport] = useState<string | null>(null);
+  const counts = useLiveQuery(async () => ({ patient: await db.patient.count(), encounter: await db.encounter.count(), allergy: await db.allergy.count(), active_order: await db.active_order.count(), snapshot_result: await db.snapshot_result.count() }), [db]);
+  async function onFile(f: File | undefined) {
+    if (!f) return;
+    setError(null); setReport(null);
+    try {
+      const json = JSON.parse(await f.text());
+      const check = checkSnapshotFile(json);
+      if (!check.ok) { setError(check.errors.join(' ')); return; }
+      await importSnapshot(db, clock, { userId: user!.id, deviceId }, json);
+      setReport(`Loaded: ${Object.entries(check.counts).map(([k, v]) => `${v} ${k}`).join(', ')}.`);
+    } catch (e) { setError(msg(e)); }
+  }
+  return (
+    <div className="flex flex-col gap-space-lg">
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Current patient list</h2>
+        {snapshot ? (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-1 font-body-md">
+            <dt className="text-secondary">Taken</dt><dd>{dateTimeLabel(snapshot.taken_at)}</dd>
+            <dt className="text-secondary">From</dt><dd>{snapshot.source_system}</dd>
+            <dt className="text-secondary">Unit</dt><dd>{snapshot.unit}</dd>
+            <dt className="text-secondary">On this laptop</dt><dd>{counts ? `${counts.patient} patients, ${counts.encounter} stays, ${counts.allergy} allergies, ${counts.active_order} orders, ${counts.snapshot_result} results` : '…'}</dd>
+          </dl>
+        ) : <p className="text-secondary">No patient list loaded.</p>}
+      </Card>
+      <Card className="flex flex-col gap-space-sm">
+        <h2 className="font-headline-sm text-headline-sm text-primary">Load a new patient list</h2>
+        {dataset === 'live' ? (
+          <>
+            <p className="text-on-surface-variant">JSON file with the six patient-list tables only (snapshot, patient, encounter, allergy, active_order, snapshot_result). Clinical records are never imported. Files marked as fake are refused.</p>
+            <label className="self-start inline-flex items-center gap-2 min-h-11 px-space-md rounded-lg border border-card-border cursor-pointer"><Icon name="upload_file" />Choose file<input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => void onFile(e.target.files?.[0])} /></label>
+          </>
+        ) : <p className="text-secondary">Practice uses its own fake patient list. Switch to Real records to load a hospital list.</p>}
+        {report && <p role="status" className="text-sync-green">{report}</p>}
+        <Err e={error} />
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------ Staff ------------------------------ */
+
+export function StaffPage() {
+  const { db, clock, deviceId } = useApp();
+  const { user } = useSession();
+  const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
+  const [form, setForm] = useState({ name: '', initials: '', role: 'RN' as Role, pin: '' });
+  const [pinFor, setPinFor] = useState<{ id: string; pin: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const actor = { userId: user!.id, deviceId };
+  const run = async (f: () => Promise<unknown>, after?: () => void) => { setError(null); try { await f(); after?.(); } catch (e) { setError(msg(e)); } };
+  return (
+    <div className="flex flex-col gap-space-lg">
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Staff on this laptop</h2>
+        <ul>{(staff ?? []).map((p) => (
+          <li key={p.id} className="flex flex-wrap items-center gap-space-md min-h-14 border-b border-card-border last:border-0">
+            <span className="w-10 h-10 rounded-full bg-secondary-fixed grid place-items-center font-bold">{p.initials}</span>
+            <span className="flex-1 font-semibold">{p.name}</span>
+            <Badge tone={p.role === 'admin' ? 'navy' : 'blue'}>{p.role === 'admin' ? 'Admin' : p.role}</Badge>
+            {p.active ? <Badge tone="green">Active</Badge> : <Badge>Switched off</Badge>}
+            <Button variant="secondary" onClick={() => setPinFor({ id: p.id, pin: '' })}>New PIN</Button>
+            <Button variant={p.active ? 'danger' : 'secondary'} onClick={() => run(() => setStaffActive(db, clock, actor, p.id, !p.active))}>{p.active ? 'Switch off' : 'Switch on'}</Button>
+          </li>
+        ))}</ul>
+        {pinFor && (
+          <div className="flex items-end gap-space-sm mt-space-md">
+            <label className="flex flex-col gap-1"><span className={labelCls}>New 4-digit PIN for {staff?.find((s) => s.id === pinFor.id)?.name}</span>
+              <input type="password" inputMode="numeric" maxLength={4} value={pinFor.pin} onChange={(e) => setPinFor({ ...pinFor, pin: e.target.value })} className={`${fieldCls()} w-40`} aria-label="New PIN" /></label>
+            <Button onClick={() => run(() => resetStaffPin(db, clock, actor, pinFor.id, pinFor.pin), () => setPinFor(null))}>Save PIN</Button>
+            <Button variant="ghost" onClick={() => setPinFor(null)}>Cancel</Button>
+          </div>
+        )}
+      </Card>
+      <Card className="flex flex-col gap-space-sm">
+        <h2 className="font-headline-sm text-headline-sm text-primary">Add a person</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
+          <label className="flex flex-col gap-1"><span className={labelCls}>Name</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldCls()} aria-label="Name" /></label>
+          <label className="flex flex-col gap-1"><span className={labelCls}>Initials</span><input value={form.initials} maxLength={3} onChange={(e) => setForm({ ...form, initials: e.target.value })} className={fieldCls()} aria-label="Initials" /></label>
+          <label className="flex flex-col gap-1"><span className={labelCls}>Role</span>
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className={fieldCls()} aria-label="Role"><option value="RN">RN</option><option value="LPN">LPN</option><option value="admin">Admin</option></select></label>
+          <label className="flex flex-col gap-1"><span className={labelCls}>4-digit PIN</span><input type="password" inputMode="numeric" maxLength={4} value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value })} className={fieldCls()} aria-label="PIN" /></label>
+        </div>
+        <Button className="self-start" onClick={() => run(() => addStaff(db, clock, actor, form), () => setForm({ name: '', initials: '', role: 'RN', pin: '' }))}><Icon name="person_add" />Add</Button>
+        <p className="font-body-sm text-secondary">What each role may do follows the UI/UX role table. Second-checker eligibility is a prototype setting (see Settings).</p>
+      </Card>
+      <Err e={error} />
+    </div>
+  );
+}
+
+/* ------------------------------ Devices, audit, settings ------------------------------ */
+
+export function DevicesPage() {
+  const { db, deviceId } = useApp();
+  const devices = useLiveQuery(() => db.device.toArray(), [db]);
+  const counts = useLiveQuery(async () => { const m = new Map<string, number>(); (await db.entry.toArray()).forEach((e) => m.set(e.device_id, (m.get(e.device_id) ?? 0) + 1)); return m; }, [db]);
+  return (
+    <Card>
+      <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Laptops</h2>
+      <ul>{(devices ?? []).map((d) => (
+        <li key={d.id} className="flex flex-wrap items-center gap-space-md min-h-14 border-b border-card-border last:border-0">
+          <MedIllustration name="workflows/device" size={26} />
+          <span className="flex-1"><strong className="text-primary">{d.label}</strong> <span className="text-secondary">· {d.id} · {d.unit}</span></span>
+          <span className="font-body-sm text-on-surface-variant">Last clock check {dateTimeLabel(d.last_clock_sync)}</span>
+          <span className="font-body-sm text-on-surface-variant">{counts?.get(d.id) ?? 0} records</span>
+          {d.id === deviceId && <Badge tone="navy">This laptop</Badge>}
+        </li>
+      ))}</ul>
+      <p className="font-body-sm text-secondary mt-space-sm">Each record keeps its laptop and a counter, so clock problems can be found in Recovery.</p>
+    </Card>
+  );
+}
+
+export function AuditPage() {
+  const { db } = useApp();
+  const [filter, setFilter] = useState('');
+  const rows = useLiveQuery(() => db.audit_log.orderBy('seq').reverse().toArray(), [db]);
+  const chain = useLiveQuery(async () => verifyChain(await db.audit_log.orderBy('seq').toArray()), [db]);
+  const actions = [...new Set((rows ?? []).map((r) => r.action))].sort();
+  const shown = (rows ?? []).filter((r) => !filter || r.action === filter).slice(0, 200);
+  return (
+    <Card>
+      <div className="flex flex-wrap items-center justify-between gap-space-md mb-space-sm">
+        <h2 className="font-headline-sm text-headline-sm text-primary">Change log</h2>
+        {chain && <Badge tone={chain.ok ? 'green' : 'red'} icon={chain.ok ? 'verified' : 'gpp_bad'}>{chain.ok ? `All ${chain.total} rows verified` : `Broken at row ${chain.brokenAtSeq}`}</Badge>}
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="h-10 rounded-lg border border-card-border px-2" aria-label="Filter by action">
+          <option value="">All actions</option>{actions.map((a) => <option key={a}>{a}</option>)}
+        </select>
+      </div>
+      <table className="w-full font-body-sm">
+        <thead><tr className="text-left text-secondary"><th className="py-1">#</th><th>Time</th><th>Who</th><th>Laptop</th><th>Action</th><th>What</th></tr></thead>
+        <tbody>{shown.map((r) => (
+          <tr key={r.id} className="border-t border-card-border"><td className="py-1 font-code-tabular">{r.seq}</td><td className="font-code-tabular">{dateTimeLabel(r.time)}</td><td>{r.user_id}</td><td>{r.device_id}</td><td>{r.action}</td><td className="font-code-tabular truncate max-w-[220px]">{r.entity}</td></tr>
+        ))}</tbody>
+      </table>
+      <p className="font-body-sm text-secondary mt-space-sm">Read only. Rows store fingerprints (hashes) of the data, never PINs. Showing up to 200 rows.</p>
+    </Card>
+  );
+}
+
+export function SettingsPage() {
+  const item = (label: string, value: ReactNode, approved: boolean) => (
+    <li className="py-space-sm border-b border-card-border last:border-0 flex flex-wrap items-start gap-space-md">
+      <span className="w-56 font-semibold text-primary">{label}</span><span className="flex-1">{value}</span>
+      <Badge tone={approved ? 'green' : 'amber'}>{approved ? 'Approved' : 'Not approved'}</Badge>
+    </li>
+  );
+  return (
+    <div className="flex flex-col gap-space-lg">
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Clinical settings</h2>
+        <p className="text-on-surface-variant mb-space-sm">{POLICY.note} They are read only here; a hospital-approved policy will replace them.</p>
+        <ul>
+          {item('High-alert medicines', `${POLICY.highAlert.entries.map((e) => e.label).join(', ')} · second nurse PIN for ${[...new Set(POLICY.highAlert.entries.flatMap((e) => e.events))].join(', ')}${POLICY.highAlert.listIsComplete ? '' : ' · partial list'}`, POLICY.highAlert.approved)}
+          {item('Second checker', POLICY.secondChecker.roles.join(', '), POLICY.secondChecker.approved)}
+          {item('Medicine timing (Overdue)', POLICY.medicationTiming.windows.length ? `${POLICY.medicationTiming.windows.length} windows` : 'None: doses show Due only', POLICY.medicationTiming.approved)}
+          {item('Vital-sign warning ranges', 'Warn only, never block', CLINICAL_WARNINGS.review.approved)}
+          {item('Recovery queue order', Object.entries(POLICY.recovery.categoryRank).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(' > '), POLICY.recovery.approved)}
+          {item('Network clearance checklist', `${POLICY.recovery.networkChecklist.length} items + admin PIN`, POLICY.recovery.approved)}
+        </ul>
+      </Card>
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">App</h2>
+        <ul className="font-body-md list-disc pl-6">
+          <li>Auto-lock after 5 minutes without use; 5 wrong PINs lock sign-in for 1 minute.</li>
+          <li>No early-warning or risk score is calculated.</li>
+        </ul>
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------ First-time setup (Real records) ------------------------------ */
+
+export function SetupPage() {
+  const { db, clock, dataset } = useApp();
+  const navigate = useNavigate();
+  const staffCount = useLiveQuery(() => db.practitioner.count(), [db]);
+  const [f, setF] = useState({ name: '', initials: '', pin: '', deviceLabel: '', unit: '' });
+  const [error, setError] = useState<string | null>(null);
+  if (dataset !== 'live') return <EmptyState icon="info" text="Setup is only for Real records. Practice is ready to use." />;
+  if (staffCount === undefined) return <p role="status">Loading…</p>;
+  if (staffCount > 0) return <EmptyState icon="task_alt" text="Setup is done. An admin can add staff in Admin → Staff." />;
+  const field = (k: keyof typeof f, label: string, type = 'text') => (
+    <label className="flex flex-col gap-1"><span className={labelCls}>{label}</span>
+      <input type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className={fieldCls()} aria-label={label} {...(type === 'password' ? { inputMode: 'numeric' as const, maxLength: 4 } : {})} /></label>
+  );
+  return (
+    <Card className="flex flex-col gap-space-md max-w-2xl">
+      <h2 className="font-headline-sm text-headline-sm text-primary">First-time setup</h2>
+      <p className="text-on-surface-variant">Create the first admin and register this laptop. Then load the hospital patient list in Admin → Patient list.</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+        {field('name', 'Admin name')}{field('initials', 'Initials')}{field('pin', '4-digit PIN', 'password')}
+        {field('deviceLabel', 'Laptop name')}{field('unit', 'Unit')}
+      </div>
+      <Button className="self-start" onClick={async () => { setError(null); try { await firstTimeSetup(db, clock, f); navigate('/sign-in'); } catch (e) { setError(msg(e)); } }}>Create admin</Button>
+      <Err e={error} />
+    </Card>
+  );
+}

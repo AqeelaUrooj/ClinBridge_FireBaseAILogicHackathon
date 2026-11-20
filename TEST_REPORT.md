@@ -1,14 +1,14 @@
 # Test report
 
-Run: 20 Nov 2026 (round 4), local (Linux, Node 22, Chrome). All runs below happened after the last code change.
+Run: 20 Nov 2026 (round 5), local (Linux, Node 22, Chrome). All runs below happened after the last code change.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | Pass (exit 0) |
 | `npm run lint` | Pass (exit 0) |
-| `npm test` (Vitest) | **64 / 64 pass** (12 files) |
+| `npm test` (Vitest) | **73 / 73 pass** (15 files) |
 | `npm run build` | Pass (PWA, 22 files precached incl. illustrations) |
-| `npm run test:e2e` (Playwright) | **19 / 19 pass** |
+| `npm run test:e2e` (Playwright) | **23 / 23 pass** |
 
 ## Unit tests (12 files)
 
@@ -33,7 +33,30 @@ New or changed this round:
   - Confirming a draft keeps the proposal, works only on drafts and keeps the chain valid.
   - A high-alert draft still needs the second nurse.
 
-## Browser tests (19)
+## Round 5 additions
+
+Unit:
+- `admin.test.ts`:
+  - Only an active admin can manage staff; every action is audited and PINs are never logged.
+  - You cannot switch off yourself.
+  - Downtime lifecycle: end is blocked until the worklist is signed off; declare → System down; network clearance needs every checklist item, the right PIN and an admin.
+  - Fake files are refused for Real records; first-time setup runs once; patient-list import goes into Real records only.
+- `worklist.test.ts`:
+  - The interval is read from the order text only.
+  - New items carry duplicate, missing-field and time-conflict flags; existing items are untouched; a second build adds nothing.
+  - Sign-off happens once and is refused for drafts.
+- `fhir.test.ts`:
+  - The synthetic data gives a valid Bundle with more than 100 resources, and drafts are excluded.
+  - The corrected version is entered-in-error with a Provenance revision; blood pressure is a LOINC panel; a held dose is not-done; every resource is tagged.
+  - The validator catches a broken reference, a bad status and a bad date.
+
+Browser (`admin-recovery.spec.ts`):
+- Admin: readiness → add staff → change log filter → settings all "Not approved" → End downtime refused → a nurse sees "Admins only."
+- Recovery: 45-item worklist → possible duplicate for Grace Bell explained ("every 6 hours") with the record to compare → sign off → count goes up → export prepared, structure check passed, file downloaded and parsed as a FHIR Bundle with Provenance.
+- First-time setup for Real records from the sign-in screen.
+- **Offline:** network off → admin signs in → recovery builds → export prepares and validates.
+
+## Browser tests (19 from earlier rounds)
 
 | File | Tests |
 |---|---|
