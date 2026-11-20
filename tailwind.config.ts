@@ -6,6 +6,6 @@ import stitch from './tailwind.stitch.json';
 // semantic clinical colours named in clinical_high_reliability_downtime_interface/DESIGN.md.
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  theme: { extend: stitch as Config['theme'] },
+  theme: { extend: stitch as unknown as NonNullable<Config['theme']>['extend'] },
   plugins: [],
 } satisfies Config;
