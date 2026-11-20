@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useApp, useSession } from '../../state/app';
 import { resetPractice } from '../../db/seed';
 import { verifyChain } from '../../db/audit';
+import { backupDb } from '../../db/backup';
 import { Button, ButtonLink, Card, Dialog, EmptyState, Icon, PageTitle } from '../../components/ui';
 
 /** Honest placeholder for a route that exists in ROUTES.md but is not built yet. No fake buttons. */
@@ -57,6 +58,21 @@ export function MorePage() {
   const navigate = useNavigate();
   const [confirmReset, setConfirmReset] = useState(false);
   const audit = useLiveQuery(async () => verifyChain(await db.audit_log.orderBy('seq').toArray()), [db]);
+  const backups = useLiveQuery(async () => {
+    const b = backupDb();
+    try { return (await b.backups.where('db_name').equals(db.name).toArray()).map(({ id, from_version, to_version, taken_at }) => ({ id, from_version, to_version, taken_at })); }
+    finally { b.close(); }
+  }, [db]);
+  async function download(id: number) {
+    const b = backupDb();
+    const row = await b.backups.get(id);
+    b.close();
+    if (!row) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(row, null, 2)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `${row.db_name}-v${row.from_version}-backup.json`; a.click();
+    URL.revokeObjectURL(url);
+  }
   return (
     <>
       <PageTitle>More</PageTitle>
@@ -74,6 +90,19 @@ export function MorePage() {
           </p>
         ) : <p role="status">Checking…</p>}
       </Card>
+      {backups && backups.length > 0 && (
+        <Card className="flex flex-col gap-space-sm">
+          <h2 className="font-headline-sm text-headline-sm text-primary">Safety copies made before app updates</h2>
+          <ul className="flex flex-col gap-1">
+            {backups.map((b) => (
+              <li key={b.id} className="flex items-center gap-space-md">
+                <span className="flex-1 font-body-md">Version {b.from_version} → {b.to_version} · {b.taken_at.slice(0, 16).replace('T', ' ')}</span>
+                <Button variant="secondary" onClick={() => download(b.id!)}><Icon name="download" />Save copy</Button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
       {dataset === 'practice' && (
         <Card className="flex flex-col gap-space-sm">
           <h2 className="font-headline-sm text-headline-sm text-primary">Practice</h2>

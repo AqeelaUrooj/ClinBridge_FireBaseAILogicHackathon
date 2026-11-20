@@ -41,7 +41,7 @@ export interface NewEntryInput<T extends EntryType> {
   status?: 'confirmed' | 'draft';
   scheduledTime?: string | null;
   supersedesId?: string | null;
-  /** Correction reason; kept in entry.confirmed.correction until the schema decision in DECISIONS.md D-05. */
+  /** Required when supersedesId is set. Saved in entry.change_reason on the new version. */
   correctionReason?: string;
 }
 
@@ -85,6 +85,7 @@ export async function createEntry<T extends EntryType>(
         if (old.status !== 'confirmed') throw new EntryWriteError('Only a confirmed record can be corrected.');
         if (old.patient_id !== input.patientId) throw new EntryWriteError('A correction must stay with the same patient.');
         if (old.type !== input.type) throw new EntryWriteError('A correction must be the same kind of record.');
+        if (!input.correctionReason?.trim()) throw new EntryWriteError('A reason is required to fix a record.');
       }
 
       if (input.type === 'med_admin' && (input.status ?? 'confirmed') === 'confirmed') await checkHighAlert(db, actor, input.values as Omit<MedAdmin, 'id' | 'entry_id'>);
@@ -93,7 +94,7 @@ export async function createEntry<T extends EntryType>(
       const status = input.status ?? 'confirmed';
       const confirmed: Record<string, unknown> | null =
         status === 'confirmed'
-          ? { ...(input.values as Record<string, unknown>), ...(input.correctionReason ? { correction: { reason: input.correctionReason } } : {}) }
+          ? { ...(input.values as Record<string, unknown>) }
           : null;
 
       const entryBase: Omit<Entry, 'counter'> = {
@@ -117,6 +118,7 @@ export async function createEntry<T extends EntryType>(
         status,
         supersedes_id: input.supersedesId ?? null,
         photo_check: input.photoCheck ?? null,
+        change_reason: input.supersedesId ? input.correctionReason!.trim() : null,
       };
       const child = { ...(input.values as object), id: newId(input.type.replace('_', '').slice(0, 3)), entry_id: id } as ChildByType[T];
 
@@ -128,7 +130,7 @@ export async function createEntry<T extends EntryType>(
       };
       await push('entry_saved_raw', `entry/${id}`, `raw:${entryBase.raw_input_ref}`);
       if (status === 'confirmed') await push('entry_confirmed', `entry/${id}`, confirmed ?? {}, input.aiProposal ?? undefined);
-      if (old) await push('entry_corrected', `entry/${old.id}`, { status: 'corrected', superseded_by: id }, { status: old.status });
+      if (old) await push('entry_corrected', `entry/${old.id}`, { status: 'corrected', superseded_by: id, change_reason: entryBase.change_reason }, { status: old.status });
 
       try {
         let saved: Entry | undefined;
@@ -168,13 +170,13 @@ export async function markEnteredInError(db: DowntimeDB, clock: Clock, actor: Ac
     if (entry.status !== 'confirmed') throw new EntryWriteError('Only a confirmed record can be marked as a mistake.');
     const now = clock.nowIso();
     const last = await lastAudit(db);
-    const row = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'entered_in_error', entity: `entry/${entryId}`, before: { status: entry.status }, after: { status: 'entered-in-error', reason } });
+    const row = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'entered_in_error', entity: `entry/${entryId}`, before: { status: entry.status }, after: { status: 'entered-in-error', change_reason: reason.trim() } });
     await db.transaction('rw', [db.entry, db.audit_log], async () => {
       const head = await db.audit_log.orderBy('seq').last();
       if ((head?.seq ?? 0) !== (last?.seq ?? 0)) throw new EntryWriteError('Another change was saved at the same moment. Try again.');
       const current = await db.entry.get(entryId);
       if (!current || current.status !== 'confirmed') throw new EntryWriteError('This record was already changed.');
-      await db.entry.update(entryId, { status: 'entered-in-error', confirmed: { ...(current.confirmed ?? {}), entered_in_error: { reason } } });
+      await db.entry.update(entryId, { status: 'entered-in-error', change_reason: reason.trim() });
       await db.audit_log.add(row);
     });
   });

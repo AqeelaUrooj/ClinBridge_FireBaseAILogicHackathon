@@ -155,6 +155,8 @@ export interface Entry {
   status: EntryStatus;
   supersedes_id?: string | null;
   photo_check?: PhotoCheck | null;
+  /** Why a record was fixed (on the new version) or marked entered-in-error (on that record). Added in DB v2 (P-02, approved). */
+  change_reason?: string | null;
 }
 
 export interface VitalSign {

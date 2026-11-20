@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { createEntry, getEntry, listPatientEntries, markEnteredInError, versionChain, type EntryWithChild } from '../../db/repos/entries';
 import type { MedAdmin, VitalSign } from '../../db/schema';
+import { legacyReason } from '../../db/db';
 import { isNurse, useApp, useSession } from '../../state/app';
 import { VITAL_RULES, type VitalKey } from '../../lib/vitals';
 import { dateTimeLabel } from '../../lib/time';
@@ -74,7 +75,7 @@ export function EntryDetail() {
   const [err, setErr] = useState<string | null>(null);
   const canChange = isNurse(user) && entry.status === 'confirmed';
   const supersededBy = useLiveQuery(() => db.entry.where('supersedes_id').equals(entry.id).first(), [db, entry.id]);
-  const why = (entry.confirmed as { correction?: { reason?: string }; entered_in_error?: { reason?: string } } | null | undefined);
+  const changeReason = entry.change_reason ?? legacyReason(entry);
 
   return (
     <>
@@ -95,8 +96,7 @@ export function EntryDetail() {
           {entry.scheduled_time && <><dt className="text-secondary">Due time</dt><dd className="font-code-tabular">{dateTimeLabel(entry.scheduled_time)}</dd></>}
           <dt className="text-secondary">By</dt><dd>{names.get(entry.performer_id) ?? entry.performer_id}</dd>
           <dt className="text-secondary">Laptop · number</dt><dd className="font-code-tabular">{entry.device_id} · #{entry.counter}</dd>
-          {why?.correction?.reason && <><dt className="text-secondary">Fix reason</dt><dd>{why.correction.reason}</dd></>}
-          {why?.entered_in_error?.reason && <><dt className="text-secondary">Mistake reason</dt><dd>{why.entered_in_error.reason}</dd></>}
+          {changeReason && <><dt className="text-secondary">{entry.status === 'entered-in-error' ? 'Mistake reason' : 'Fix reason'}</dt><dd>{changeReason}</dd></>}
         </dl>
         {entry.status === 'corrected' && supersededBy && (
           <p className="rounded-lg bg-surface-container-low p-space-md flex items-center gap-2"><Icon name="info" />This is an old version.<ButtonLink variant="ghost" to={`/entries/${supersededBy.id}`}>See the new one</ButtonLink></p>

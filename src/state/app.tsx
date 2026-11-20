@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getDb, requestPersistentStorage, type Dataset, type DowntimeDB } from '../db/db';
 import { importPracticeSeed } from '../db/seed';
+import { openWithMigration } from '../db/backup';
 import type { DowntimeEvent, Practitioner, Snapshot } from '../db/schema';
 import { derivePhase, currentEvent, type Phase } from '../lib/phase';
 import { liveClock, practiceClock, type Clock } from '../lib/time';
@@ -49,7 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setBootError(null);
     (async () => {
       try {
-        await db.open();
+        await openWithMigration(db, clock, dataset === 'practice' ? PRACTICE_DEVICE : 'unregistered');
         if (dataset === 'practice') await importPracticeSeed(db);
         void requestPersistentStorage();
         if (!cancelled) setReady(true);
@@ -60,7 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [db, dataset]);
+  }, [db, dataset, clock]);
 
   const events = useLiveQuery(() => (ready ? db.downtime_event.toArray() : []), [db, ready], []);
   const snapshot = useLiveQuery(() => (ready ? db.snapshot.orderBy('taken_at').last() : undefined), [db, ready]);

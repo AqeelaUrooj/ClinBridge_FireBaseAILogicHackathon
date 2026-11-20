@@ -1,6 +1,6 @@
 # P-02 — Add `entry.change_reason`
 
-Status: **waiting for approval**. Not applied. The schema and database are unchanged.
+Status: **approved and applied (DB version 2)**, 20 Nov 2026. See "As applied" at the end.
 
 ## Why
 
@@ -61,3 +61,12 @@ After the upgrade finishes, on first open, the app adds one audit row: `action: 
 | Wrong patient or mistake → "Reason" | marked `entry.change_reason` |
 | Record details → "Fix reason" / "Mistake reason" | `entry.change_reason` |
 | FHIR export (later) | `Provenance.reason` text (proposed, to check in Phase 7) |
+
+## As applied (differs from the draft above in one safe way)
+
+- The migration **copies** each legacy reason into `change_reason` and **does not remove** it from `entry.confirmed`. Owner instruction was "do not overwrite the original entry", so v2 is purely additive. New saves write the reason only to `change_reason`.
+- Before upgrading, the app copies every table of the old database into a separate local database `downtimekit-backups` (`src/db/backup.ts`). Nothing leaves the laptop.
+- One `schema_migrated` audit row is added after the upgrade (`to_version`, `reasons_copied`, `backup_id`). The hash chain still verifies.
+- A fix now **requires** a reason in the database layer too, not only on screen.
+- Tests: `src/db/migration.test.ts`. Builds a real v1 database with legacy reasons, upgrades it, and checks that nothing else changed, the history is kept, the audit chain is valid and the backup is complete.
+- Still 19 tables. Only `entry` gains one optional field; no index change.

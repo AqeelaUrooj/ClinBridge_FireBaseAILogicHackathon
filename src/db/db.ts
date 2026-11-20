@@ -12,6 +12,40 @@ import type {
  */
 export type Dataset = 'practice' | 'live';
 
+/** Index definitions of DB version 1 (the final 19-table schema). Exported so migration tests can build a v1 database. */
+export const V1_STORES: Record<string, string> = {
+  snapshot: 'id, taken_at',
+  patient: 'id, mrn',
+  encounter: 'id, patient_id',
+  allergy: 'id, patient_id',
+  active_order: 'id, encounter_id',
+  snapshot_result: 'id, patient_id, time',
+  practitioner: 'id',
+  device: 'id',
+  downtime_event: 'id, declared_at',
+  entry: 'id, patient_id, encounter_id, care_time, status, supersedes_id, [device_id+counter]',
+  vital_sign: 'id, &entry_id',
+  med_admin: 'id, &entry_id, order_id',
+  intake_output: 'id, &entry_id',
+  note: 'id, &entry_id',
+  lab_event: 'id, &entry_id, order_id',
+  worklist_item: 'id, entry_id, patient_id, priority',
+  handoff: 'id, patient_id',
+  audit_log: 'id, &seq',
+  key_store: 'id',
+};
+export const DB_VERSION = 2;
+
+/** Reason stored the pre-v2 way (inside entry.confirmed) during development. Read-only helper. */
+export function legacyReason(e: Pick<Entry, 'confirmed'>): string | null {
+  const c = (e.confirmed ?? null) as { correction?: { reason?: unknown }; entered_in_error?: { reason?: unknown } } | null;
+  const r = c?.correction?.reason ?? c?.entered_in_error?.reason;
+  return typeof r === 'string' && r.trim() ? r.trim() : null;
+}
+
+/** Filled by an upgrade; read once after open to write the audit row (Web Crypto cannot run inside an upgrade). */
+export const pendingMigrationNotes = new Map<string, { toVersion: number; reasonsCopied: number }>();
+
 export class DowntimeDB extends Dexie {
   snapshot!: Table<Snapshot, string>;
   patient!: Table<Patient, string>;
@@ -35,27 +69,20 @@ export class DowntimeDB extends Dexie {
 
   constructor(public readonly dataset: Dataset, name = `downtimekit-${dataset}`) {
     super(name);
-    // Version 1 = final 19-table schema. Add new versions (never edit this one) for migrations.
-    this.version(1).stores({
-      snapshot: 'id, taken_at',
-      patient: 'id, mrn',
-      encounter: 'id, patient_id',
-      allergy: 'id, patient_id',
-      active_order: 'id, encounter_id',
-      snapshot_result: 'id, patient_id, time',
-      practitioner: 'id',
-      device: 'id',
-      downtime_event: 'id, declared_at',
-      entry: 'id, patient_id, encounter_id, care_time, status, supersedes_id, [device_id+counter]',
-      vital_sign: 'id, &entry_id',
-      med_admin: 'id, &entry_id, order_id',
-      intake_output: 'id, &entry_id',
-      note: 'id, &entry_id',
-      lab_event: 'id, &entry_id, order_id',
-      worklist_item: 'id, entry_id, patient_id, priority',
-      handoff: 'id, patient_id',
-      audit_log: 'id, &seq',
-      key_store: 'id',
+    // Version 1 = final 19-table schema. Never edit a released version; add a new one for each migration.
+    this.version(1).stores(V1_STORES);
+    // Version 2 (P-02, approved): adds optional entry.change_reason. No new table, no index change, still 19 tables.
+    // Additive and lossless: copies any reason captured during development (kept inside entry.confirmed before v2)
+    // into change_reason and leaves the original entry values untouched.
+    this.version(2).stores({}).upgrade(async (tx) => {
+      let copied = 0;
+      await tx.table('entry').toCollection().modify((e: Entry) => {
+        if (e.change_reason) return;
+        const legacy = legacyReason(e);
+        e.change_reason = legacy;
+        if (legacy) copied++;
+      });
+      pendingMigrationNotes.set(this.name, { toVersion: 2, reasonsCopied: copied });
     });
   }
 }
