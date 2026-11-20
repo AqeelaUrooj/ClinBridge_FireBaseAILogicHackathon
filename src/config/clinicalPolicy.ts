@@ -52,6 +52,14 @@ export interface ClinicalPolicy {
     roles: Role[];
     note: string;
   };
+  recovery: {
+    approved: boolean;
+    /** Work-queue order only (higher first). Not a clinical score. */
+    categoryRank: Record<string, number>;
+    /** Items an admin must confirm before network clearance (Back online). */
+    networkChecklist: string[];
+    note: string;
+  };
   medicationTiming: {
     approved: boolean;
     /** No windows = no Overdue status at all; scheduled doses only show Due. */
@@ -80,6 +88,17 @@ export const PROTOTYPE_POLICY: ClinicalPolicy = {
     approved: false,
     roles: ['RN'],
     note: 'Temporary conservative prototype setting. Who may be a second checker must be approved against local policy, staff credentials and regulations.',
+  },
+  recovery: {
+    approved: false,
+    // Medicines first (Data plan: "top back-entry priority to stop double dosing"), then the plan's category order.
+    categoryRank: { meds: 6, results: 5, vitals: 4, io: 3, notes: 2, other: 1 },
+    networkChecklist: [
+      'IT / security team says the hospital network is safe to use again',
+      'EHR team says back-entry into the main record can start',
+      'Downtime lead approved switching this unit to Back online',
+    ],
+    note: 'Prototype queue order and checklist wording. Needs approval by the hospital downtime lead.',
   },
   medicationTiming: {
     approved: false,

@@ -17,7 +17,6 @@
 - **Clinical policy is a prototype.** High-alert list partial, second-checker roles not approved, no timing policy (More → Clinical settings shows this).
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).
 - **Labs are typed in by nurses** as phoned/printed by the lab; no lab interface.
-- **Not pushed to GitHub yet:** the commit author email in the first 9 commits maps to an unrelated GitHub account (D-04).
 - **AI not integrated.** Needs Chrome desktop 139+ with Gemini Nano downloaded and Firebase config (docs/AI_INTEGRATION.md).
 - **Photos are not encrypted** and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.

@@ -37,7 +37,7 @@
 |---|---|---|
 | P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
-| D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon` (public, empty). **Before pushing:** the first 9 commits use author email `talal@users.noreply.github.com`, which GitHub maps to an existing unrelated account `talal`. Rewrite authors (history change) or push as is? | Push held; new commits use `ClinBridge Developer <clinbridge-dev@example.invalid>` until decided |
+| D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`. Old commits had an author email that GitHub maps to an unrelated account; owner chose to rewrite authorship before publishing | **Resolved 20 Nov 2026:** all 13 commits re-authored as `Aqeela Urooj <38668564+AqeelaUrooj@users.noreply.github.com>` (owner confirmed); file content and messages unchanged; pushed |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |
 | D-18 | Approved medicine timing policy (windows may differ by drug) | Shows Due only (D-25) |
