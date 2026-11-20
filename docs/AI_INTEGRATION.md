@@ -12,7 +12,8 @@
 ## 1. On-device: verified platform facts
 
 - The Prompt API (Gemini Nano in Chrome) runs on desktop Chrome only: Windows 10/11, macOS 13+, Linux, or Chromebook Plus. It does not run on Android or iOS.
-- Version: one Chrome guide gives Chrome 148 (desktop); Firebase AI Logic's on-device path needs Chrome 139 or later and SDK 12.5.0 or later.
+- Version: the Prompt API is on by default for web pages from **Chrome 148 stable** (released 5 May 2026); Chrome extensions had it from Chrome 138. Firebase AI Logic's on-device path needs Chrome 139 or later and SDK 12.5.0 or later. Sampling settings (like temperature) are still an origin trial on the web, so ClinBridge must not rely on them.
+- **Other browsers:** not supported. MDN lists the Prompt API as Chrome-only, and two browser vendors oppose the spec. Firefox, Safari and (per a third-party report) Chromium builds from Linux package managers will show "AI not available"; manual capture still works there.
 - Hardware:
   - Storage: 22 GB free on the drive that holds the Chrome profile.
   - Processor: either a GPU with more than 4 GB of video memory, or a CPU with 16 GB RAM and 4 or more cores.
