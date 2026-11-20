@@ -1,8 +1,8 @@
 import { createContext, useContext, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { createEntry, getEntry, markEnteredInError, versionChain, type EntryWithChild } from '../../db/repos/entries';
-import type { VitalSign } from '../../db/schema';
+import { createEntry, getEntry, listPatientEntries, markEnteredInError, versionChain, type EntryWithChild } from '../../db/repos/entries';
+import type { MedAdmin, VitalSign } from '../../db/schema';
 import { isNurse, useApp, useSession } from '../../state/app';
 import { VITAL_RULES, type VitalKey } from '../../lib/vitals';
 import { dateTimeLabel } from '../../lib/time';
@@ -11,6 +11,9 @@ import { PatientFrame, useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { StatusBadge, SourceBadge, TYPE_LABEL, entrySummary, isRetired } from './entryView';
 import { VitalsEditor, vitalsToForm } from '../vitals/VitalsEditor';
+import { MedEditor } from '../meds/MedEditor';
+import { MedValues } from '../meds/MedsPages';
+import { currentRate, medFormFromOrder, orderGroup, type MedEvent } from '../../lib/meds';
 
 const EntryCtx = createContext<EntryWithChild | null>(null);
 const useCurrentEntry = () => {
@@ -85,9 +88,11 @@ export function EntryDetail() {
           <div className="flex gap-1"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></div>
         </div>
         {entry.type === 'vital_sign' && child && <VitalsValues v={child as VitalSign} />}
+        {entry.type === 'med_admin' && child && <MedValues m={child as MedAdmin} names={names} />}
         <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-1 font-body-md">
           <dt className="text-secondary">Measured / given</dt><dd className="font-code-tabular">{dateTimeLabel(entry.care_time)}</dd>
           <dt className="text-secondary">Typed in</dt><dd className="font-code-tabular">{dateTimeLabel(entry.entry_time)}</dd>
+          {entry.scheduled_time && <><dt className="text-secondary">Due time</dt><dd className="font-code-tabular">{dateTimeLabel(entry.scheduled_time)}</dd></>}
           <dt className="text-secondary">By</dt><dd>{names.get(entry.performer_id) ?? entry.performer_id}</dd>
           <dt className="text-secondary">Laptop · number</dt><dd className="font-code-tabular">{entry.device_id} · #{entry.counter}</dd>
           {why?.correction?.reason && <><dt className="text-secondary">Fix reason</dt><dd>{why.correction.reason}</dd></>}
@@ -97,7 +102,7 @@ export function EntryDetail() {
           <p className="rounded-lg bg-surface-container-low p-space-md flex items-center gap-2"><Icon name="info" />This is an old version.<ButtonLink variant="ghost" to={`/entries/${supersededBy.id}`}>See the new one</ButtonLink></p>
         )}
         <div className="flex flex-wrap gap-space-sm">
-          {canChange && entry.type === 'vital_sign' && <ButtonLink to={`/entries/${entry.id}/correct`}><Icon name="edit" />Fix</ButtonLink>}
+          {canChange && (entry.type === 'vital_sign' || entry.type === 'med_admin') && <ButtonLink to={`/entries/${entry.id}/correct`}><Icon name="edit" />Fix</ButtonLink>}
           {canChange && <Button variant="danger" onClick={() => setMistake(true)}><Icon name="block" />Wrong patient or mistake</Button>}
           {(entry.supersedes_id || entry.status === 'corrected') && <ButtonLink variant="secondary" to={`/entries/${entry.id}/history`}><Icon name="history" />All versions</ButtonLink>}
         </div>
@@ -162,9 +167,52 @@ export function CorrectEntry() {
   const { db, clock, deviceId } = useApp();
   const { user } = useSession();
   const navigate = useNavigate();
-  if (entry.status !== 'confirmed' || entry.type !== 'vital_sign' || !isNurse(user)) {
+  const med = entry.type === 'med_admin' ? (child as MedAdmin | undefined) : undefined;
+  const medCtx = useLiveQuery(async () => {
+    if (!med?.order_id) return null;
+    const order = await db.active_order.get(med.order_id);
+    const meds = (await listPatientEntries(db, entry.patient_id)).filter((x) => x.entry.type === 'med_admin' && x.entry.id !== entry.id);
+    return order ? { order, prior: med.prior_infusion_rate ?? currentRate(order, meds).rate } : null;
+  }, [db, med?.order_id, entry.id, entry.patient_id]);
+
+  if (entry.status !== 'confirmed' || !(entry.type === 'vital_sign' || entry.type === 'med_admin') || !isNurse(user)) {
     return <EmptyState icon="block" text="This record cannot be fixed here." action={<ButtonLink variant="secondary" to={`/entries/${entry.id}`}>Back</ButtonLink>} />;
   }
+  const actor = () => { if (!user) throw new Error('Sign in again.'); return { userId: user.id, deviceId }; };
+
+  if (entry.type === 'med_admin') {
+    if (medCtx === undefined) return <p role="status">Loading…</p>;
+    if (!medCtx || !med) return <EmptyState icon="block" text="The order for this medicine is not in the patient list, so it cannot be fixed here." />;
+    const g = orderGroup(medCtx.order);
+    const events: MedEvent[] = g === 'infusion' ? ['rate_changed', 'administered', 'held'] : ['administered', 'held', 'refused'];
+    return (
+      <>
+        <Crumbs last="Fix" />
+        <h1 className="font-headline-lg text-headline-lg text-primary">Fix medicine record</h1>
+        <p className="font-body-md text-on-surface-variant">The old record stays in the history. Your fix is saved as a new version.</p>
+        <MedEditor
+          order={medCtx.order}
+          initial={medFormFromOrder(medCtx.order, (events.includes(med.event as MedEvent) ? med.event : 'administered') as MedEvent, med)}
+          events={events}
+          priorRate={medCtx.prior}
+          initialCareTime={entry.care_time}
+          scheduledTime={entry.scheduled_time}
+          minCareTime={encounter?.admit_time ?? undefined}
+          requireChangeReason
+          saveLabel="Save fix"
+          onCancel={() => navigate(`/entries/${entry.id}`)}
+          onSubmit={async ({ values, careTime, changeReason }) => {
+            const e = await createEntry(db, clock, actor(), {
+              type: 'med_admin', patientId: entry.patient_id, careTime, scheduledTime: entry.scheduled_time ?? null,
+              values, supersedesId: entry.id, correctionReason: changeReason,
+            });
+            navigate(`/entries/${e.id}`, { replace: true });
+          }}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <Crumbs last="Fix" />
@@ -178,8 +226,7 @@ export function CorrectEntry() {
         saveLabel="Save fix"
         onCancel={() => navigate(`/entries/${entry.id}`)}
         onSubmit={async ({ values, careTime, reason }) => {
-          if (!user) throw new Error('Sign in again.');
-          const e = await createEntry(db, clock, { userId: user.id, deviceId }, {
+          const e = await createEntry(db, clock, actor(), {
             type: 'vital_sign', patientId: entry.patient_id, careTime,
             values: { ...values, weight_kg: (child as VitalSign | undefined)?.weight_kg ?? null, raw_text: null },
             supersedesId: entry.id, correctionReason: reason,

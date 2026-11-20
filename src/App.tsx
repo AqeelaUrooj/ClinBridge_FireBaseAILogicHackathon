@@ -8,6 +8,7 @@ import { PatientSummary } from './features/patient/PatientSummary';
 import { Timeline } from './features/patient/Timeline';
 import { VitalsPage, RecordVitals } from './features/vitals/VitalsPages';
 import { EntryLayout, EntryDetail, EntryHistory, CorrectEntry } from './features/entries/EntryPages';
+import { MedsPage, OrderPage, RecordMed, OrdersPage } from './features/meds/MedsPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
 function RequireAuth() {
@@ -60,12 +61,12 @@ export function App() {
             <Route path="timeline" element={<Timeline />} />
             <Route path="vitals" element={<VitalsPage />} />
             <Route path="vitals/record" element={<RecordVitals />} />
-            <Route path="meds" element={<NotBuilt title="Medicines" phase="Phase 3" />} />
-            <Route path="meds/:order" element={<NotBuilt title="Medicine order" phase="Phase 3" />} />
-            <Route path="meds/:order/record" element={<NotBuilt title="Give medicine" phase="Phase 3" />} />
+            <Route path="meds" element={<MedsPage />} />
+            <Route path="meds/:order" element={<OrderPage />} />
+            <Route path="meds/:order/record" element={<RecordMed />} />
             <Route path="io" element={<NotBuilt title="Fluids" phase="Phase 4" />} />
             <Route path="notes" element={<NotBuilt title="Notes" phase="Phase 4" />} />
-            <Route path="orders" element={<NotBuilt title="Orders" phase="Phase 3" />} />
+            <Route path="orders" element={<OrdersPage />} />
             <Route path="body" element={<NotBuilt title="Body map" phase="Phase 6" />} />
             <Route path="handoff" element={<NotBuilt title="Handover for this patient" phase="Phase 6" />} />
             <Route path="capture" element={<NotBuilt title="Photo of paper" phase="Phase 5" />} />

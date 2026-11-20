@@ -3,8 +3,11 @@
 - **Not for real patients yet.** Practice mode only until clinical review (D-17) and security work below are done.
 - **No encryption at rest yet.** Data in IndexedDB is not encrypted (AES-GCM + `key_store` planned for Phase 8). Laptop disk encryption is required meanwhile.
 - **Session is in memory.** Reloading the page signs you out (records stay saved). This is on purpose for shared laptops.
-- **Vitals limits are placeholders** (D-17). The "outside usual range" highlight never blocks saving and is not a score.
-- **Reasons for fixes** are kept inside `entry.confirmed` JSON until D-05 is decided.
+- **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
+- **No Overdue status** for medicines until the hospital time window is given (D-18).
+- **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.
+- **Body map not built** (waits on P-01). Site is typed, with standard words offered.
+- **Reasons for fixes** are kept inside `entry.confirmed` JSON until P-02 is approved.
 - **AI not wired** (no Firebase config yet, D-16). No on-device or cloud AI runs in this build.
 - **Many pages are placeholders** — see ROUTES.md.
 - **Date picker format** follows the browser's language setting (may show month/day order). Saved times are ISO with the ward's offset.

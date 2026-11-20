@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { DowntimeDB } from '../db';
 import { importPracticeSeed, PRACTICE_PIN } from '../seed';
 import { verifyChain } from '../audit';
+import type { MedAdmin } from '../schema';
 import { createEntry, getEntry, listPatientEntries, markEnteredInError, versionChain } from './entries';
 import { practiceClock } from '../../lib/time';
 import { verifyPin } from '../../lib/crypto';
@@ -90,5 +91,30 @@ describe('append-only entries', () => {
     const list = await listPatientEntries(db, 'pt-01');
     const counters = list.map((x) => x.entry.counter);
     expect(new Set(counters).size).toBe(counters.length);
+  });
+});
+
+describe('high-alert medicines (repository guard)', () => {
+  const insulin: Omit<MedAdmin, 'id' | 'entry_id'> = {
+    order_id: 'ord-04', drug_name: 'insulin lispro', rxnorm_code: null, event: 'administered', dose_due: 4, dose_due_unit: 'units',
+    dose_given: 4, dose_given_unit: 'units', route: 'SC', site: 'Abdomen, left side', end_time: null, infusion_rate: null,
+    infusion_rate_unit: null, prior_infusion_rate: null, reason: null, double_checked: null, double_checked_by: null, raw_text: null,
+  };
+  const save = (v: typeof insulin) => createEntry(db, clock, actor, { type: 'med_admin', patientId: 'pt-02', careTime: clock.nowIso(), values: v });
+
+  it('refuses a high-alert dose with no second nurse', async () => {
+    await expect(save(insulin)).rejects.toThrow(/second nurse/);
+  });
+  it('refuses the same nurse as second checker, and a non-eligible role', async () => {
+    await expect(save({ ...insulin, double_checked: true, double_checked_by: 'pr-okafor' })).rejects.toThrow(/different nurse/);
+    await expect(save({ ...insulin, double_checked: true, double_checked_by: 'pr-ellis' })).rejects.toThrow(/cannot be the second checker/);
+  });
+  it('saves when a different eligible nurse checked it', async () => {
+    const e = await save({ ...insulin, double_checked: true, double_checked_by: 'pr-park' });
+    const got = await getEntry(db, e.id);
+    expect((got?.child as { double_checked_by?: string }).double_checked_by).toBe('pr-park');
+  });
+  it('does not require a second nurse for a held high-alert dose', async () => {
+    await expect(save({ ...insulin, event: 'held', dose_given: null, dose_given_unit: null, reason: 'not eating' })).resolves.toBeDefined();
   });
 });

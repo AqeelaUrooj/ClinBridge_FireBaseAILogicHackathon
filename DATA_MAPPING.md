@@ -35,6 +35,23 @@ Schema: `src/db/schema.ts` (19 tables, matches the Data & DB tab). No invented f
 | (automatic) | `entry.status` → `entered-in-error` |
 | Reason | `entry.confirmed.entered_in_error.reason` (provisional, D-05) + audit row |
 
+## Record medicine → `entry` + `med_admin`
+
+| Screen | Field |
+|---|---|
+| Due time picked on the order page | `entry.scheduled_time` |
+| Time | `entry.care_time` |
+| (from the order) | `med_admin.order_id`, `drug_name`, `rxnorm_code`, `dose_due`, `dose_due_unit` |
+| What happened: Given / Held / Refused / Rate changed | `med_admin.event` = `administered` / `held` / `refused` / `rate_changed` |
+| Dose given / Unit | `dose_given` / `dose_given_unit` (mg, mcg, g, mL, units, mmol, tablet) |
+| Route | `route` (PO, IV, IM, SC, SL, PR, INH, TOP) |
+| Site | `site` (standard words, patient's left/right) |
+| New rate / Unit · current rate | `infusion_rate` / `infusion_rate_unit` · `prior_infusion_rate` |
+| Why held / What the patient said / Note | `reason` |
+| Second nurse check (high-alert) | `double_checked = true`, `double_checked_by` = that nurse's id |
+
+Medicine slot status is worked out, not stored: the live entry (confirmed or draft) with the same `order_id` and `scheduled_time`.
+
 ## Audit
 
 Every save writes `audit_log` rows: `seq`, `time`, `user_id`, `device_id`, `action`, `entity`, `before`, `after`, `prev_row_hash` (SHA-256 of the previous row).

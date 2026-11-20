@@ -22,8 +22,10 @@ Built = works. Placeholder = honest "being built" page.
 | `/patients/:id/timeline` | History | Built |
 | `/patients/:id/vitals` | Vitals: latest, trend, list | Built |
 | `/patients/:id/vitals/record` | Record vitals → review → save | Built |
-| `/patients/:id/meds`, `/meds/:order`, `/meds/:order/record` | Medicines | Placeholder (Phase 3) |
-| `/patients/:id/orders` | Orders | Placeholder (Phase 3) |
+| `/patients/:id/meds` | Medicines: Scheduled, As needed, Drips; today's times with Given / Due / Held / Refused | Built |
+| `/patients/:id/meds/:order` | One order: details, today's times, history | Built |
+| `/patients/:id/meds/:order/record` | Record Given / Held / Refused / Rate change → review → second nurse PIN (high-alert) → save | Built |
+| `/patients/:id/orders` | All orders, read only | Built |
 | `/patients/:id/io` | Fluids | Placeholder (Phase 4) |
 | `/patients/:id/notes` | Notes | Placeholder (Phase 4) |
 | `/patients/:id/capture` | Photo of paper | Placeholder (Phase 5) |
@@ -31,7 +33,7 @@ Built = works. Placeholder = honest "being built" page.
 | `/patients/:id/handoff` | Patient handover | Placeholder (Phase 6) |
 | `/entries/:entry` | Record details, Fix, Mistake | Built |
 | `/entries/:entry/history` | All versions | Built |
-| `/entries/:entry/correct` | Fix vitals with reason | Built (vitals only) |
+| `/entries/:entry/correct` | Fix vitals or a medicine record, with reason | Built (vitals, medicines) |
 | `/capture/:entry/confirm` | Check photo result | Placeholder (Phase 5) |
 
 Every patient page and every `/entries/*` page asks for the patient check (name, born, MRN) first.
