@@ -30,6 +30,16 @@
   - It is confirmed beside the photo (existing confirm flow). Correction history and the original photo are unchanged. Medication entry has no AI, so high-alert controls are untouched.
   - Seed proposals have no `_ai` block and show "Simulated proposal".
 
+## Two Firebase app instances (found live, 20 Nov 2026)
+
+- The AI SDK reads the App Check provider **once**, when the AI instance is created. So ClinBridge uses two Firebase apps: `clinbridge` (on-device; never gets App Check, so no reCAPTCHA traffic) and `clinbridge-cloud` (cloud; App Check is initialised **before** `getAI()`).
+- Before this fix, cloud requests carried no App Check token and Firebase answered 401. Regression test: `src/lib/ai/firebase.test.ts`.
+
+## Cloud vitals schema
+
+- Cloud `responseSchema`: every field **required and nullable** (null = not written), each with a description of the words nurses write (pulse, resps, sats, temp, "BP 128/80"). With optional, undescribed fields, gemini-3.5-flash-lite skipped clearly written values. Verified live.
+- On-device constraint: same descriptions, fields optional (nullable types untested on a real Prompt API model).
+
 ## inferenceSource contract (verified for the installed SDK)
 
 - Installed: `firebase` **13.4.0**, which bundles `@firebase/ai` 3.1.0. Its source defines

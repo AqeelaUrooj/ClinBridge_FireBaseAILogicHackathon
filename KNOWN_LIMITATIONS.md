@@ -25,8 +25,10 @@
 - **Clinical policy is a prototype.** High-alert list partial, second-checker roles not approved, no timing policy (More → Clinical settings shows this).
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).
 - **Labs are typed in by nurses** as phoned/printed by the lab; no lab interface.
-- **AI is built but not yet proven with a real model.**
-  - All AI tests use a mock Prompt API or canned cloud responses (docs/AI_TEST_MATRIX.md). The sandbox's Chrome 153 reports the on-device model as unavailable.
+- **Cloud AI is proven live; on-device AI is not.**
+  - 20 Nov 2026: genuine Firebase cloud inference (gemini-3.5-flash-lite, text + image, App Check enforced) worked on the owner's PC (docs/LIVE_TEST_RESULTS_2026-11-20.md).
+  - Gemini Nano is blocked on that PC by hardware (2 GB VRAM, 8 GB RAM, 2 cores). On-device proposals are tested with a mock Prompt API only.
+  - The cloud model's output depends on Google's hosted model; values can be missed or wrong. Every proposal stays a draft for a nurse.
   - Live use needs desktop Chrome 148+, a downloaded Gemini Nano (with the multimodal flag for photos), and the owner's Firebase config + App Check.
   - AI proposes vitals from a photo or synthetic note only. No AI for medicines, notes or handover.
   - Proposals can be wrong; they are always saved as drafts for a nurse to confirm.

@@ -119,3 +119,12 @@ Network restrictions held:      yes / no (details)
 ```
 
 Send the filled template (and screenshots without the DevTools console) and the results go into `TEST_REPORT.md`. Until then, the submission must not claim working live AI.
+
+## Results so far
+
+- **20 Nov 2026, DESKTOP-6NQ637E** (Windows 10, Chrome 157): cloud parts of Scenario B and all of Scenario C **passed**; Scenario A on-device steps **blocked by hardware** (manual fallback passed); see `docs/LIVE_TEST_RESULTS_2026-11-20.md`.
+
+## Notes from the first live run
+
+- The App Check debug token line in the console starts with **"Firebase App Check debug token:"** and appears once per page load, on the first cloud call.
+- Don't switch Wi-Fi off while Claude drives the browser through the Claude in Chrome extension: the extension needs the internet. Do the Wi-Fi-off steps (A3–A10) by hand.

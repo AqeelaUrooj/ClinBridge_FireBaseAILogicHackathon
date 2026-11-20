@@ -4,7 +4,13 @@ Reviewed 20 Nov 2026. Deadline 30 Nov 2026. **Synthetic data only.**
 
 ## The honest headline
 
-Hybrid AI with Firebase AI Logic is **built** (merged to `main` via PR #7), but it has only been tested with **mocks**. It is **not** a completed, working hybrid-AI demonstration until the live test in `docs/LIVE_AI_TEST_CHECKLIST.md` passes. No real Gemini Nano or Gemini cloud answer has been produced yet; see `docs/AI_TEST_MATRIX.md`. The demo needs a prepared laptop and the owner's Firebase config. Everything else (offline charting, encryption, recovery, FHIR export) works without AI, by design.
+Hybrid AI with Firebase AI Logic is built (PR #7). **Live status (20 Nov 2026, owner's PC DESKTOP-6NQ637E, see `docs/LIVE_TEST_RESULTS_2026-11-20.md`):**
+
+- **Verified live:** genuine Firebase cloud inference (gemini-3.5-flash-lite, text and image) with App Check enforced; Practice compare (cloud side); nurse review of AI drafts; cloud blocked in System Down; on-device-unavailable fallback; manual capture; encrypted storage; network clearance; cloud second look.
+- **Implemented, mock-tested only:** on-device Gemini Nano proposals, offline AI, Device-vs-Cloud with both sides real.
+- **Blocked by hardware:** Gemini Nano on DESKTOP-6NQ637E (2 GB VRAM, 8 GB RAM, 2 cores; Chrome reports the model "unavailable").
+
+It is **not** a completed hybrid-AI demonstration until on-device inference runs on compatible hardware (Demo B below). The demo needs a prepared laptop and the owner's Firebase config. Everything else (offline charting, encryption, recovery, FHIR export) works without AI, by design.
 
 ## Demo instructions (synthetic data only)
 
@@ -52,9 +58,11 @@ Suggested 3-minute story: 1 → 2 (go offline in DevTools first) → 5 → 6 →
 
 ## Blockers for the live AI demo (owner)
 
-1. **Firebase project + App Check:** web config and reCAPTCHA Enterprise site key in `.env.local`. Never paste keys into chat or commit them.
-2. **A laptop with desktop Chrome 148+** that can run Gemini Nano, with the model prepared. The sandbox's Chrome reports the model "unavailable".
-3. **One real run of the three scenarios** (`docs/LIVE_AI_TEST_CHECKLIST.md`), recorded in TEST_REPORT before the submission claims live results.
+1. ~~Firebase project + App Check~~ **Done** (`clinbridge-hackathon`, App Check enforced, debug token for localhost).
+2. **A laptop that can run Gemini Nano** (GPU with more than 4 GB VRAM, or 16 GB RAM + 4 cores; Chrome 148+; 22 GB free disk). DESKTOP-6NQ637E cannot.
+3. On that laptop: Scenario 1 and the on-device side of Scenario 2 (`docs/LIVE_AI_TEST_CHECKLIST.md`). Scenario 3 (cloud second look) and the cloud side of Scenario 2 already passed live.
+
+**Two demos until then:** *Demo A (this PC, verified):* real cloud inference with App Check, offline nursing documentation, encryption, recovery, on-device-unavailable fallback, manual capture, FHIR export. *Demo B (compatible hardware, not yet run):* real Gemini Nano, on-device image reading, offline AI proposals, full Device vs Cloud. Mark Demo B verified only after it has actually run.
 
 ## Other risks for the demo
 

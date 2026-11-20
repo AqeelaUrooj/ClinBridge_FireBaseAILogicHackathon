@@ -29,6 +29,19 @@ So the real browser API was exercised for availability only, and ClinBridge's "c
 | inferenceSource contract (SDK 13.4.0) | Real SDK source + runtime value with a **mock** Prompt API | Unit | Constant `{ ON_DEVICE: 'on_device', IN_CLOUD: 'in_cloud' }`; runtime value `'on_device'`; `'ON_DEVICE'`, unknown and missing values rejected |
 | Cloud request running, then System down | Real SDK + **held canned** HTTP response | Unit (7) + browser (second tab declares the outage; fake reCAPTCHA/App Check/Gemini stand-ins) | Request aborted; a late answer is discarded (`CloudRevokedError`), never shown or saved; phase re-read from the database before sending and on arrival |
 
+## Live results (20 Nov 2026, owner's PC)
+
+| Scenario | Real model? | Result |
+|---|---|---|
+| Cloud compare, text note | **Real** gemini-3.5-flash-lite via Firebase AI Logic | 200, in_cloud, 7/7 after schema fix |
+| Cloud compare, synthetic form image | **Real** | 200, in_cloud, image tokens 1080, 7/7 after fix |
+| Cloud second look, paper photo (Back online) | **Real** | 200, 1100 image tokens, 7/7, differences shown, record unchanged |
+| App Check enforcement | **Real** | 401 without registered debug token; 200 after |
+| On-device (Gemini Nano) | Real Chrome 157, **model unavailable** | Blocked by hardware; fallback message; 0 external requests |
+| System Down network | Real Chrome, network logged | 0 external requests during capture/proposal/save |
+
+Details: `docs/LIVE_TEST_RESULTS_2026-11-20.md`.
+
 ## What still needs a real run (owner, on a prepared laptop)
 
 1. Desktop Chrome **148+**. Multimodal flag on. Model downloaded via ClinBridge → More → AI check → "Prepare on-device model".
