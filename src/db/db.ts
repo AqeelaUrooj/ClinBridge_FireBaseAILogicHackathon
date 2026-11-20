@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { encryptionMiddleware, setVaultMode } from './encryption';
 import type {
   ActiveOrder, Allergy, AuditLog, Device, DowntimeEvent, Encounter, Entry, Handoff, IntakeOutput,
   KeyStore, LabEvent, MedAdmin, Note, Patient, Practitioner, Snapshot, SnapshotResult, VitalSign, WorklistItem,
@@ -84,6 +85,8 @@ export class DowntimeDB extends Dexie {
       });
       pendingMigrationNotes.set(this.name, { toVersion: 2, reasonsCopied: copied });
     });
+    // Encryption at rest (P-04): index fields stay plain, the rest of each row is AES-256-GCM. See encryption.ts.
+    this.use(encryptionMiddleware(this.name, V1_STORES));
   }
 }
 
@@ -93,6 +96,8 @@ export function getDb(dataset: Dataset): DowntimeDB {
   let db = open.get(dataset);
   if (!db) {
     db = new DowntimeDB(dataset);
+    // Fail closed: nothing can be read or written until boot has checked the vault (vault.ts detectVault).
+    setVaultMode(db.name, { mode: 'pending' });
     open.set(dataset, db);
   }
   return db;
