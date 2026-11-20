@@ -27,10 +27,9 @@ jobs:
           path: playwright-report
 
   fhir-validate:
-    # Official HL7 FHIR validator (R4 4.0.1) on the synthetic export. Report only for now:
-    # results are documented in docs/FHIR_VALIDATION.md; failures do not block CI yet.
+    # Official HL7 FHIR validator (R4 4.0.1) on the synthetic export. Fails on any error;
+    # warnings are reported only. Results are documented in docs/FHIR_VALIDATION.md.
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,7 +44,7 @@ jobs:
       - name: Build synthetic export
         run: FHIR_OUT=$PWD/fhir-bundle.json npx vitest run src/lib/fhir.export.test.ts
       - name: Download HL7 validator
-        run: curl -sSL -o validator_cli.jar https://github.com/hapifhir/org.hl7.fhir.core/releases/latest/download/validator_cli.jar
+        run: curl -sSL -o validator_cli.jar https://github.com/hapifhir/org.hl7.fhir.core/releases/download/7.0.6/validator_cli.jar
       - name: Validate (R4 4.0.1)
         run: |
           java -jar validator_cli.jar -version | head -3 || true
@@ -53,7 +52,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          node scripts/fhir-summary.mjs fhir-validation.json || true
+          node scripts/fhir-summary.mjs fhir-validation.json --fail-on-error
           grep -E "Success|Error|errors" fhir-validation.txt | tail -5 || true
       - uses: actions/upload-artifact@v4
         if: always()

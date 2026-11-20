@@ -1,5 +1,5 @@
 // Prints the HL7 validator result (OperationOutcome JSON) in a readable form for the CI log.
-// Usage: node scripts/fhir-summary.mjs fhir-validation.json
+// Usage: node scripts/fhir-summary.mjs fhir-validation.json [--fail-on-error]
 import { readFileSync } from 'node:fs';
 
 const r = JSON.parse(readFileSync(process.argv[2] || 'fhir-validation.json', 'utf8'));
@@ -30,4 +30,10 @@ for (const sev of ['warning', 'information']) {
   if (!groups.size) continue;
   console.log(`\n=== ${sev.toUpperCase()} (grouped, top 40) ===`);
   [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 40).forEach(([k, n]) => console.log(`${String(n).padStart(4)}  ${k}`));
+}
+
+const errors = (counts.error || 0) + (counts.fatal || 0);
+if (process.argv.includes('--fail-on-error') && errors > 0) {
+  console.error(`\nFHIR validation failed: ${errors} error(s).`);
+  process.exit(1);
 }

@@ -1,14 +1,34 @@
 # Test report
 
-Run: 20 Nov 2026 (round 5), local (Linux, Node 22, Chrome). All runs below happened after the last code change.
+Run: 20 Nov 2026 (round 6), local (Linux, Node 22, Chrome) on branch `feat/reliability`. All runs below happened after the last code change.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | Pass (exit 0) |
 | `npm run lint` | Pass (exit 0) |
-| `npm test` (Vitest) | **73 / 73 pass** (15 files) |
+| `npm test` (Vitest) | **82 pass, 1 skipped** (16 files + 1 skipped). The skipped file only writes the export for CI. |
 | `npm run build` | Pass (PWA, 22 files precached incl. illustrations) |
-| `npm run test:e2e` (Playwright) | **23 / 23 pass** |
+| `npm run test:e2e` (Playwright) | **24 / 24 pass** |
+| HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors** (was 10), 264 warnings, 418 information. See docs/FHIR_VALIDATION.md |
+
+## Round 6 additions
+
+Unit (`src/db/reliability.test.ts`, 9 tests). Each test breaks something on purpose:
+- **Interrupted write:** the child table write fails halfway. Nothing is saved, and the entry counter has no gap.
+- **Failed correction:** the old version is NOT marked corrected.
+- **Failed draft confirm / handover save:** nothing is added.
+- **Storage full (quota):** the nurse sees "Laptop storage is full, so this was NOT saved. Use the paper downtime form…" instead of the raw browser error. *(Defect found and fixed this round.)*
+- **Failed DB upgrade:** v1 data is kept as it was; a later good upgrade works.
+- **Safety copy restore:** restores into an empty database; refuses a database that already has data.
+- **Wrong laptop clock (set backwards):** the entry counter still goes up, and the recovery worklist flags a time conflict.
+- **Duplicate worklist items:** 3 worklist builds running at the same moment add each item only once.
+- **Interrupted export:** if writing the export record fails, `exported_at` stays empty and no audit row is added.
+
+Browser (`e2e/restart.spec.ts`), real Chrome profile on disk:
+- Service worker installed → pulse 83 saved → second form half-filled (pulse 199) → browser killed.
+- Browser started again **with the network off**: app opens, pulse 83 is there, 199 is not, `navigator.onLine` is false.
+
+FHIR: the official HL7 validator runs in CI (`fhir-validate` job) on every push to main and every PR, and now fails the build on any error.
 
 ## Unit tests (12 files)
 

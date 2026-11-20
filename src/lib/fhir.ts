@@ -54,7 +54,7 @@ export function buildBundle(input: ExportInput): R {
   const encOf = new Map(input.encounters.map((e) => [e.patient_id, e]));
 
   for (const p of input.patients) {
-    add({ resourceType: 'Patient', id: p.id, identifier: [{ type: { text: 'MRN' }, value: p.mrn }], name: [{ family: p.family_name, given: [p.given_name] }], gender: p.sex, birthDate: p.birth_date });
+    add({ resourceType: 'Patient', id: p.id, identifier: [{ type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR', display: 'Medical record number' }], text: 'MRN' }, value: p.mrn }], name: [{ family: p.family_name, given: [p.given_name] }], gender: p.sex, birthDate: p.birth_date });
   }
   for (const e of input.encounters) {
     add({ resourceType: 'Encounter', id: e.id, status: 'in-progress', class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'IMP', display: 'inpatient encounter' }, subject: ref('Patient', e.patient_id), period: { start: e.admit_time }, ...(e.bed ? { location: [{ location: { display: `${e.unit}, bed ${e.bed}` } }] } : {}) });
