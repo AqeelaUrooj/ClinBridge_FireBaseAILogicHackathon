@@ -21,6 +21,7 @@ export function Timeline() {
         <div className="flex items-center justify-between mb-space-sm">
           <h2 className="font-headline-md text-headline-md text-primary">History</h2>
           <div className="flex gap-space-sm">
+            <ButtonLink variant="secondary" to={`/patients/${patient.id}/handoff`}><Icon name="swap_horiz" />Handover</ButtonLink>
             <ButtonLink variant="secondary" to={`/patients/${patient.id}/body`}><Icon name="accessibility_new" />Body map</ButtonLink>
             <ButtonLink variant="secondary" to={`/patients/${patient.id}/labs`}><Icon name="science" />Labs</ButtonLink>
             <ButtonLink variant="secondary" to={`/patients/${patient.id}/orders`}><Icon name="list_alt" />Orders</ButtonLink>

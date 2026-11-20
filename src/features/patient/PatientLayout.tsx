@@ -45,7 +45,7 @@ export function PatientFrame({ patientId, children }: { patientId: string | unde
   }
   return (
     <PatientCtx.Provider value={data}>
-      <PatientBanner data={data} />
+      <div className="print:hidden"><PatientBanner data={data} /></div>
       {children}
     </PatientCtx.Provider>
   );

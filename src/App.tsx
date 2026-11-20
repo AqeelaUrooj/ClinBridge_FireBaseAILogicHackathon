@@ -11,6 +11,7 @@ import { EntryLayout, EntryDetail, EntryHistory, CorrectEntry } from './features
 import { MedsPage, OrderPage, RecordMed, OrdersPage } from './features/meds/MedsPages';
 import { BodyMapPage } from './features/body/BodyMapPage';
 import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
+import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
 function RequireAuth() {
@@ -49,7 +50,7 @@ export function App() {
           <Route index element={<Home />} />
           <Route path="/ward" element={<WardBoard />} />
           <Route path="/add" element={<AddPage />} />
-          <Route path="/handover" element={<NotBuilt title="Handover" phase="Phase 6" />} />
+          <Route path="/handover" element={<WardHandoverPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/labs" element={<WardLabsPage />} />
@@ -74,7 +75,9 @@ export function App() {
             <Route path="labs/record" element={<RecordLab />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="body" element={<BodyMapPage />} />
-            <Route path="handoff" element={<NotBuilt title="Handover for this patient" phase="Phase 6" />} />
+            <Route path="handoff" element={<PatientHandoffPage />} />
+            <Route path="handoff/new" element={<NewHandoffPage />} />
+            <Route path="handoff/:hid" element={<HandoffViewPage />} />
             <Route path="capture" element={<NotBuilt title="Photo of paper" phase="Phase 5" />} />
           </Route>
           <Route path="/entries/:entry" element={<EntryLayout />}>

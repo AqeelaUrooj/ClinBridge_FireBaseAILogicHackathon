@@ -126,9 +126,8 @@ export function AppShell() {
   const headerH = dataset === 'practice' ? '68px' : '44px';
   return (
     <div style={{ ['--header-h' as string]: headerH }}>
-      <ModeBanner />
-      <Sidebar />
-      <main id="main" className="min-h-screen bg-background pl-[220px]" style={{ paddingTop: headerH }}>
+      <div className="print:hidden"><ModeBanner /><Sidebar /></div>
+      <main id="main" className="min-h-screen bg-background pl-[220px] print:pl-0 print:!pt-0 print:bg-white" style={{ paddingTop: headerH }}>
         <div className="max-w-[1180px] mx-auto px-space-xl py-space-lg flex flex-col gap-space-lg">
           <Outlet />
         </div>
