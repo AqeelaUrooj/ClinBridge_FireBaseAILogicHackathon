@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useApp, useSession } from '../../state/app';
 import { resetPractice } from '../../db/seed';
+import { clearPhotos } from '../../db/photos';
 import { verifyChain } from '../../db/audit';
 import { backupDb } from '../../db/backup';
 import { MedIllustration } from '../../components/MedIllustration';
@@ -45,11 +46,11 @@ export function AlertsPage() {
         {drafts === undefined ? <p role="status">Loading…</p> : drafts.length === 0 ? <EmptyState text="Nothing to check" /> : (
           <ul className="flex flex-col gap-space-sm">
             {drafts.map((d) => (
-              <li key={d.id}><ButtonLink variant="secondary" to={`/entries/${d.id}`}>Draft {d.type.replace('_', ' ')} · {d.care_time.slice(11, 16)}<Icon name="chevron_right" /></ButtonLink></li>
+              <li key={d.id}><ButtonLink variant="secondary" to={`/capture/${d.id}/confirm`}>Draft {d.type.replace('_', ' ')} · {d.care_time.slice(11, 16)}<Icon name="chevron_right" /></ButtonLink></li>
             ))}
           </ul>
         )}
-        <p className="mt-space-md font-body-sm text-secondary">Checking drafts opens in a later phase. You can see each draft now.</p>
+
       </Card>
     </>
   );
@@ -130,7 +131,7 @@ export function MorePage() {
         <Dialog title="Reset practice data?" onClose={() => setConfirmReset(false)}>
           <p>All practice records you added will be removed and the fake patients restored.</p>
           <div className="flex gap-space-sm">
-            <Button variant="danger" className="flex-1" onClick={async () => { await resetPractice(db); signOut(); navigate('/sign-in'); }}>Reset</Button>
+            <Button variant="danger" className="flex-1" onClick={async () => { await resetPractice(db); await clearPhotos('practice'); signOut(); navigate('/sign-in'); }}>Reset</Button>
             <Button variant="secondary" className="flex-1" onClick={() => setConfirmReset(false)}>Cancel</Button>
           </div>
         </Dialog>

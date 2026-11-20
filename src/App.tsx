@@ -12,6 +12,7 @@ import { MedsPage, OrderPage, RecordMed, OrdersPage } from './features/meds/Meds
 import { BodyMapPage } from './features/body/BodyMapPage';
 import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
+import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
 function RequireAuth() {
@@ -78,14 +79,16 @@ export function App() {
             <Route path="handoff" element={<PatientHandoffPage />} />
             <Route path="handoff/new" element={<NewHandoffPage />} />
             <Route path="handoff/:hid" element={<HandoffViewPage />} />
-            <Route path="capture" element={<NotBuilt title="Photo of paper" phase="Phase 5" />} />
+            <Route path="capture" element={<CapturePage />} />
           </Route>
           <Route path="/entries/:entry" element={<EntryLayout />}>
             <Route index element={<EntryDetail />} />
             <Route path="history" element={<EntryHistory />} />
             <Route path="correct" element={<CorrectEntry />} />
           </Route>
-          <Route path="/capture/:entry/confirm" element={<NotBuilt title="Check photo result" phase="Phase 5" />} />
+          <Route path="/capture/:entry" element={<EntryLayout />}>
+            <Route path="confirm" element={<ConfirmDraftPage />} />
+          </Route>
           <Route path="*" element={<NotBuilt title="Page not found" phase="no such page" />} />
         </Route>
       </Route>

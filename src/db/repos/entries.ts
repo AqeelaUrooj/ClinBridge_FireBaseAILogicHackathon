@@ -220,3 +220,37 @@ export async function versionChain(db: DowntimeDB, id: string): Promise<EntryWit
   }
   return Promise.all(chain.map(async (entry) => ({ entry, child: await childTable(db, entry.type).where('entry_id').equals(entry.id).first() })));
 }
+
+/**
+ * Confirm a draft (e.g. typed from a photo, or proposed by AI): the nurse's checked values become the record.
+ * The draft's ai_proposal and raw input stay on the entry; the audit row keeps what was proposed vs confirmed.
+ * Only drafts can be confirmed; confirmed records change only through a correction.
+ */
+export async function confirmDraft<T extends EntryType>(
+  db: DowntimeDB, clock: Clock, actor: Actor, entryId: string, type: T, values: Omit<ChildByType[T], 'id' | 'entry_id'>, careTime?: string,
+): Promise<Entry> {
+  if (type === 'med_admin') await checkHighAlert(db, actor, values as Omit<MedAdmin, 'id' | 'entry_id'>);
+  return serial(async () => {
+    const entry = await db.entry.get(entryId);
+    if (!entry) throw new EntryWriteError('Record not found.');
+    if (entry.status !== 'draft') throw new EntryWriteError('Only a draft can be confirmed here.');
+    if (entry.type !== type) throw new EntryWriteError('Wrong kind of record.');
+    const child = await childTable(db, type).where('entry_id').equals(entryId).first();
+    const now = clock.nowIso();
+    const confirmed = { ...(values as Record<string, unknown>) };
+    const last = await lastAudit(db);
+    const row = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'entry_confirmed', entity: `entry/${entryId}`, before: entry.ai_proposal ?? child ?? {}, after: confirmed });
+    const updated: Entry = { ...entry, status: 'confirmed', confirmed, confirmed_by: actor.userId, confirmed_at: now, care_time: careTime ?? entry.care_time };
+    await db.transaction('rw', [db.entry, childTable(db, type), db.audit_log], async () => {
+      const head = await db.audit_log.orderBy('seq').last();
+      if ((head?.seq ?? 0) !== (last?.seq ?? 0)) throw new EntryWriteError('Another change was saved at the same moment. Try again.');
+      const current = await db.entry.get(entryId);
+      if (!current || current.status !== 'draft') throw new EntryWriteError('This draft was already handled.');
+      await db.entry.put(updated);
+      if (child) await childTable(db, type).put({ ...(values as object), id: (child as { id: string }).id, entry_id: entryId } as ChildByType[T]);
+      else await childTable(db, type).add({ ...(values as object), id: newId(type.replace('_', '').slice(0, 3)), entry_id: entryId } as ChildByType[T]);
+      await db.audit_log.add(row);
+    });
+    return updated;
+  });
+}

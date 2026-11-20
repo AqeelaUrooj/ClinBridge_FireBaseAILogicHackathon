@@ -15,11 +15,12 @@ import { fullName } from '../patient/patientData';
 import { StatusBadge, SourceBadge, TYPE_LABEL, entrySummary, isRetired } from './entryView';
 import { VitalsEditor, vitalsToForm } from '../vitals/VitalsEditor';
 import { MedEditor } from '../meds/MedEditor';
+import { PhotoView } from '../capture/PhotoView';
 import { MedValues } from '../meds/MedsPages';
 import { currentRate, medFormFromOrder, orderGroup, type MedEvent } from '../../lib/meds';
 
 const EntryCtx = createContext<EntryWithChild | null>(null);
-const useCurrentEntry = () => {
+export const useCurrentEntry = () => {
   const v = useContext(EntryCtx);
   if (!v) throw new Error('useCurrentEntry outside entry route');
   return v;
@@ -127,10 +128,17 @@ export function EntryDetail() {
           <dt className="text-secondary">Laptop · number</dt><dd className="font-code-tabular">{entry.device_id} · #{entry.counter}</dd>
           {changeReason && <><dt className="text-secondary">{entry.status === 'entered-in-error' ? 'Mistake reason' : 'Fix reason'}</dt><dd>{changeReason}</dd></>}
         </dl>
+        {entry.raw_input_kind === 'photo' && (
+          <details className="rounded-lg border border-card-border p-space-sm">
+            <summary className="cursor-pointer font-body-md text-primary">Source photo</summary>
+            <div className="mt-space-sm"><PhotoView refId={entry.raw_input_ref} /></div>
+          </details>
+        )}
         {entry.status === 'corrected' && supersededBy && (
           <p className="rounded-lg bg-surface-container-low p-space-md flex items-center gap-2"><Icon name="info" />This is an old version.<ButtonLink variant="ghost" to={`/entries/${supersededBy.id}`}>See the new one</ButtonLink></p>
         )}
         <div className="flex flex-wrap gap-space-sm">
+          {entry.status === 'draft' && isNurse(user) && <ButtonLink to={`/capture/${entry.id}/confirm`}><Icon name="fact_check" />Check and confirm</ButtonLink>}
           {canChange && <ButtonLink to={`/entries/${entry.id}/correct`}><Icon name="edit" />Fix</ButtonLink>}
           {canChange && <Button variant="danger" onClick={() => setMistake(true)}><Icon name="block" />Wrong patient or mistake</Button>}
           {(entry.supersedes_id || entry.status === 'corrected') && <ButtonLink variant="secondary" to={`/entries/${entry.id}/history`}><Icon name="history" />All versions</ButtonLink>}
