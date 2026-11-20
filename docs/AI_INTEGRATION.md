@@ -1,6 +1,6 @@
 # AI in ClinBridge: four separate capabilities
 
-**Status (20 Nov 2026): none integrated.** Manual paper capture, handover, and rules-only recovery work fully without AI. The only "proposals" or "second-look" values in the app come from the synthetic practice data and are labelled as simulated.
+**Status (20 Nov 2026): none integrated.** ClinBridge is restricted to synthetic data. Manual paper capture, handover, and rules-only recovery work fully without AI. The only "proposals" or "second-look" values in the app come from the synthetic practice data and are labelled as simulated.
 
 | # | Capability | Where it runs | When allowed | Depends on | Status |
 |---|---|---|---|---|---|
@@ -12,7 +12,7 @@
 ## 1. On-device: verified platform facts
 
 - The Prompt API (Gemini Nano in Chrome) runs on desktop Chrome only: Windows 10/11, macOS 13+, Linux, or Chromebook Plus. It does not run on Android or iOS.
-- Version: the Prompt API is on by default for web pages from **Chrome 148 stable** (released 5 May 2026); Chrome extensions had it from Chrome 138. Firebase AI Logic's on-device path needs Chrome 139 or later and SDK 12.5.0 or later. Sampling settings (like temperature) are still an origin trial on the web, so ClinBridge must not rely on them.
+- **ClinBridge's browser requirement: desktop Chrome 148 or later.** Reason: the Prompt API is on by default for web pages from Chrome 148 stable (released 5 May 2026). Before that, only Chrome extensions had it (from Chrome 138). Firebase AI Logic's own minimum (Chrome 139+, SDK 12.5.0+) is lower, but as a web app ClinBridge is bound by 148. Sampling settings (like temperature) are still an origin trial on the web, so ClinBridge must not rely on them.
 - **Other browsers:** not supported. MDN lists the Prompt API as Chrome-only, and two browser vendors oppose the spec. Firefox, Safari and (per a third-party report) Chromium builds from Linux package managers will show "AI not available"; manual capture still works there.
 - Hardware:
   - Storage: 22 GB free on the drive that holds the Chrome profile.

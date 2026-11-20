@@ -1,17 +1,24 @@
 # Test report
 
-Run: 20 Nov 2026 (round 7), local (Linux, Node 22, Chrome) on branch `feat/encryption` (PR #4). All runs below happened after the last code change, and GitHub Actions ran the same checks on the PR.
+Run: 20 Nov 2026 (round 7, after the review fixes), local (Linux, Node 22, Chrome) on branch `feat/encryption` (PR #4). All runs below happened after the last code change, and GitHub Actions ran the same checks on the PR.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | Pass (exit 0) |
 | `npm run lint` | Pass (exit 0) |
-| `npm test` (Vitest) | **142 pass, 1 skipped** (20 files + 1 skipped). The skipped file only writes the export for CI. |
+| `npm test` (Vitest) | **148 pass, 1 skipped** (21 files + 1 skipped). The skipped file only writes the export for CI. |
 | `npm run build` | Pass (PWA, 22 files precached) |
 | `npm run test:e2e` (Playwright) | **25 / 25 pass** (the offline test also passed 3 runs in a row) |
 | HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors, 11 warnings** (was 254), 418 information |
 
 ## Round 7 additions: encryption at rest (P-04)
+
+Index-field integrity, `src/db/indexIntegrity.test.ts` (6 tests, added after review):
+- All **45 index fields** of all tables were tampered one by one in raw IndexedDB. Each one fails with an integrity error, and the row is readable again once restored. This includes patient.mrn, entry.patient_id/encounter_id/care_time/status/supersedes_id/device_id/counter, audit_log.seq, med_admin.order_id, snapshot_result.time and worklist_item.priority.
+- Removing an index field, or changing the stored format version, is detected.
+- Legitimate app changes (correction, entered-in-error) re-seal the row and stay readable.
+- Photo index fields are bound too.
+- Data in the first format (v1) stays readable after unlock and is re-sealed as v2 with identical content (audit row). An old v1 copy put back afterwards is refused.
 
 Crypto, `src/lib/vaultCrypto.test.ts` (23 tests):
 - Default 600,000 PBKDF2 iterations.

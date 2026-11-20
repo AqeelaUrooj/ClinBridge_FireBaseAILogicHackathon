@@ -38,7 +38,7 @@ Also working:
 ## Round 7 (PR #4, branch `feat/encryption`)
 
 - **PRs #1, #3, #2 merged** after re-checking CI on each head and on the combined branch.
-- **Encryption at rest:**
+- **Encryption at rest** (index fields authenticated, format v2):
   - WebCrypto vault: unit passphrase + recovery key; AES-256-GCM per row and per photo.
   - Unlock screen after every reload or restart; Lock records now; idle lock.
   - Practice encrypted with the public passphrase.
@@ -90,11 +90,12 @@ Also working:
 
 ## Waiting on you
 
-- **P-05 credential activation** (F1/F2), **P-04 cleanup** and **Real-records migration** approvals, hospital IT review.
+- **P-04 cleanup** and **Real-records migration** approvals (evidence first), hospital IT/security review (docs/SECURITY_REVIEW.md).
 - **Final body map region model** (P-01). Then `note.body_site` (P-03).
 - **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
 ## Next
 
-- Phase 8: encryption at rest (AES-GCM + key_store), print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
-- On-device AI once Firebase config and a Chrome desktop test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.
+- F1 second-laptop enrollment (approved), cleanup workflow on synthetic data (execution on Real records not approved), Real-records migration evidence pack.
+- Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
+- On-device AI once Firebase config and a desktop Chrome 148+ test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.

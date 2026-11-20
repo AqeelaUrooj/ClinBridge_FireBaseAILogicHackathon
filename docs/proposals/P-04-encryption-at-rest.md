@@ -28,7 +28,7 @@ Status: **decisions made 20 Nov 2026 (owner). Reversible parts implemented on br
 **Keys**
 - **Data key (DEK):** `crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 })`. WebCrypto can only wrap a key that is extractable, so the new key is created extractable, wrapped twice, and then thrown away. The key the app works with is then made by `unwrapKey(..., extractable: false)`. Tests check that `exportKey` on it fails.
 - **Passphrase key (KEK):** PBKDF2-HMAC-SHA-256, 600,000 iterations, a random 16-byte salt → AES-KW-256 key, non-extractable, wrap/unwrap only.
-- **Recovery secret:** 128 random bits from `crypto.getRandomValues`, shown once as 26 base-32 characters in groups. It's high-entropy, so its wrapping key comes from HKDF-SHA-256 (random salt) instead of a slow KDF. It is never stored.
+- **Recovery secret:** 160 random bits from `crypto.getRandomValues`, shown once as 32 base-32 characters in 8 groups of 4 (alphabet without I, O, 0, 1; checked by `vaultCrypto.test.ts`). It's high-entropy, so its wrapping key comes from HKDF-SHA-256 (random salt) instead of a slow KDF. It is never stored. Using it to recover always issues a new recovery key.
 - **Wrong secret:** AES-KW has a built-in integrity check, so a wrong passphrase or recovery secret fails to unwrap. Nothing reveals which part was wrong.
 
 **`key_store` (no schema change)**
@@ -40,17 +40,19 @@ Status: **decisions made 20 Nov 2026 (owner). Reversible parts implemented on br
 
 **Records**
 - A Dexie middleware sits closest to IndexedDB, so the rest of Dexie (live queries, cache) only ever sees plain values in memory.
-- On write, the **index fields** of each table (from the schema's index list, e.g. `id`, `patient_id`, `care_time`) stay plain, and everything else becomes one AES-256-GCM blob. Each blob gets a fresh random 96-bit nonce, and `table + primary key` is bound in as associated data, so a blob moved to another row fails to decrypt.
+- On write, the **index fields** of each table (from the schema's index list, e.g. `id`, `patient_id`, `care_time`) stay plain, and everything else becomes one AES-256-GCM blob with a fresh random 96-bit nonce.
+- **Index fields are authenticated (format v2):** the associated data is `cb2|<table>|` + canonical JSON of *all* the row's index fields. Changing, removing or moving any plain index value (MRN, patient, encounter, time, status, audit seq, ...) without the key makes decryption fail. That is reported as an integrity error. App changes re-seal the row with the new values. All 45 index fields were tampered one by one in `indexIntegrity.test.ts`.
+- **Format v1** (associated data `table + primary key` only, used by the first build of this PR) is still read for compatibility, but only while a database has v1 rows. After unlock, `resealLegacyRows()` re-seals them as v2 (content compared, audit row `vault_format_upgraded`). From then on v1 is refused. The stored version number isn't trusted: changing it changes the associated data.
 - Random 96-bit nonces are safe up to about 2³² encryptions per key (NIST SP 800-38D). A ward laptop is many orders of magnitude below that. Key rotation re-encrypts if ever needed.
 - The logical schema doesn't change. Only the stored form of a row does (index fields + `_enc`).
-- Async WebCrypto calls inside an IndexedDB transaction use `Dexie.waitFor` to keep the transaction open. A prototype passed in fake-indexeddb (writes, reads, cursors, `modify`, all inside one transaction); real-Chrome proof comes from the implementation's browser tests.
+- Async WebCrypto calls inside an IndexedDB transaction keep that transaction open with tiny reads on the request's own transaction, and hand results back inside an IndexedDB callback (`keepAlive` in `encryption.ts`). `Dexie.waitFor` was tried first, but live queries hung in real Chrome (D-43). Browser tests cover it.
 - `practitioner` is encrypted too, so PIN hashes can't be brute-forced from a copied profile while the vault is locked.
 - The audit hash chain is computed on plain values, as today, and is verified after decryption.
 
-**Photos:** encrypted in `photos.ts`, the only place that reads or writes them, before the transaction. The `ref`, `patient_id` and `saved_at` indexes stay plain.
+**Photos:** encrypted in `photos.ts`, the only place that reads or writes them, before the transaction. The `ref`, `patient_id` and `saved_at` indexes stay plain and are bound into the associated data (v2).
 
 **Lock and unlock**
-- The working key lives only in memory. A refresh, browser restart or "Lock laptop" means the passphrase (or recovery secret) must be typed again. Offline unlock works because everything is local.
+- The working key lives only in memory. A refresh, browser restart, "Lock records now" or the idle lock means the passphrase (or recovery secret) must be typed again. Offline unlock works because everything is local.
 - On lock, the app drops its key reference and closes the database, which clears Dexie's in-memory caches.
 - **Limit:** JavaScript can't guarantee when the browser frees memory, so key material may stay in RAM until garbage collection. We do not claim immediate destruction.
 - Vault idle lock: configurable in `src/config/securityPolicy.ts`. The prototype default is marked **not approved**; hospital IT sets it.
@@ -106,7 +108,8 @@ Status: **decisions made 20 Nov 2026 (owner). Reversible parts implemented on br
 ## Risks that remain
 
 - Forgotten passphrase **and** lost recovery secret = records can't be read (by design; paper is the source).
-- Index fields stay readable. That includes **`patient.mrn`** (an indexed field), record times, statuses and ids. Removing the MRN index would be a schema change and needs a separate decision.
+- Index fields stay **readable** (not secret), but they are authenticated, so changes are detected. That includes **`patient.mrn`**, record times, statuses and ids. Hiding the MRN would need a schema change and a separate decision.
+- **Rollback isn't detected:** someone with the files could put back an *older genuine copy* of a whole row (index fields and ciphertext together). Detecting that needs a monotonic counter stored outside the browser profile.
 - XSS (a script injected into the page) or a malicious browser extension can read data while the vault is unlocked.
 - A shared unit passphrase can leak socially.
 - The browser can evict storage if persistence isn't granted.

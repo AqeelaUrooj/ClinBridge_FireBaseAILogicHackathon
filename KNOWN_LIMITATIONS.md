@@ -2,7 +2,7 @@
 
 - **Not for real patients yet.** Practice mode only until clinical review (D-17) and security work below are done.
 - **Encryption at rest (P-04) is a prototype.** Not reviewed by hospital IT/security. Keep full-disk encryption on. What stays readable or unprotected:
-  - **Index fields are plain** in every table: ids, `patient.mrn`, record times, statuses, links between records. Names, values, notes, staff names and PIN hashes are encrypted.
+  - **Index fields are readable but authenticated** in every table: ids, `patient.mrn`, record times, statuses, links between records. They can be read from a copied profile, but changing one is detected. Names, values, notes, staff names and PIN hashes are encrypted.
   - **Practice gives no secrecy:** its passphrase and recovery key are public on purpose (fake data only).
   - **Existing plain Real records are not encrypted.** A database that held Real records before this build stays plain (red banner) until the migration is approved.
   - **Plain copies that still exist:** the pre-encryption checkpoint and older safety copies in `downtimekit-backups` (listed on More, marked "not encrypted"). Removing them needs approval. A FHIR export file is plain by design.
@@ -10,7 +10,7 @@
   - **Memory:** the key stays in browser memory while unlocked. JavaScript can't force the browser to wipe it at once after locking.
   - **While unlocked**, a malicious extension or injected script could read records. There are no third-party scripts in the app.
   - **One shared unit passphrase** can leak socially. Losing both the passphrase and the recovery key makes the records unreadable (paper stays the source).
-  - **Rollback is not detected:** someone with the files could put back an older copy of a whole row. Swapping ciphertext between rows and adding plain rows are detected.
+  - **Rollback is not detected:** someone with the files could put back an older genuine copy of a whole row. Edited index fields, ciphertext moved between rows, added plain rows and old-format (v1) copies are detected.
   - **Passphrase rules are guidance** (length, common words, patterns), not a strength guarantee.
 - **Session is in memory.** Reloading the page signs you out (records stay saved). This is on purpose for shared laptops.
 - **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
@@ -18,16 +18,14 @@
 - **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.
 - **Body map is a first model** (21 regions, draft ids). Neck, groin/perineum and hips are drawn but cannot be selected. Pain and skin markers need `note.body_site` (P-03, pending). Sites that are not in the fixed table are listed, not drawn.
 - **Records saved before DB v2** keep their old reason inside `entry.confirmed` as well as the new `change_reason` (migration was additive on purpose).
-- **AI not wired** (no Firebase config yet, D-16). No on-device or cloud AI runs in this build.
 - **Many pages are placeholders** — see ROUTES.md.
 - **Date picker format** follows the browser's language setting (may show month/day order). Saved times are ISO with the ward's offset.
 - **Icon font is large** (~4 MB, cached once for offline). Can be subset later.
 - **One browser tab at a time.** Writes are ordered inside one tab; two tabs writing at the same moment retry, but this is not fully tested.
-- **Real records setup** (`/setup`) is not built, so the Real records database stays empty.
 - **Clinical policy is a prototype.** High-alert list partial, second-checker roles not approved, no timing policy (More → Clinical settings shows this).
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).
 - **Labs are typed in by nurses** as phoned/printed by the lab; no lab interface.
-- **AI not integrated.** Needs Chrome desktop 139+ with Gemini Nano downloaded and Firebase config (docs/AI_INTEGRATION.md).
+- **AI not integrated** (no Firebase config yet, D-16). No on-device or cloud AI runs in this build. When built, on-device AI needs **desktop Chrome 148 or later** with the Gemini Nano model downloaded (details in docs/AI_INTEGRATION.md). Manual capture and rules-only recovery never depend on it.
 - **Photos** are encrypted with the records' key and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.
 - **The safety copy before a DB upgrade** is a local copy on the same laptop. It is not disaster recovery or a backup system.
