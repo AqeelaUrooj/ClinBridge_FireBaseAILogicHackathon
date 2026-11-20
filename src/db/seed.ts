@@ -36,7 +36,9 @@ export async function importPracticeSeed(db: DowntimeDB, seed?: SeedFile): Promi
 
   const prepared: Partial<Record<TableName, Record<string, unknown>[]>> = {};
   for (const name of TABLE_NAMES) {
-    const rows = (data[name] as Record<string, unknown>[] | undefined) ?? [];
+    // The seed's key_store row is a fake placeholder ("FAKE-WRAPPED-KEY..."), not a vault: never imported.
+    // The real Practice vault is created by bootPractice (P-04, C1).
+    const rows = name === 'key_store' ? [] : ((data[name] as Record<string, unknown>[] | undefined) ?? []);
     const drop = NON_SCHEMA_FIELDS[name] ?? [];
     prepared[name] = rows.map((r) => {
       const copy = { ...r };
@@ -62,8 +64,10 @@ export async function importPracticeSeed(db: DowntimeDB, seed?: SeedFile): Promi
 /** Wipe the Practice dataset and load the seed again. */
 export async function resetPractice(db: DowntimeDB): Promise<SeedReport> {
   if (db.dataset !== 'practice') throw new Error('Only the Practice dataset can be reset.');
-  await db.transaction('rw', TABLE_NAMES.map((n) => db.table(n)), async () => {
-    for (const name of TABLE_NAMES) await db.table(name).clear();
+  // key_store is kept: it holds the Practice vault, so the reloaded seed is encrypted with the same key.
+  const tables = TABLE_NAMES.filter((n) => n !== 'key_store');
+  await db.transaction('rw', tables.map((n) => db.table(n)), async () => {
+    for (const name of tables) await db.table(name).clear();
   });
   return importPracticeSeed(db);
 }

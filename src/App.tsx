@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useApp, useSession, isAdmin } from './state/app';
 import { AppShell } from './components/AppShell';
 import { SignIn, LockScreen } from './features/auth/SignIn';
+import { UnlockVault } from './features/auth/UnlockVault';
 import { WardBoard } from './features/ward/WardBoard';
 import { PatientLayout } from './features/patient/PatientLayout';
 import { PatientSummary } from './features/patient/PatientSummary';
@@ -13,7 +14,7 @@ import { BodyMapPage } from './features/body/BodyMapPage';
 import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
-import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage } from './features/admin/AdminPages';
+import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
 import { RecoveryListPage, RecoveryItemPage, ExportPage } from './features/recovery/RecoveryPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
@@ -31,7 +32,7 @@ function Home() {
 }
 
 export function App() {
-  const { ready, bootError } = useApp();
+  const { ready, bootError, vault } = useApp();
   if (bootError) {
     return (
       <main className="min-h-screen grid place-items-center p-space-xl">
@@ -44,6 +45,8 @@ export function App() {
     );
   }
   if (!ready) return <p role="status" className="p-space-xl text-secondary">Opening DowntimeKit…</p>;
+  // Encrypted and locked (refresh, restart, "Lock records", idle lock): nothing else renders until unlocked.
+  if (vault === 'locked') return <UnlockVault />;
   return (
     <Routes>
       <Route path="/sign-in" element={<SignIn />} />
@@ -68,6 +71,7 @@ export function App() {
             <Route path="staff" element={<StaffPage />} />
             <Route path="devices" element={<DevicesPage />} />
             <Route path="audit" element={<AuditPage />} />
+            <Route path="backup" element={<BackupPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="/recovery" element={<RecoveryListPage />} />

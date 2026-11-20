@@ -39,6 +39,14 @@
 | D-40 | FHIR fixes from the HL7 validator: allergy `clinicalStatus` from the existing `allergy.status`, `reaction.severity` from `allergy.severity`, MRN identifier coded `MR` (HL7 v2-0203), no dosage block for a held/refused dose without dose or rate | Exact matches to existing fields; nothing guessed |
 | D-41 | Official HL7 FHIR Validator 7.0.6 (pinned), R4 4.0.1, runs in GitHub Actions; fails on errors, reports warnings | The sandbox can't reach the HL7 package servers |
 | D-42 | Encryption at rest (P-04): A1 modified (unit passphrase unlocks the vault; PINs identify and authorise), B1 encrypted backups, C1 Practice encrypted with a published passphrase, D1 staged migration on Practice first | Owner decision 20 Nov 2026; irreversible steps need separate approval |
+| D-43 | Encryption middleware keeps the IndexedDB transaction alive with its own tiny reads on the request's transaction instead of `Dexie.waitFor` | Dexie's zone was unreliable inside middleware in real Chrome (live queries hung); proven by browser tests |
+| D-44 | Encrypted stored row = index fields + `_enc`; logical schema unchanged; `key_store` row `vault` uses self-describing strings in the existing fields | No schema change (P-04) |
+| D-45 | Recovery always issues a NEW recovery key (the typed one may have been seen); Practice keeps its published one | Security; Practice has no secrecy anyway |
+| D-46 | Real-records first-time setup creates the vault before any record; recovery key shown and confirmed BEFORE the vault exists | A1; nothing to migrate, so not an irreversible step |
+| D-47 | More → "Save copy" (plain JSON safety copy download) removed; list shows encrypted / not encrypted | Plain downloads defeat encryption; encrypted backup file replaces it |
+| D-48 | Seed's fake `key_store` placeholder is not imported; Practice reset keeps the vault row | Placeholder isn't a key; keeps reset data readable |
+| D-49 | FHIR narrative `text.status = generated`, built only from each resource's fields | dom-6 warnings; no invented content |
+| D-50 | Vault idle lock 60 min, PBKDF2 600,000 iterations: prototype values in `securityPolicy.ts`, shown "Not approved" | Hospital IT decides |
 
 ## Open — need an answer
 
@@ -47,8 +55,9 @@
 | P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
 | P-05 | Second-laptop credential activation: F1 admin-supervised (recommended), F2 one-time codes, or both — `docs/proposals/P-05-second-laptop-enrollment.md` | Not built; no PIN hashes move between laptops |
-| P-04-D6 | Cleanup of plain copies (pre-encryption checkpoint, older safety copies) after the Practice migration tests pass | Not done; plain copies kept |
-| P-04-RM | Encrypting an existing Real-records database that already holds plain data (irreversible step) | Not done; app shows "not encrypted" |
+| P-04-D6 | Cleanup of plain copies: proposal in P-04 (needs a fresh encrypted backup first; removes only unencrypted safety copies) | Not done; plain copies kept |
+| P-04-RM | Encrypting an existing Real-records database that already holds plain data (irreversible step): proposal in P-04 | Not done; app shows "not encrypted" |
+| P-04-IT | Hospital IT/security review of the encryption design, idle-lock time and iteration count | Prototype values, marked not approved |
 | D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`. Old commits had an author email that GitHub maps to an unrelated account; owner chose to rewrite authorship before publishing | **Resolved 20 Nov 2026:** all 13 commits re-authored as `Aqeela Urooj <38668564+AqeelaUrooj@users.noreply.github.com>` (owner confirmed); file content and messages unchanged; pushed |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |

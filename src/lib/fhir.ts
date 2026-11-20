@@ -50,7 +50,7 @@ const obsStatus = (e: Entry) => (e.status === 'confirmed' ? 'final' : 'entered-i
 
 export function buildBundle(input: ExportInput): R {
   const res: R[] = [];
-  const add = (r: R) => { const { _profile, ...rest } = r as R & { _profile?: string }; res.push({ ...rest, meta: meta(_profile) }); };
+  const add = (r: R) => { const { _profile, ...rest } = r as R & { _profile?: string }; res.push({ ...rest, meta: meta(_profile), text: narrative(rest) }); };
   const encOf = new Map(input.encounters.map((e) => [e.patient_id, e]));
 
   for (const p of input.patients) {
@@ -224,4 +224,35 @@ function dosageOf(m: MedAdmin): { dosage?: Record<string, unknown> } {
   const rate = m.infusion_rate != null && m.infusion_rate_unit ? { rateQuantity: { value: m.infusion_rate, unit: m.infusion_rate_unit } } : {};
   if (!('dose' in dose) && !('rateQuantity' in rate)) return {};
   return { dosage: { ...(m.route ? { route: textCode(m.route) } : {}), ...(m.site ? { site: textCode(m.site) } : {}), ...dose, ...rate } };
+}
+
+/* ---------- Narrative (FHIR dom-6) ---------- */
+
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/** Plain-text rendering of an element, using only what the element itself holds. */
+function show(v: unknown): string {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (Array.isArray(v)) return v.map(show).filter(Boolean).join('; ');
+  const o = v as R;
+  if (typeof o.text === 'string' && !('div' in o)) return o.text;
+  if (Array.isArray(o.coding) && o.coding.length) return show((o.coding[0] as R).display ?? (o.coding[0] as R).code);
+  if (typeof o.reference === 'string') return o.reference + (typeof o.display === 'string' ? ` (${o.display})` : '');
+  if ('value' in o && ('unit' in o || 'code' in o)) return `${show(o.value)} ${show(o.unit ?? o.code)}`.trim();
+  return Object.entries(o).map(([k, x]) => (show(x) ? `${k}: ${show(x)}` : '')).filter(Boolean).join(', ');
+}
+
+/**
+ * Human-readable summary, status "generated": FHIR's term for a narrative made ENTIRELY from the resource's own
+ * structured elements. Nothing is added, interpreted or coded here; it restates the fields one by one.
+ */
+export function narrative(r: R): { status: 'generated'; div: string } {
+  const rows = Object.entries(r)
+    .filter(([k]) => !['resourceType', 'id', 'meta', 'text'].includes(k))
+    .map(([k, v]) => [k, show(v)] as const)
+    .filter(([, v]) => v !== '')
+    .map(([k, v]) => `<li><b>${esc(k)}</b>: ${esc(v)}</li>`)
+    .join('');
+  return { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml"><p><b>${esc(String(r.resourceType))}</b> ${esc(String(r.id ?? ''))}</p><ul>${rows}</ul></div>` };
 }

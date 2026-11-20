@@ -16,6 +16,10 @@ export interface SchemaBackup {
   to_version: number;
   taken_at: string;
   tables: Record<string, unknown[]>;
+  /** 'schema-upgrade' (default, before a Dexie version upgrade) or 'pre-encryption' (P-04 migration checkpoint). */
+  kind?: 'schema-upgrade' | 'pre-encryption';
+  /** SHA-256 (base64url) of each table's canonical JSON, used to prove the checkpoint was written correctly. */
+  table_hashes?: Record<string, string>;
 }
 
 class BackupDB extends Dexie {
@@ -36,7 +40,7 @@ function rawOpen(name: string): Promise<IDBDatabase> {
   });
 }
 
-function readAll(db: IDBDatabase): Promise<Record<string, unknown[]>> {
+export function readAll(db: IDBDatabase): Promise<Record<string, unknown[]>> {
   const names = Array.from(db.objectStoreNames);
   if (names.length === 0) return Promise.resolve({});
   return new Promise((resolve, reject) => {

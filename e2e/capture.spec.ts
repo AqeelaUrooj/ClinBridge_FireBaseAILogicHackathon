@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
+import { unlockIfNeeded } from './helpers';
 
 async function signInOpen(page: Page, patientId: string) {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await expect(page).toHaveURL(/\/ward$/);
@@ -61,6 +63,7 @@ test('dark photo gives a hint but never blocks', async ({ page }) => {
 
 test('practice draft with a stored proposal is labelled as simulated, not live AI', async ({ page }) => {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await page.getByRole('complementary').getByRole('link', { name: /Alerts/ }).click();

@@ -1,6 +1,7 @@
 import { test, expect, chromium, type Page } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { unlockIfNeeded, unlockPractice } from './helpers';
 import { join } from 'node:path';
 
 const BASE = 'http://localhost:4173';
@@ -23,8 +24,10 @@ test('abrupt closure mid-form saves nothing; a saved record survives a full brow
     let ctx = await launch(dir);
     let page = await ctx.newPage();
     await page.goto(`${BASE}/sign-in`);
+    await unlockIfNeeded(page); // first start: Practice vault created and seeded
     await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistration())?.active?.state === 'activated');
     await page.reload();
+    await unlockPractice(page);
     await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
     await signInOpenVitals(page);
     // Saved record
@@ -43,6 +46,8 @@ test('abrupt closure mid-form saves nothing; a saved record survives a full brow
     ctx = await launch(dir, true);
     page = await ctx.newPage();
     await page.goto(`${BASE}/sign-in`);
+    // Encrypted at rest: after a restart nothing is readable until the unit passphrase is typed (offline works).
+    await unlockPractice(page);
     await expect(page.getByRole('heading', { name: 'Who are you?' })).toBeVisible();
     await signInOpenVitals(page);
     await expect(page.getByText(/Pulse 83/).first()).toBeVisible();

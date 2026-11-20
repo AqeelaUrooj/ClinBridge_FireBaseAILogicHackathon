@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 6)
+Last updated: 20 Nov 2026 (round 7)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -12,7 +12,7 @@ Last updated: 20 Nov 2026 (round 6)
 | 5 | Photo of paper form (on-device AI) | **Manual capture done**; AI not integrated (see docs/AI_INTEGRATION.md) |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | **Done** except practice compare (needs AI) |
-| 8 | Offline/security hardening, encryption at rest, deploy | Partly: offline shell, restart-offline test, reliability tests, HL7 validation done; encryption waits for P-04 approval |
+| 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest built for Practice and new Real-records setups (PR #4); Real-records migration and cleanup wait for approval; second laptop waits for P-05 |
 
 ## Phase 2 slice — working end to end
 
@@ -34,6 +34,18 @@ Also working:
 - High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride): red bar, and Save stays locked until a **different** eligible nurse picks their name and enters their own PIN. The database layer refuses the save too, so the rule cannot be skipped from the screen.
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
+
+## Round 7 (PR #4, branch `feat/encryption`)
+
+- **PRs #1, #3, #2 merged** after re-checking CI on each head and on the combined branch.
+- **Encryption at rest** (index fields authenticated, format v2):
+  - WebCrypto vault: unit passphrase + recovery key; AES-256-GCM per row and per photo.
+  - Unlock screen after every reload or restart; Lock records now; idle lock.
+  - Practice encrypted with the public passphrase.
+  - New Real-records setups are encrypted from the first record.
+- **Staged migration** proven on Practice (checkpoint, verify, interruption, resume). Real records are not migrated.
+- **Encrypted backup file** and restore at setup. FHIR export needs a "sensitive" confirmation.
+- **FHIR narrative:** HL7 warnings went from 254 to 11.
 
 ## Round 6
 
@@ -78,11 +90,12 @@ Also working:
 
 ## Waiting on you
 
-- **P-04 encryption decisions** (A, B, C, D) and **P-05** second laptop.
+- **P-04 cleanup** and **Real-records migration** approvals (evidence first), hospital IT/security review (docs/SECURITY_REVIEW.md).
 - **Final body map region model** (P-01). Then `note.body_site` (P-03).
 - **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
 ## Next
 
-- Phase 8: encryption at rest (AES-GCM + key_store), print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
-- On-device AI once Firebase config and a Chrome desktop test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.
+- F1 second-laptop enrollment (approved), cleanup workflow on synthetic data (execution on Real records not approved), Real-records migration evidence pack.
+- Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
+- On-device AI once Firebase config and a desktop Chrome 148+ test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.

@@ -134,6 +134,7 @@ export function ExportPage() {
   const [state, setState] = useState<Awaited<ReturnType<typeof prepareExport>> | null>(null);
   const [hash, setHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ack, setAck] = useState(false);
   if (phase !== 'online') return <><PageTitle>Export</PageTitle><NotYet /></>;
   async function download() {
     if (!state) return;
@@ -143,7 +144,7 @@ export function ExportPage() {
       setHash(h);
       const url = URL.createObjectURL(new Blob([state.json], { type: 'application/fhir+json' }));
       const a = document.createElement('a');
-      a.href = url; a.download = `clinbridge-fhir-${clock.nowIso().slice(0, 16).replace(/[:T]/g, '-')}.json`; a.click();
+      a.href = url; a.download = `SENSITIVE-clinbridge-fhir-${clock.nowIso().slice(0, 16).replace(/[:T]/g, '-')}.json`; a.click();
       URL.revokeObjectURL(url);
     } catch (e) { setError(msg(e)); }
   }
@@ -163,7 +164,12 @@ export function ExportPage() {
             </ul>
             {state.errors.length > 0 && <pre className="bg-clinical-red-bg p-space-sm rounded text-body-sm overflow-auto max-h-60">{state.errors.slice(0, 30).join('\n')}</pre>}
             {state.openItems > 0 && <p className="text-[#7a5410] font-body-md flex items-center gap-2"><Icon name="warning" />Some items are not signed off yet. You can still make a file, but the export should normally wait.</p>}
-            <Button className="self-start" disabled={state.errors.length > 0} onClick={download}><Icon name="download" />Download file</Button>
+            <div role="note" className="rounded-lg border-2 border-clinical-red-border bg-clinical-red-bg p-space-md flex flex-col gap-space-sm">
+              <p className="font-semibold text-clinical-red flex items-center gap-2"><Icon name="warning" />Sensitive: this file is NOT encrypted</p>
+              <p className="font-body-md">It holds patient names, medicines and notes in plain text, because the EHR team&apos;s system must read it. The browser saves it in its downloads folder; ClinBridge cannot protect that folder. Hand it only to the authorised EHR team, by a route your hospital approves, then delete the local copy.</p>
+              <label className="flex items-start gap-2 font-body-md"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} aria-label="I understand this file is sensitive and not encrypted" className="mt-1 w-5 h-5" />I understand this file is sensitive and not encrypted.</label>
+            </div>
+            <Button className="self-start" disabled={state.errors.length > 0 || !ack} onClick={download}><Icon name="download" />Download file</Button>
           </>
         )}
         {hash && <p role="status" className="text-sync-green font-body-md">File saved. Fingerprint (SHA-256) recorded in the change log: <span className="font-code-tabular break-all">{hash}</span></p>}

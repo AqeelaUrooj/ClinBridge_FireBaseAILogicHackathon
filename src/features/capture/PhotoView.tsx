@@ -7,8 +7,8 @@ import { Badge, Icon } from '../../components/ui';
 
 /** Shows a stored photo full width with a link to open it at full size. */
 export function PhotoView({ refId }: { refId: string }) {
-  const { dataset } = useApp();
-  const photo = useLiveQuery(async () => (await getPhoto(dataset, refId)) ?? null, [dataset, refId]);
+  const { db } = useApp();
+  const photo = useLiveQuery(async () => (await getPhoto(db, refId)) ?? null, [db, refId]);
   const [url, setUrl] = useState<string | null>(null);
   const [intact, setIntact] = useState<boolean | null>(null);
   useEffect(() => {

@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
+import { unlockIfNeeded } from './helpers';
 
 async function openBodyMap(page: Page, patientId: string) {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await expect(page).toHaveURL(/\/ward$/);

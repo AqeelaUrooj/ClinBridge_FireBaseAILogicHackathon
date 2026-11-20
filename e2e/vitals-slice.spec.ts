@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { unlockIfNeeded, unlockPractice } from './helpers';
 
 /**
  * Phase 2 vertical slice, end to end, on fake practice data only:
@@ -8,6 +9,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 async function signIn(page: Page) {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await expect(page).toHaveURL(/\/ward$/);
@@ -52,8 +54,10 @@ test('record vitals, survive reload, then fix them', async ({ page }) => {
   await expect(page.getByText('Saved on this laptop.')).toBeVisible();
   await expect(page.getByText('BP 128/82 · Pulse 77 · O₂ 97%')).toBeVisible();
 
-  // Reload: IndexedDB keeps it. The session is in memory, so we sign in again.
+  // Reload: IndexedDB keeps it. The key and the session are only in memory, so the records are locked:
+  // unlock with the unit passphrase, then sign in again.
   await page.reload();
+  await expect(page.getByRole('heading', { name: 'Unlock records on this laptop' })).toBeVisible();
   await signIn(page);
   await openSam(page);
   await page.getByRole('link', { name: 'View details' }).click();
@@ -76,6 +80,7 @@ test('record vitals, survive reload, then fix them', async ({ page }) => {
 
 test('wrong PIN is refused and locks after 5 tries', async ({ page }) => {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Jordan Park/ }).click();
   for (let i = 1; i <= 5; i++) {
     for (const d of '1111') await page.getByRole('button', { name: d, exact: true }).click();
@@ -87,13 +92,15 @@ test('wrong PIN is refused and locks after 5 tries', async ({ page }) => {
 
 test('app works offline after first load: sign in, illustrations, body map, save survives reload', async ({ page, context }) => {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistration())?.active?.state === 'activated');
   await page.reload(); // let the service worker take control
+  await unlockPractice(page);
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Who are you?' })).toBeVisible();
-  await signIn(page);
+  await expect(page.getByRole('heading', { name: 'Unlock records on this laptop' })).toBeVisible();
+  await signIn(page); // goes to /sign-in and unlocks with no network
   // Illustrations on the ward board load from the local cache.
   const imgs = page.locator('img[data-asset]');
   await expect(imgs.first()).toBeVisible();
@@ -106,10 +113,12 @@ test('app works offline after first load: sign in, illustrations, body map, save
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved on this laptop.')).toBeVisible();
+  await expect(page.locator('img[data-asset]').first()).toBeVisible(); // page content loads after decryption
   const vitalsImgs = await page.locator('img[data-asset]').evaluateAll((els) => els.map((e) => (e as HTMLImageElement).naturalWidth));
   expect(vitalsImgs.length).toBeGreaterThan(0);
   expect(vitalsImgs.every((w) => w > 0)).toBe(true);
   await page.reload(); // still offline
+  await expect(page.getByRole('heading', { name: 'Unlock records on this laptop' })).toBeVisible();
   await signIn(page);
   await openSam(page);
   await page.getByRole('link', { name: 'View details' }).click();
