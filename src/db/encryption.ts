@@ -1,4 +1,4 @@
-import Dexie, { type DBCore, type DBCoreCursor, type DBCoreTable, type Middleware } from 'dexie';
+import type { DBCore, DBCoreCursor, DBCoreTable, DBCoreTransaction, Middleware } from 'dexie';
 import { isSealed, openJson, sealJson, type Sealed } from '../lib/vaultCrypto';
 
 /**
@@ -11,8 +11,10 @@ import { isSealed, openJson, sealJson, type Sealed } from '../lib/vaultCrypto';
  * fields, with associated data "<table>|<primary key>" so a ciphertext copied onto another row fails.
  * `key_store` is never encrypted (it holds only wrapped keys).
  *
- * WebCrypto is async; awaiting it inside an IndexedDB transaction would let the transaction auto-commit,
- * so every crypto call here runs through Dexie.waitFor(), which keeps the transaction alive.
+ * WebCrypto is async; awaiting it inside an IndexedDB transaction would let the transaction auto-commit.
+ * keepAlive() keeps the request's own IDBTransaction busy with tiny reads while the crypto runs, and hands the
+ * result back from inside an IndexedDB success callback, where the transaction is active again. (Dexie.waitFor
+ * does the same through Dexie's zone, but that zone is not reliable inside middleware in real Chrome: queries hung.)
  *
  * Modes per database (fail closed in the app):
  *   pending    database opened by the app, vault state not known yet -> any encrypted-table access throws
@@ -72,7 +74,43 @@ export function indexFieldsFromSpec(spec: string): string[] {
 }
 
 const aadFor = (table: string, pk: unknown) => `${table}|${JSON.stringify(pk)}`;
-const W = <T>(p: Promise<T>): Promise<T> => Dexie.waitFor(p, 60_000);
+/**
+ * Run `p` while keeping `trans` alive; settle from inside an IDB success callback. If the transaction is
+ * already inactive (nothing more will be done in it), settle normally.
+ */
+export function keepAlive<T>(trans: DBCoreTransaction | undefined, p: Promise<T>): Promise<T> {
+  const idb = trans as unknown as IDBTransaction | undefined;
+  if (!idb || typeof idb.objectStore !== 'function' || !idb.objectStoreNames?.length) return p;
+  return new Promise<T>((resolve, reject) => {
+    let done = false;
+    let ok = false;
+    let value: T;
+    let error: unknown;
+    p.then((v) => { done = true; ok = true; value = v; }, (e) => { done = true; error = e; });
+    let store: IDBObjectStore;
+    try {
+      store = idb.objectStore(idb.objectStoreNames[0]!);
+    } catch {
+      p.then(resolve, reject);
+      return;
+    }
+    const spin = () => {
+      if (done) {
+        if (ok) resolve(value);
+        else reject(error);
+        return;
+      }
+      try {
+        const r = store.get(-Infinity);
+        r.onsuccess = spin;
+        r.onerror = spin;
+      } catch {
+        p.then(resolve, reject); // transaction finished: no further requests depend on it
+      }
+    };
+    spin();
+  });
+}
 
 type Row = Record<string, unknown>;
 
@@ -136,7 +174,7 @@ function wrapTable(t: DBCoreTable, name: string, idx: string[], dbName: string):
     if (!key) throw new VaultLockedError();
     return decryptRow(key, name, idx, v as Row);
   };
-  const decAll = (vs: unknown[]) => W(Promise.all(vs.map(dec)));
+  const decAll = (trans: DBCoreTransaction, vs: unknown[]) => keepAlive(trans, Promise.all(vs.map(dec)));
 
   return {
     ...t,
@@ -144,37 +182,48 @@ function wrapTable(t: DBCoreTable, name: string, idx: string[], dbName: string):
       if (req.type === 'add' || req.type === 'put') {
         const key = keyOrThrow();
         if (!key) return t.mutate(req);
-        const values = await W(Promise.all(req.values.map((v) => encryptRow(key, name, idx, v as Row))));
+        const values = await keepAlive(req.trans, Promise.all(req.values.map((v) => encryptRow(key, name, idx, v as Row))));
         return t.mutate({ ...req, values });
       }
       return t.mutate(req);
     },
     get: async (req) => {
       const v = await t.get(req);
-      return v === undefined ? v : W(dec(v));
+      return v === undefined ? v : keepAlive(req.trans, dec(v));
     },
-    getMany: async (req) => decAll(await t.getMany(req)),
+    getMany: async (req) => decAll(req.trans, await t.getMany(req)),
     query: async (req) => {
       const r = await t.query(req);
       if (!req.values) return r;
-      return { ...r, result: await decAll(r.result) };
+      return { ...r, result: await decAll(req.trans, r.result) };
     },
     openCursor: async (req) => {
       const c = await t.openCursor(req);
       if (!c || !req.values) return c;
-      return wrapCursor(c, dec);
+      return wrapCursor(c, dec, req.trans);
     },
   };
 }
 
-function wrapCursor(c: DBCoreCursor, dec: (v: unknown) => Promise<unknown>): DBCoreCursor {
+function wrapCursor(c: DBCoreCursor, dec: (v: unknown) => Promise<unknown>, trans: DBCoreTransaction): DBCoreCursor {
   let current: unknown;
+  // Native IDBCursor getters (key, primaryKey) throw "Illegal invocation" if called on another object, so every
+  // property the wrapper exposes is read from the real cursor explicitly.
   return Object.create(c, {
     value: { get: () => current },
+    key: { get: () => c.key },
+    primaryKey: { get: () => c.primaryKey },
+    done: { get: () => c.done },
+    trans: { get: () => c.trans },
+    continue: { value: (key?: unknown) => c.continue(key) },
+    continuePrimaryKey: { value: (key: unknown, pk: unknown) => c.continuePrimaryKey(key, pk) },
+    advance: { value: (n: number) => c.advance(n) },
+    stop: { value: (v?: unknown) => c.stop(v) },
+    fail: { value: (e: Error) => c.fail(e) },
     start: {
       value: (onNext: () => void) =>
         c.start(() => {
-          W(dec(c.value)).then(
+          keepAlive(trans, dec(c.value)).then(
             (v) => {
               current = v;
               onNext();

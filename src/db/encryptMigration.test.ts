@@ -9,6 +9,7 @@ import { MigrationVerifyError, migrateToEncrypted, verifyAgainstCheckpoint } fro
 import { detectVault, rawPlainRowCount, readVaultRow, unlockVault } from './vault';
 import { importPracticeSeed } from './seed';
 import { practiceClock } from '../lib/time';
+import { clearPhotos, getPhoto, rawPhotos, savePhoto, verifyPhoto } from './photos';
 import { WrongSecretError } from '../lib/vaultCrypto';
 import { PUBLIC_PRACTICE_PASSPHRASE } from '../config/securityPolicy';
 
@@ -16,7 +17,8 @@ const FAST = 1000;
 const clock = practiceClock();
 const dbs: DowntimeDB[] = [];
 
-afterEach(() => {
+afterEach(async () => {
+  await clearPhotos('practice');
   for (const db of dbs.splice(0)) {
     clearVaultMode(db.name);
     db.close();
@@ -168,6 +170,40 @@ describe('staged migration on synthetic Practice data', () => {
     expect(await rawPlainRowCount(db)).toBe(0);
     const cp = (await checkpointsFor(db.name))[0]!;
     expect(JSON.stringify(cp.tables.patient)).toMatch(/family_name/); // known plain copy, kept until cleanup is approved
+  });
+});
+
+describe('photos', () => {
+  it('plain photos are encrypted by the migration, each checked against its capture-time hash', async () => {
+    const { db } = await plainPractice();
+    const png = new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4])], { type: 'image/png' });
+    // saved the old way (no vault yet -> plain)
+    clearVaultMode(db.name);
+    const saved = await savePhoto(db, clock, { userId: 'pr-okafor', deviceId: 'dev-01' }, 'pt-08', png);
+    setVaultMode(db.name, { mode: 'pending' });
+    expect('blob' in (await rawPhotos('practice'))[0]!).toBe(true);
+    await detectVault(db);
+    const r = await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: 'dev-01', iterations: FAST });
+    expect(r.photosEncrypted).toBe(1);
+    const raw = (await rawPhotos('practice'))[0] as unknown as Record<string, unknown>;
+    expect(raw.blob).toBeUndefined();
+    expect(raw.sha256).toBeUndefined();
+    expect(Object.keys(raw).sort()).toEqual(['_bytes', '_enc', 'patient_id', 'ref', 'saved_at']);
+    const back = await getPhoto(db, saved.ref);
+    expect(back?.sha256).toBe(saved.sha256);
+    expect(await verifyPhoto(back!)).toBe(true);
+  });
+
+  it('a photo saved while the vault is unlocked is encrypted straight away and unreadable once locked', async () => {
+    const { db } = await plainPractice();
+    await detectVault(db);
+    await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: 'dev-01', iterations: FAST });
+    const png = new Blob([new Uint8Array([137, 80, 78, 71, 9, 9, 9])], { type: 'image/png' });
+    const p = await savePhoto(db, clock, { userId: 'pr-okafor', deviceId: 'dev-01' }, 'pt-02', png);
+    expect('_bytes' in (await rawPhotos('practice'))[0]!).toBe(true);
+    expect(await verifyPhoto((await getPhoto(db, p.ref))!)).toBe(true);
+    setVaultMode(db.name, { mode: 'locked' });
+    await expect(getPhoto(db, p.ref)).rejects.toThrow(/locked/);
   });
 });
 

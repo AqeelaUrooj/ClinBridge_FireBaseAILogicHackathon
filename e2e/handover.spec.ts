@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { unlockIfNeeded } from './helpers';
 
 test('handover: write from confirmed records, review, save, view history, print layout', async ({ page }) => {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await page.getByRole('complementary').getByRole('link', { name: 'Handover' }).click(); // sidebar → ward handover
@@ -34,6 +36,7 @@ test('handover: write from confirmed records, review, save, view history, print 
 
 test('handover: Review is blocked until Situation, Background and Assessment are written', async ({ page }) => {
   await page.goto('/sign-in');
+  await unlockIfNeeded(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await page.getByTestId('patient-pt-01').click();

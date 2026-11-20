@@ -6,6 +6,7 @@ import { buildAuditRow } from './audit';
 import { createVault, readVaultRow, rawPlainRowCount } from './vault';
 import { sha256 } from '../lib/vaultCrypto';
 import type { Clock } from '../lib/time';
+import { encryptPlainPhotos, getPhoto, rawPhotos, verifyPhoto } from './photos';
 
 /**
  * Staged in-place encryption of a database that holds plain records (P-04 decision D1, conditional).
@@ -35,6 +36,7 @@ export interface MigrationReport {
   checkpointId: number;
   resumed: boolean;
   counts: Record<string, number>;
+  photosEncrypted: number;
   verified: true;
 }
 
@@ -151,15 +153,23 @@ export async function migrateToEncrypted(db: DowntimeDB, opts: MigrationOptions)
     if (opts.interruptAfterTable === t.name) throw new Error(`Simulated interruption after "${t.name}"`);
   }
 
+  // 3b. photos: each one is checked against its capture-time hash before its plain row is replaced
+  const photosEncrypted = await encryptPlainPhotos(db);
+
   // 4. verify, then stop accepting plain rows
   const counts = await verifyAgainstCheckpoint(db, checkpoint);
+  for (const p of await rawPhotos(db.dataset)) {
+    if (!('_bytes' in p)) throw new MigrationVerifyError(`photo ${p.ref} is still plain`);
+    const open = await getPhoto(db, p.ref);
+    if (!open || !(await verifyPhoto(open))) throw new MigrationVerifyError(`photo ${p.ref} does not match its saved hash`);
+  }
   const m = getVaultMode(db.name) as { mode: 'unlocked'; key: CryptoKey; allowPlain: boolean };
   setVaultMode(db.name, { ...m, allowPlain: false });
 
   // 5. audit
   const last = await db.audit_log.orderBy('seq').last();
-  const row = await buildAuditRow({ last, time: opts.clock.nowIso(), userId: 'system', deviceId: opts.deviceId, action: 'vault_encrypted', entity: 'database', after: { counts, checkpoint_id: checkpoint.id ?? null, resumed } });
+  const row = await buildAuditRow({ last, time: opts.clock.nowIso(), userId: 'system', deviceId: opts.deviceId, action: 'vault_encrypted', entity: 'database', after: { counts, photos: photosEncrypted, checkpoint_id: checkpoint.id ?? null, resumed } });
   await db.audit_log.add(row);
 
-  return { checkpointId: checkpoint.id!, resumed, counts, verified: true };
+  return { checkpointId: checkpoint.id!, resumed, counts, photosEncrypted, verified: true };
 }

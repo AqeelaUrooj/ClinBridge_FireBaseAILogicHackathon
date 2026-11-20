@@ -199,6 +199,7 @@ describe('datasets stay apart', () => {
     await expect(createVault(live, PUBLIC_PRACTICE_PASSPHRASE, { iterations: FAST })).rejects.toThrow(/public practice passphrase/);
     await expect(createVault(live, 'short', { iterations: FAST })).rejects.toThrow(/12 characters/);
     await expect(createVault(live, 'violet harbour lantern seventeen', { iterations: FAST, recoveryCode: PUBLIC_PRACTICE_RECOVERY_CODE })).rejects.toThrow(/random recovery key/);
+    await expect(createVault(live, 'violet harbour lantern seventeen', { iterations: FAST, recoveryCode: PUBLIC_PRACTICE_RECOVERY_CODE.toLowerCase() })).rejects.toThrow();
     const code = await createVault(live, 'violet harbour lantern seventeen', { iterations: FAST });
     expect(code).not.toBe(PUBLIC_PRACTICE_RECOVERY_CODE);
     await expect(unlockVault(live, { passphrase: PUBLIC_PRACTICE_PASSPHRASE })).rejects.toBeInstanceOf(WrongSecretError);

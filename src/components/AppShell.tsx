@@ -7,7 +7,7 @@ import { PHASE_LABEL } from '../lib/phase';
 
 /** Header: always visible, shows mode, snapshot age, laptop and the signed-in person (Stitch status rail). */
 export function ModeBanner() {
-  const { phase, event, snapshot, clock, dataset, db } = useApp();
+  const { phase, event, snapshot, clock, dataset, db, vault } = useApp();
   const { user, lock } = useSession();
   const navigate = useNavigate();
   const clearedBy = useLiveQuery(async () => (event?.cleared_by ? (await db.practitioner.get(event.cleared_by))?.name : undefined), [db, event?.cleared_by]);
@@ -53,6 +53,11 @@ export function ModeBanner() {
       {dataset === 'practice' && (
         <div className="h-6 flex items-center gap-space-sm px-space-md font-label-uppercase text-[10px] tracking-wider text-white" style={{ background: 'repeating-linear-gradient(135deg,#4a6078 0 14px,#3e5468 14px 28px)' }}>
           <Icon name="school" className="text-[14px]" />PRACTICE · FAKE PATIENTS ONLY · NOT A CLINICAL RECORD
+        </div>
+      )}
+      {vault === 'plain-data' && (
+        <div role="alert" className="min-h-6 flex items-center gap-space-sm px-space-md font-label-uppercase text-[10px] tracking-wider bg-clinical-red text-white">
+          <Icon name="lock_open" className="text-[14px]" />RECORDS ON THIS LAPTOP ARE NOT ENCRYPTED · ENCRYPTING THEM NEEDS APPROVAL (P-04) · KEEP FULL-DISK ENCRYPTION ON
         </div>
       )}
     </header>

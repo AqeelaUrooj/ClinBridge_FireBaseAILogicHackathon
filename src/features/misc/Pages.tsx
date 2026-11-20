@@ -57,26 +57,16 @@ export function AlertsPage() {
 }
 
 export function MorePage() {
-  const { db, dataset } = useApp();
+  const { db, dataset, vault, lockRecords } = useApp();
   const { user, signOut } = useSession();
   const navigate = useNavigate();
   const [confirmReset, setConfirmReset] = useState(false);
   const audit = useLiveQuery(async () => verifyChain(await db.audit_log.orderBy('seq').toArray()), [db]);
   const backups = useLiveQuery(async () => {
     const b = backupDb();
-    try { return (await b.backups.where('db_name').equals(db.name).toArray()).map(({ id, from_version, to_version, taken_at }) => ({ id, from_version, to_version, taken_at })); }
+    try { return (await b.backups.where('db_name').equals(db.name).toArray()).map(({ id, from_version, to_version, taken_at, kind, tables }) => ({ id, from_version, to_version, taken_at, kind, encrypted: Object.entries(tables).every(([t, rows]) => t === 'key_store' || (rows as { _enc?: unknown }[]).every((r) => r._enc !== undefined)) })); }
     finally { b.close(); }
   }, [db]);
-  async function download(id: number) {
-    const b = backupDb();
-    const row = await b.backups.get(id);
-    b.close();
-    if (!row) return;
-    const url = URL.createObjectURL(new Blob([JSON.stringify(row, null, 2)], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = `${row.db_name}-v${row.from_version}-backup.json`; a.click();
-    URL.revokeObjectURL(url);
-  }
   return (
     <>
       <PageTitle>More</PageTitle>
@@ -107,14 +97,26 @@ export function MorePage() {
           <li>Vital-sign warning ranges: {CLINICAL_WARNINGS.review.approved ? 'approved' : 'drafts, not approved'}</li>
         </ul>
       </Card>
+      <Card className="flex flex-col gap-space-sm">
+        <h2 className="font-headline-sm text-headline-sm text-primary">Records encryption</h2>
+        {vault === 'unlocked' ? (
+          <>
+            <p className="text-on-surface-variant"><Icon name="lock" className="text-sync-green" /> Records on this laptop are encrypted{dataset === 'practice' ? ' with the public practice passphrase (no secrecy, fake data only)' : ''}. Locking needs the unit passphrase to open them again; everyone is signed out.</p>
+            <Button variant="secondary" className="self-start" onClick={lockRecords}><Icon name="lock" />Lock records now</Button>
+          </>
+        ) : (
+          <p className="text-clinical-red font-semibold"><Icon name="lock_open" /> Records on this laptop are not encrypted. Encrypting existing Real records needs approval (P-04). Keep full-disk encryption on.</p>
+        )}
+      </Card>
       {backups && backups.length > 0 && (
         <Card className="flex flex-col gap-space-sm">
-          <h2 className="font-headline-sm text-headline-sm text-primary">Safety copies made before app updates</h2>
+          <h2 className="font-headline-sm text-headline-sm text-primary">Safety copies on this laptop</h2>
+          <p className="text-on-surface-variant font-body-sm">Made before app updates and before encryption, so nothing is lost if a step fails. They stay on this laptop; removing them needs approval (P-04 cleanup). For a copy to keep elsewhere, an admin makes an encrypted backup file.</p>
           <ul className="flex flex-col gap-1">
             {backups.map((b) => (
               <li key={b.id} className="flex items-center gap-space-md">
-                <span className="flex-1 font-body-md">Version {b.from_version} → {b.to_version} · {b.taken_at.slice(0, 16).replace('T', ' ')}</span>
-                <Button variant="secondary" onClick={() => download(b.id!)}><Icon name="download" />Save copy</Button>
+                <span className="flex-1 font-body-md">{b.kind === 'pre-encryption' ? 'Before encryption' : `Version ${b.from_version} → ${b.to_version}`} · {b.taken_at.slice(0, 16).replace('T', ' ')}</span>
+                {b.encrypted ? <span className="text-sync-green font-body-sm">encrypted</span> : <span className="text-clinical-red font-body-sm font-semibold">not encrypted</span>}
               </li>
             ))}
           </ul>

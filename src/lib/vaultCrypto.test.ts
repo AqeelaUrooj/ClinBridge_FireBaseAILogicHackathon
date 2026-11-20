@@ -31,7 +31,7 @@ describe('vault keys', () => {
     expect(stored).not.toContain(PASS);
     expect(stored).not.toContain(v.recoveryCode.replace(/-/g, ''));
     // AES-KW output for a 32-byte key is 40 bytes (key + 8-byte integrity block).
-    expect(fromB64u(v.keys.wrapped_key_pin.split('$')[4]).length).toBe(40);
+    expect(fromB64u(v.keys.wrapped_key_pin.split('$')[4]!).length).toBe(40);
   });
 
   it('two vaults from the same passphrase get different salts and different data keys', async () => {
@@ -62,8 +62,8 @@ describe('vault keys', () => {
   it('a tampered wrapped key is refused', async () => {
     const v = await createVaultKeys(PASS, { iterations: FAST });
     const parts = v.keys.wrapped_key_pin.split('$');
-    const w = fromB64u(parts[4]);
-    w[5] ^= 1;
+    const w = fromB64u(parts[4]!);
+    w[5] = w[5]! ^ 1;
     parts[4] = btoa(String.fromCharCode(...w)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     await expect(unlockWithPassphrase({ wrapped_key_pin: parts.join('$') }, PASS)).rejects.toBeInstanceOf(WrongSecretError);
   });
@@ -119,10 +119,10 @@ describe('authenticated encryption', () => {
     const { key } = await createVaultKeys(PASS, { iterations: FAST });
     const s = await sealJson(key, { dose: 5 }, 'med_admin|m-1');
     const ct = new Uint8Array(s.ct.slice(0));
-    ct[0] ^= 1;
+    ct[0] = ct[0]! ^ 1;
     await expect(openBytes(key, { ...s, ct: ct.buffer }, 'med_admin|m-1')).rejects.toBeInstanceOf(DecryptError);
     const iv = new Uint8Array(s.iv);
-    iv[0] ^= 1;
+    iv[0] = iv[0]! ^ 1;
     await expect(openBytes(key, { ...s, iv }, 'med_admin|m-1')).rejects.toBeInstanceOf(DecryptError);
     await expect(openBytes(key, s, 'med_admin|m-2')).rejects.toBeInstanceOf(DecryptError);
     expect(await openJson(key, s, 'med_admin|m-1')).toEqual({ dose: 5 });

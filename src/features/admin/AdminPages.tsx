@@ -7,11 +7,15 @@ import { addStaff, clearNetwork, declareDowntime, endDowntime, firstTimeSetup, i
 import type { Role } from '../../db/schema';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
+import { SECURITY_POLICY } from '../../config/securityPolicy';
 import { PHASE_LABEL } from '../../lib/phase';
 import { dateTimeLabel } from '../../lib/time';
 import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { MedIllustration } from '../../components/MedIllustration';
 import { fieldCls, labelCls } from '../charting/TwoStepEditor';
+import { PassphraseHelp, RecoveryCodeConfirm } from '../auth/UnlockVault';
+import { auditVaultEvent, createVault, isUnlocked } from '../../db/vault';
+import { checkPassphrase, newRecoveryCode } from '../../lib/vaultCrypto';
 
 const Err = ({ e }: { e: string | null }) => (e ? <p role="alert" className="text-error font-body-md">{e}</p> : null);
 const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
@@ -328,6 +332,14 @@ export function SettingsPage() {
         </ul>
       </Card>
       <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Security settings</h2>
+        <p className="text-on-surface-variant mb-space-sm">Prototype values. Hospital IT/security must review them before real use.</p>
+        <ul>
+          {item('Records lock after no use', `${SECURITY_POLICY.vaultIdleLockMinutes} minutes (unit passphrase needed again)`, SECURITY_POLICY.approved)}
+          {item('Passphrase key derivation', `PBKDF2-SHA-256, ${SECURITY_POLICY.pbkdf2Iterations.toLocaleString('en-US')} iterations; AES-256-GCM records`, SECURITY_POLICY.approved)}
+        </ul>
+      </Card>
+      <Card>
         <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">App</h2>
         <ul className="font-body-md list-disc pl-6">
           <li>Auto-lock after 5 minutes without use; 5 wrong PINs lock sign-in for 1 minute.</li>
@@ -341,27 +353,75 @@ export function SettingsPage() {
 /* ------------------------------ First-time setup (Real records) ------------------------------ */
 
 export function SetupPage() {
-  const { db, clock, dataset } = useApp();
+  const { db, clock, dataset, vaultCreated } = useApp();
   const navigate = useNavigate();
   const staffCount = useLiveQuery(() => db.practitioner.count(), [db]);
-  const [f, setF] = useState({ name: '', initials: '', pin: '', deviceLabel: '', unit: '' });
+  const [f, setF] = useState({ name: '', initials: '', pin: '', deviceLabel: '', unit: '', pass1: '', pass2: '' });
+  const [code, setCode] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (dataset !== 'live') return <EmptyState icon="info" text="Setup is only for Real records. Practice is ready to use." />;
   if (staffCount === undefined) return <p role="status">Loading…</p>;
   if (staffCount > 0) return <EmptyState icon="task_alt" text="Setup is done. An admin can add staff in Admin → Staff." />;
   const field = (k: keyof typeof f, label: string, type = 'text') => (
     <label className="flex flex-col gap-1"><span className={labelCls}>{label}</span>
-      <input type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className={fieldCls()} aria-label={label} {...(type === 'password' ? { inputMode: 'numeric' as const, maxLength: 4 } : {})} /></label>
+      <input type={type} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} className={fieldCls()} aria-label={label} autoComplete="off" {...(k === 'pin' ? { inputMode: 'numeric' as const, maxLength: 4 } : {})} /></label>
   );
+
+  // Step 1 checks everything BEFORE a vault exists, so a typo never leaves a half-made setup.
+  const check = (): string | null => {
+    if (!f.name.trim() || !/^[A-Za-z]{1,3}$/.test(f.initials.trim())) return 'Enter a name and 1 to 3 initials.';
+    if (!/^\d{4}$/.test(f.pin)) return 'PIN must be 4 digits.';
+    if (!f.deviceLabel.trim() || !f.unit.trim()) return 'Enter the laptop name and the unit.';
+    if (f.pass1 !== f.pass2) return 'The two unit passphrases are not the same.';
+    const s = checkPassphrase(f.pass1);
+    return s.ok ? null : s.problems.join(' ');
+  };
+
+  const finish = async () => {
+    if (!code) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (!isUnlocked(db)) await createVault(db, f.pass1, { recoveryCode: code });
+      const admin = await firstTimeSetup(db, clock, f);
+      const device = (await db.device.toArray())[0]?.id ?? 'unregistered';
+      await auditVaultEvent(db, clock, device, 'vault_created', { dataset: 'live', by: admin.id });
+      setF({ name: '', initials: '', pin: '', deviceLabel: '', unit: '', pass1: '', pass2: '' });
+      setCode(null);
+      vaultCreated();
+      navigate('/sign-in');
+    } catch (e) {
+      setError(msg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Card className="flex flex-col gap-space-md max-w-2xl">
       <h2 className="font-headline-sm text-headline-sm text-primary">First-time setup</h2>
-      <p className="text-on-surface-variant">Create the first admin and register this laptop. Then load the hospital patient list in Admin → Patient list.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-        {field('name', 'Admin name')}{field('initials', 'Initials')}{field('pin', '4-digit PIN', 'password')}
-        {field('deviceLabel', 'Laptop name')}{field('unit', 'Unit')}
-      </div>
-      <Button className="self-start" onClick={async () => { setError(null); try { await firstTimeSetup(db, clock, f); navigate('/sign-in'); } catch (e) { setError(msg(e)); } }}>Create admin</Button>
+      {!code ? (
+        <>
+          <p className="text-on-surface-variant">Create the first admin, register this laptop and set the unit passphrase that encrypts the records on it. Then load the hospital patient list in Admin → Patient list.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+            {field('name', 'Admin name')}{field('initials', 'Initials')}{field('pin', '4-digit PIN', 'password')}
+            {field('deviceLabel', 'Laptop name')}{field('unit', 'Unit')}
+          </div>
+          <h3 className="font-headline-sm text-primary">Unit passphrase</h3>
+          <p className="text-on-surface-variant font-body-sm">Typed once after each restart or lock to open the records. PINs still say who is acting. ClinBridge never stores the passphrase.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+            {field('pass1', 'Unit passphrase', 'password')}{field('pass2', 'Unit passphrase again', 'password')}
+          </div>
+          <PassphraseHelp />
+          <Button className="self-start" onClick={() => { const e = check(); setError(e); if (!e) setCode(newRecoveryCode()); }}>Next: recovery key</Button>
+        </>
+      ) : (
+        <>
+          <RecoveryCodeConfirm code={code} onConfirmed={() => void finish()} confirmLabel={busy ? 'Setting up…' : 'Create admin and encrypt'} />
+          <Button variant="ghost" className="self-start" disabled={busy} onClick={() => setCode(null)}>Back</Button>
+        </>
+      )}
       <Err e={error} />
     </Card>
   );
