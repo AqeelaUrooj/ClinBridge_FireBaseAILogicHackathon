@@ -38,3 +38,16 @@ describe('FHIR R4 export', () => {
     expect(errs).toMatch(/not a dateTime/);
   });
 });
+
+describe('narrative (dom-6)', () => {
+  it('is "generated" XHTML restating only the resource fields, with HTML escaped', async () => {
+    const { narrative } = await import('./fhir');
+    const n = narrative({ resourceType: 'Observation', id: 'o-1', status: 'final', code: { text: 'Pulse <check> & "go"' }, valueQuantity: { value: 83, unit: '/min' }, meta: { tag: [] } });
+    expect(n.status).toBe('generated');
+    expect(n.div.startsWith('<div xmlns="http://www.w3.org/1999/xhtml">')).toBe(true);
+    expect(n.div).toContain('Pulse &lt;check&gt; &amp; &quot;go&quot;');
+    expect(n.div).toContain('83 /min');
+    expect(n.div).not.toContain('meta');
+    expect(n.div).not.toMatch(/<check>/);
+  });
+});
