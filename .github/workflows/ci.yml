@@ -53,7 +53,7 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          node -e "const r=require('./fhir-validation.json');const it=(r.issue||[]).concat(...(r.entry||[]).map(e=>e.resource&&e.resource.issue||[]));const c={};for(const i of it)c[i.severity]=(c[i.severity]||0)+1;console.log('ISSUE COUNTS',JSON.stringify(c));" || true
+          node scripts/fhir-summary.mjs fhir-validation.json || true
           grep -E "Success|Error|errors" fhir-validation.txt | tail -5 || true
       - uses: actions/upload-artifact@v4
         if: always()
