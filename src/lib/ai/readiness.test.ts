@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Firebase init itself is covered in service.test.ts; here it is stubbed so no SDK background work (heartbeat in
+// IndexedDB) outlives the test environment.
+vi.mock('./firebase', () => ({ getFirebaseAi: vi.fn(async () => ({})) }));
+
 import { checkReadiness, chromeMajor } from './readiness';
 import type { AiConfig } from './config';
 

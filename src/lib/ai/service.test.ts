@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * AI service tests against the REAL Firebase JS SDK 13.4.0 (browser build), with:
@@ -53,6 +53,13 @@ beforeEach(() => {
     return new Response(JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: ANSWER }] }, finishReason: 'STOP', index: 0 }] }), { status: 200, headers: { 'content-type': 'application/json' } });
   });
   globalThis.fetch = fetchSpy as unknown as typeof fetch;
+});
+
+afterAll(async () => {
+  // Let the SDK finish its background IndexedDB work (heartbeat) before the test environment is torn down.
+  const { getApps, deleteApp } = await import('firebase/app');
+  await Promise.all(getApps().map((a) => deleteApp(a)));
+  await new Promise((r) => setTimeout(r, 200));
 });
 
 afterEach(() => {
