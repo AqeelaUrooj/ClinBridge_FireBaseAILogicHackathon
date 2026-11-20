@@ -63,7 +63,10 @@ export async function setStaffActive(db: DowntimeDB, clock: Clock, actor: Actor,
 export async function resetStaffPin(db: DowntimeDB, clock: Clock, actor: Actor, id: string, pin: string): Promise<void> {
   await requireAdmin(db, actor);
   if (!isValidPinFormat(pin)) throw new EntryWriteError('PIN must be 4 digits.');
-  if (!(await db.practitioner.get(id))) throw new EntryWriteError('Staff member not found.');
+  const target = await db.practitioner.get(id);
+  if (!target) throw new EntryWriteError('Staff member not found.');
+  // Accounts from an enrollment file need the in-person activation step (F1), not a plain PIN reset.
+  if (target.pin_hash.startsWith('pending$enrollment$')) throw new EntryWriteError('This account needs activation: check the person’s identity in person, then use Activate.');
   const pin_hash = await hashPin(pin);
   const row = await audit(db, clock, actor, 'staff_pin_reset', `practitioner/${id}`, { pin_reset: true }); // never the PIN or hash
   await commit(db, row, () => db.practitioner.update(id, { pin_hash }));

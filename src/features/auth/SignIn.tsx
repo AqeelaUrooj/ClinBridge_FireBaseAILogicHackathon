@@ -7,6 +7,7 @@ import { useApp, useSession } from '../../state/app';
 import { PRACTICE_PIN } from '../../db/seed';
 import { Button, Icon } from '../../components/ui';
 import { PinPad } from './PinPad';
+import { isPendingActivation } from '../../db/enrollment';
 import { ModeBanner } from '../../components/AppShell';
 
 const MAX_TRIES = 5;
@@ -113,11 +114,11 @@ export function SignIn() {
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-space-sm">
                   {staff.map((s) => (
-                    <button key={s.id} onClick={() => setSelected(s)} className="min-h-16 flex items-center gap-2 rounded-lg border border-card-border bg-surface-container-lowest hover:bg-surface-container-low px-3 text-left">
+                    <button key={s.id} onClick={() => setSelected(s)} disabled={isPendingActivation(s)} className="min-h-16 flex items-center gap-2 rounded-lg border border-card-border bg-surface-container-lowest hover:bg-surface-container-low px-3 text-left disabled:opacity-60 disabled:cursor-not-allowed">
                       <span className="w-9 h-9 rounded-full bg-secondary-fixed text-on-secondary-fixed grid place-items-center font-bold shrink-0">{s.initials}</span>
                       <span className="leading-tight">
                         <span className="block font-body-lg text-body-lg text-primary">{s.name}</span>
-                        <span className="block font-body-sm text-body-sm text-secondary">{s.role === 'admin' ? 'Admin' : s.role}</span>
+                        <span className="block font-body-sm text-body-sm text-secondary">{s.role === 'admin' ? 'Admin' : s.role}{isPendingActivation(s) ? ' · Needs activation by an admin' : ''}</span>
                       </span>
                     </button>
                   ))}

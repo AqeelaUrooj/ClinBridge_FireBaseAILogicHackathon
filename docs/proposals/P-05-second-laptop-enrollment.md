@@ -1,6 +1,6 @@
 # P-05 — Second-laptop enrollment
 
-Status: **E1 architecture approved 20 Nov 2026, with credential transfer revised.** Not implemented. **The credential-activation choice below needs approval before any code.**
+Status: **F1 approved 20 Nov 2026 and implemented** on branch `feat/enrollment` (synthetic data only). Original options kept below for the record.
 
 ## Fixed by the owner's decision
 
@@ -10,7 +10,7 @@ Status: **E1 architecture approved 20 Nov 2026, with credential transfer revised
 - Laptop 2 makes its **own** data key and recovery secret (P-04). The unit passphrase may be the same words; the wrap uses laptop 2's own salt.
 - The patient list is imported separately with the existing patient-list import.
 - Audit rows: `enrollment_created` on laptop 1, `enrollment_completed` and each `credential_activated` on laptop 2.
-- Device ids are random UUID-based, so two laptops never share one. That keeps the recovery merge key (`device_id` + `counter`) unique.
+- **Device ids are made on laptop 2 at import, never taken from the file** (random UUID-based). Two laptops never share one, even if the same file is used twice, so the recovery merge key (`device_id` + `counter`) stays unique.
 
 ## The problem: activating staff without contacting laptop 1 or a server
 
@@ -54,3 +54,37 @@ Anyone picks a name and sets a PIN. **Not acceptable:** it weakens authenticatio
 ## Decision needed
 
 **Pick F1 (admin-supervised, recommended), F2 (one-time codes), or both** (F1 as the default, F2 for units with many staff). Neither moves a reusable credential between laptops. Implementation waits for this answer.
+
+## Implementation (F1)
+
+| Step | Where | What happens |
+|---|---|---|
+| Make the file | Laptop 1 → Admin → Laptops → "Enroll another laptop" | Admin only. One-time enrollment passphrase: strength rules apply, and the unit passphrase is refused. AES-256-GCM with a PBKDF2-SHA-256 key (600k). The header is associated data. The file expires 24 h after creation (prototype, not approved). Shows a 16-character **fingerprint**. Audit `enrollment_created`. |
+| Check the file | Laptop 2 → first-time setup → "Join this unit" | Shows the fingerprint computed from the file **before** the passphrase is typed. "Open file" stays disabled until the admin ticks that it matches laptop 1's screen, seen in person. |
+| Open | Laptop 2 | Wrong passphrase, damaged or edited file, expired file, or a file carrying credentials: refused, nothing created. |
+| Join | Laptop 2 | The admin picks themself (must be an active admin in the file) and sets a **new** PIN. Then a new laptop name and their **own** unit passphrase, and the new recovery key is confirmed before anything is written. Then: own vault, new device id, staff rows, all in one transaction. Audit `enrollment_completed` (enrollment id, fingerprint, source laptop, counts). |
+| Activate staff | Laptop 2 → Admin → Staff → "Activate" | Accounts show "Needs activation" and can't sign in. They are disabled on the sign-in screen, and no PIN from laptop 1 works. The admin ticks "I checked this person's identity in person". The person types a new PIN twice. Audit `credential_activated` (who, verified by). "New PIN" is refused for these accounts, so this step can't be skipped. |
+
+Tests: `src/db/enrollment.test.ts` (8) and `e2e/enrollment.spec.ts` (two fresh browsers).
+
+## Can laptop 2 tell the file really came from an authorised admin?
+
+**Only partly, and we don't claim more.**
+- AES-GCM with the enrollment passphrase proves two things: the file was made by **someone who knew the passphrase**, and it **wasn't changed** since. It does **not** prove who that person was. Anyone who learns the passphrase can make a valid-looking file.
+- What actually ties the file to an authorised admin is the **process**:
+  1. The passphrase is handed over in person.
+  2. Both admins compare the fingerprint on the two screens.
+  3. The receiving admin must be an admin listed in the file and present at laptop 2.
+- What a forged file could do: the person importing it becomes admin of an **empty** laptop. Anyone with an empty laptop can already get that through first-time setup. A forged file can't reach laptop 1's records or keys, and every other account still needs an in-person activation on laptop 2. The real risk is a **wrong staff list** (fake names or roles). The fingerprint check and the activation step are the controls for that.
+- A stronger guarantee would need a **signature with a key laptop 2 already trusts**: a per-unit signing key, its public part installed on every laptop in advance, or its fingerprint read out by IT. That needs key management the hospital owns. It is listed for the security review, not built.
+
+## Reuse of a file: limits without central coordination
+
+- Laptop 2 refuses a file if it is already set up, so the same file can't be used twice on one laptop.
+- The file **cannot be made single-use across laptops offline**: laptop 1 never hears that it was used. A copied file could set up a third laptop until it expires.
+- Mitigations:
+  - short expiry (24 h, judged by laptop 2's own clock, which may be wrong);
+  - a one-time passphrase handed over in person;
+  - deleting the file after use;
+  - every joined laptop gets its own device id.
+- Detection after the fact: the enrollment id is in each joined laptop's audit log (`enrollment_completed`), and laptop 1's log has `enrollment_created`. Comparing the logs during readiness or recovery shows a file used more than once. There is no screen for that comparison yet.

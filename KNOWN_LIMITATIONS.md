@@ -33,6 +33,10 @@
 - **No live EHR connection.** Export is a file.
 - **Recovery uses rules only.** The cloud second look / "recheck" needs Firebase. Practice data shows simulated second-look results, labelled as such.
 - **Settings are read only.** Clinical settings live in `src/config/clinicalPolicy.ts` until an approved admin settings store exists (needs a schema decision).
-- **Device registration:** Practice uses the seed laptops; Real records registers one laptop at first-time setup. There is no way yet to add a second laptop; options are in `docs/proposals/P-05-second-laptop-enrollment.md` (waits for approval).
+- **Second laptop (F1):**
+  - The enrollment file is protected by a passphrase. It proves knowledge of that passphrase, not the sender's identity; the in-person handover and the fingerprint check are the identity controls.
+  - Reuse across laptops can't be stopped offline, only limited (24 h expiry by the receiving laptop's clock) and detected later through the enrollment id in the audit logs.
+  - Staff changes after enrollment must be repeated on each laptop (no sync, by design).
+  - Details are in P-05.
 - **Storage full:** when the laptop runs out of browser storage, the save is refused with a clear message to use paper. The app does not free space by itself.
 - **Safety copy restore** exists in code (`restoreSafetyCopy`) and is tested, but there is no screen for it. Only IT should use it, into an empty database.
