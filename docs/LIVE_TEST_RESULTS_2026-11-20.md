@@ -94,5 +94,5 @@ Pending-request cancellation on System Down was not re-run live (it needs a slow
 
 ## Follow-ups for the owner
 
-- After testing, delete the debug token in Firebase → App Check → Apps → Manage debug tokens (it was briefly visible in a console log during troubleshooting).
+- ~~Delete the exposed debug token~~ **Done 20 Nov 2026:** revoked in Firebase ("No tokens registered") and removed from the PC's browser storage, so the SDK makes a fresh token next time. The reCAPTCHA Enterprise site key was not touched.
 - A "Review this one as a draft" Practice draft (Tom Hale, 13:22) was left unconfirmed in the Practice data.

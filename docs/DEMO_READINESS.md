@@ -12,6 +12,10 @@ Hybrid AI with Firebase AI Logic is built (PR #7). **Live status (20 Nov 2026, o
 
 It is **not** a completed hybrid-AI demonstration until on-device inference runs on compatible hardware (Demo B below). The demo needs a prepared laptop and the owner's Firebase config. Everything else (offline charting, encryption, recovery, FHIR export) works without AI, by design.
 
+**Presenting:** follow `docs/DEMO_WALKTHROUGH.md` (10 steps, each marked live / automated / hardware-blocked). Gemini Nano on another laptop: `docs/GEMINI_NANO_SECOND_LAPTOP.md`.
+
+**App Check debug token:** the token used in live testing was revoked on 20 Nov 2026 (it was briefly exposed in a console log). Register a fresh one for each demo session and revoke it afterwards (walkthrough, "Before the demo").
+
 ## Demo instructions (synthetic data only)
 
 **Before the demo (network on):**
