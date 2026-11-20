@@ -1,7 +1,7 @@
 # Known limitations
 
 - **Not for real patients yet.** Practice mode only until clinical review (D-17) and security work below are done.
-- **No encryption at rest yet.** Data in IndexedDB is not encrypted (AES-GCM + `key_store` planned for Phase 8). Laptop disk encryption is required meanwhile.
+- **No encryption at rest yet.** Data in IndexedDB, the photo store, the safety copies and exported files are not encrypted. The design is in `docs/proposals/P-04-encryption-at-rest.md` and waits for approval. Laptop disk encryption is required meanwhile.
 - **Session is in memory.** Reloading the page signs you out (records stay saved). This is on purpose for shared laptops.
 - **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
 - **No Overdue status** for medicines until the hospital time window is given (D-18).
@@ -21,8 +21,10 @@
 - **Photos are not encrypted** and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.
 - **The safety copy before a DB upgrade** is a local copy on the same laptop. It is not disaster recovery or a backup system.
-- **FHIR export is checked by our own structural validator**, not the official HL7 validator. Some codes are text-only (see D-37). Loading it into an EHR needs the hospital EHR team.
+- **FHIR export passes the official HL7 validator (R4) with 0 errors**, but that is not EHR interoperability. Medicines, allergies, fluids, risk scores, most labs and notes are free text with no standard code; the route of a held or refused dose is not exported. Full list in docs/FHIR_VALIDATION.md. Loading it into an EHR needs the hospital EHR team.
 - **No live EHR connection.** Export is a file.
 - **Recovery uses rules only.** The cloud second look / "recheck" needs Firebase. Practice data shows simulated second-look results, labelled as such.
 - **Settings are read only.** Clinical settings live in `src/config/clinicalPolicy.ts` until an approved admin settings store exists (needs a schema decision).
-- **Device registration:** Practice uses the seed laptops; Real records registers one laptop at first-time setup. There is no screen yet to register a second laptop.
+- **Device registration:** Practice uses the seed laptops; Real records registers one laptop at first-time setup. There is no way yet to add a second laptop; options are in `docs/proposals/P-05-second-laptop-enrollment.md` (waits for approval).
+- **Storage full:** when the laptop runs out of browser storage, the save is refused with a clear message to use paper. The app does not free space by itself.
+- **Safety copy restore** exists in code (`restoreSafetyCopy`) and is tested, but there is no screen for it. Only IT should use it, into an empty database.
