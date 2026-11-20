@@ -9,7 +9,7 @@ Run: 20 Nov 2026 (round 6), local (Linux, Node 22, Chrome) on branch `feat/relia
 | `npm test` (Vitest) | **82 pass, 1 skipped** (16 files + 1 skipped). The skipped file only writes the export for CI. |
 | `npm run build` | Pass (PWA, 22 files precached incl. illustrations) |
 | `npm run test:e2e` (Playwright) | **24 / 24 pass** |
-| HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors** (was 10), 264 warnings, 418 information. See docs/FHIR_VALIDATION.md |
+| HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors** (was 10), 254 warnings (was 264), 418 information. See docs/FHIR_VALIDATION.md |
 
 ## Round 6 additions
 
