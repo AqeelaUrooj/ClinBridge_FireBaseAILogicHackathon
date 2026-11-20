@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 7)
+Last updated: 20 Nov 2026 (round 8)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -12,7 +12,7 @@ Last updated: 20 Nov 2026 (round 7)
 | 5 | Photo of paper form (on-device AI) | **Manual capture done**; AI not integrated (see docs/AI_INTEGRATION.md) |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | **Done** except practice compare (needs AI) |
-| 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest built for Practice and new Real-records setups (PR #4); Real-records migration and cleanup wait for approval; second laptop waits for P-05 |
+| 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest merged (PR #4). F1 second-laptop enrollment (PR #5). Cleanup workflow on synthetic data (PR #6). Real-records migration and Real-records cleanup not approved. Not deployed |
 
 ## Phase 2 slice — working end to end
 
@@ -34,6 +34,14 @@ Also working:
 - High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride): red bar, and Save stays locked until a **different** eligible nurse picks their name and enters their own PIN. The database layer refuses the save too, so the rule cannot be skipped from the screen.
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
+
+## Round 8
+
+- **PR #4 merged** (`ff8a11a`) after the review fixes: every plain index field is authenticated (format v2), with v1 data still readable and upgraded on unlock; docs synced.
+- **F1 second-laptop enrollment** (PR #5): encrypted staff-only file, fingerprint check, own vault and device id on laptop 2, in-person activation.
+- **Plain safety-copy cleanup** (PR #6): six checks, including a fresh backup and a restore test. Works on Practice; refused for Real records.
+- **Real-records migration evidence pack:** P-06 (not approved).
+- Required external reviewer roles (`docs/SECURITY_REVIEW.md`); demo readiness (`docs/DEMO_READINESS.md`).
 
 ## Round 7 (PR #4, branch `feat/encryption`)
 
@@ -90,12 +98,12 @@ Also working:
 
 ## Waiting on you
 
-- **P-04 cleanup** and **Real-records migration** approvals (evidence first), hospital IT/security review (docs/SECURITY_REVIEW.md).
+- **Real-records cleanup** (P-04) and **Real-records migration** (P-06) approvals; hospital IT/security review (docs/SECURITY_REVIEW.md); Firebase config + Chrome 148+ test laptop for AI.
 - **Final body map region model** (P-01). Then `note.body_site` (P-03).
 - **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
 ## Next
 
-- F1 second-laptop enrollment (approved), cleanup workflow on synthetic data (execution on Real records not approved), Real-records migration evidence pack.
+- AI integration (blocked on Firebase config and a Chrome 148+ test laptop; see DEMO_READINESS).
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
 - On-device AI once Firebase config and a desktop Chrome 148+ test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.

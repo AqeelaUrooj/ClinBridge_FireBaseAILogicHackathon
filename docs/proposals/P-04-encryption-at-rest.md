@@ -138,19 +138,22 @@ Status: **decisions made 20 Nov 2026 (owner). Reversible parts implemented on br
 4. Old plain JSON safety-copy downloads made with earlier builds. The download button is removed in this PR, but files saved before are outside the app.
 5. Deleted rows' old bytes inside the browser's storage files until the browser compacts them, and old SSD blocks. Browsers give no secure-erase API.
 
-## Proposal: cleanup step (needs approval, irreversible)
+## Cleanup step: implemented for synthetic data, NOT approved for Real records
 
-On a dataset whose vault is complete, an admin action **"Remove plain safety copies"** would:
-1. Check that the database has no plain rows (`rawPlainRowCount = 0`), that the audit chain is valid, and that every photo is sealed.
-2. Require a **new encrypted backup file made in the same session** and successfully opened (test-decrypted) with its passphrase. That way the checkpoint is never the only recoverable copy.
-3. Delete only `downtimekit-backups` rows for this dataset that are not encrypted (`pre-encryption` and old `schema-upgrade` copies). An audit row `plain_copies_removed` records counts and the backup's fingerprint.
-4. Say plainly on screen: this removes the copies from the app's storage; it can't guarantee the disk is wiped, and it can't reach files already downloaded.
+`src/db/plainCleanup.ts`, with Admin → Backup → "Remove plain safety copies". Checks before anything is removed:
+1. the database is fully encrypted (v2, no plain rows, photos sealed);
+2. the audit chain is valid;
+3. a **fresh encrypted backup** is made and downloaded;
+4. that backup opens with its passphrase and every table matches;
+5. **restore test:** the backup is restored into a temporary database with its own key, compared table by table, then deleted;
+6. a final integrity check.
 
-## Proposal: Real-records migration (needs approval, irreversible)
+Then the admin must type `REMOVE PLAIN COPIES`, with a token valid for 10 minutes and single use. Only unencrypted safety copies of that database are deleted, the deletion is verified, and the audit row `plain_copies_removed` is written. The screen states that this is not secure physical erasure.
 
-Same staged migration as Practice, started only by an admin from Admin → Settings, after:
-- typing a new unit passphrase,
-- confirming the new recovery key,
-- making an encrypted backup first.
+**Real records:** the checks can run, but deletion is refused in code and the button stays off. That needs separate, explicit approval.
 
-The checkpoint stays until the cleanup above is approved separately.
+Tests: `plainCleanup.test.ts` (5) and `e2e/cleanup.spec.ts`.
+
+## Real-records migration
+
+See **P-06** (`docs/proposals/P-06-real-records-migration.md`): final algorithm, rollback, evidence, risks, compatibility, review plan. Not approved; not enabled.

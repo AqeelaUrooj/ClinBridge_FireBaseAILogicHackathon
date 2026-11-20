@@ -48,7 +48,13 @@ jobs:
       - name: Validate (R4 4.0.1)
         run: |
           java -jar validator_cli.jar -version | head -3 || true
-          java -jar validator_cli.jar fhir-bundle.json -version 4.0.1 -output fhir-validation.json -html-output fhir-validation.html | tee fhir-validation.txt
+          # tx.fhir.org (HL7's terminology server) is sometimes unreachable: one retry after 60 s. If both runs fail
+          # the job fails; terminology checks are never switched off silently.
+          for attempt in 1 2; do
+            java -jar validator_cli.jar fhir-bundle.json -version 4.0.1 -output fhir-validation.json -html-output fhir-validation.html | tee fhir-validation.txt
+            [ -s fhir-validation.json ] && break
+            echo "Validator produced no result (attempt $attempt)"; sleep 60
+          done
       - name: Summary
         if: always()
         run: |

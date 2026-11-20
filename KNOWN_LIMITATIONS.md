@@ -5,7 +5,7 @@
   - **Index fields are readable but authenticated** in every table: ids, `patient.mrn`, record times, statuses, links between records. They can be read from a copied profile, but changing one is detected. Names, values, notes, staff names and PIN hashes are encrypted.
   - **Practice gives no secrecy:** its passphrase and recovery key are public on purpose (fake data only).
   - **Existing plain Real records are not encrypted.** A database that held Real records before this build stays plain (red banner) until the migration is approved.
-  - **Plain copies that still exist:** the pre-encryption checkpoint and older safety copies in `downtimekit-backups` (listed on More, marked "not encrypted"). Removing them needs approval. A FHIR export file is plain by design.
+  - **Plain copies that still exist:** the pre-encryption checkpoint and older safety copies in `downtimekit-backups` (listed on More, marked "not encrypted"). On Practice an admin can remove them through the guarded cleanup (Admin → Backup). For Real records, removing them needs separate approval. A FHIR export file is plain by design.
   - **Deleting is not wiping.** Browsers don't promise that deleted IndexedDB data is erased from the disk, and SSDs keep old blocks. Downloaded files are outside the app.
   - **Memory:** the key stays in browser memory while unlocked. JavaScript can't force the browser to wipe it at once after locking.
   - **While unlocked**, a malicious extension or injected script could read records. There are no third-party scripts in the app.

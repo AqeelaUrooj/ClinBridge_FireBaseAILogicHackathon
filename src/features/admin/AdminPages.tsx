@@ -19,6 +19,7 @@ import { checkPassphrase, newRecoveryCode } from '../../lib/vaultCrypto';
 import { createEncryptedBackup, openBackupFile, restoreEncryptedBackup } from '../../db/encryptedBackup';
 import { ActivateStaffForm, EnrollLaptopCard, JoinUnitForm } from './EnrollmentUi';
 import { isPendingActivation } from '../../db/enrollment';
+import { CleanupCard } from './CleanupUi';
 
 const Err = ({ e }: { e: string | null }) => (e ? <p role="alert" className="text-error font-body-md">{e}</p> : null);
 const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
@@ -505,7 +506,8 @@ export function BackupPage() {
     }
   };
   return (
-    <Card className="flex flex-col gap-space-md max-w-2xl">
+    <div className="flex flex-col gap-space-lg max-w-2xl">
+    <Card className="flex flex-col gap-space-md">
       <h2 className="font-headline-sm text-headline-sm text-primary">Encrypted backup file</h2>
       <p className="text-on-surface-variant">Makes one file with every record and photo on this laptop, encrypted (AES-256-GCM) with a <strong>backup passphrase</strong> that you choose now. It must be different from the unit passphrase. The laptop&apos;s keys are never in the file.</p>
       <p className="text-on-surface-variant font-body-sm">The browser saves the file where its downloads go. ClinBridge cannot see or protect that folder: move the file to storage your hospital approves, and keep the backup passphrase apart from the file. To restore, use first-time setup on an empty laptop (Real records).</p>
@@ -520,5 +522,7 @@ export function BackupPage() {
       {done && <p role="status" className="text-sync-green">Backup file made. Fingerprint recorded in the change log: <span className="font-code-tabular break-all">{done}</span></p>}
       <Err e={error} />
     </Card>
+    <CleanupCard />
+    </div>
   );
 }

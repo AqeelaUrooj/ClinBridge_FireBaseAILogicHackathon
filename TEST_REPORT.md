@@ -1,15 +1,39 @@
 # Test report
 
-Run: 20 Nov 2026 (round 7, after the review fixes), local (Linux, Node 22, Chrome) on branch `feat/encryption` (PR #4). All runs below happened after the last code change, and GitHub Actions ran the same checks on the PR.
+Run: 20 Nov 2026 (round 8), local (Linux, Node 22, Chrome) on branch `feat/cleanup` (stacked on `feat/enrollment`). All runs below happened after the last code change.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | Pass (exit 0) |
 | `npm run lint` | Pass (exit 0) |
-| `npm test` (Vitest) | **148 pass, 1 skipped** (21 files + 1 skipped). The skipped file only writes the export for CI. |
+| `npm test` (Vitest) | **165 pass, 1 skipped** (24 files + 1 skipped). The skipped file only writes the export for CI. |
 | `npm run build` | Pass (PWA, 22 files precached) |
-| `npm run test:e2e` (Playwright) | **25 / 25 pass** (the offline test also passed 3 runs in a row) |
-| HL7 FHIR Validator 7.0.6 (GitHub Actions) | **0 errors, 11 warnings** (was 254), 418 information |
+| `npm run test:e2e` (Playwright) | **27 / 27 pass** |
+| HL7 FHIR Validator 7.0.6 (GitHub Actions, PR #4 merge) | **0 errors, 11 warnings**, 418 information |
+
+## Round 8 additions
+
+- `enrollment.test.ts` (8):
+  - The file holds no PIN hash, records, key or passphrase.
+  - Admin only; weak passphrase and the unit passphrase are refused.
+  - The fingerprint matches laptop 1. Damaged, edited, expired and wrong-passphrase files are refused.
+  - Laptop 2 gets its own vault, a new device id, the same staff ids. Only the importing admin can sign in; laptop 1's PIN doesn't work there.
+  - Activation needs an admin and the in-person identity tick. It's audited without the PIN, and plain PIN reset is refused for pending accounts.
+  - A duplicate enrollment on the same laptop is refused. The same file on a third laptop gets a different device id.
+  - Failures leave laptop 2 empty.
+- `plainCleanup.test.ts` (5):
+  - All six checks pass. The fresh backup opens. The temporary restore database is removed.
+  - Wrong confirmation or a non-admin is refused. Only the plain copy is removed, clinical data is untouched, and an audit row is written. The token is single use.
+  - Refused at step 1 while a migration is unfinished. A weak backup passphrase is refused. A made-up token is refused.
+  - Real records: checks pass but deletion is refused; the copy stays.
+- `realMigrationEvidence.test.ts` (4, synthetic Real records; approval flag used only in tests):
+  - Refused without approval.
+  - Backup → migrate → identical, and the backup restores to the same content.
+  - The checkpoint restores the original plain data.
+  - Interrupted → restart → wrong passphrase refused → resume → identical.
+- Browser:
+  - `e2e/enrollment.spec.ts`, two fresh browsers: fingerprint compared, wrong passphrase, join, pending nurse disabled, laptop-A PIN refused, activation needs the identity tick, nurse signs in with the new PIN.
+  - `e2e/cleanup.spec.ts`: six checks, fresh backup downloaded, typed confirmation, plain copy removed, temporary database gone.
 
 ## Round 7 additions: encryption at rest (P-04)
 
