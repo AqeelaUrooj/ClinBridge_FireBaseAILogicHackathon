@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { listPatientEntries } from '../../db/repos/entries';
 import { useApp } from '../../state/app';
-import { Breadcrumbs, Button, Card, EmptyState } from '../../components/ui';
+import { Breadcrumbs, Button, ButtonLink, Card, EmptyState, Icon } from '../../components/ui';
 import { EntryRow } from '../entries/entryView';
 import { useCurrentPatient } from './PatientLayout';
 import { fullName } from './patientData';
@@ -18,7 +18,13 @@ export function Timeline() {
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: `/patients/${patient.id}` }, { label: 'History' }]} />
       <Card>
-        <h2 className="font-headline-md text-headline-md text-primary mb-space-sm">History</h2>
+        <div className="flex items-center justify-between mb-space-sm">
+          <h2 className="font-headline-md text-headline-md text-primary">History</h2>
+          <div className="flex gap-space-sm">
+            <ButtonLink variant="secondary" to={`/patients/${patient.id}/body`}><Icon name="accessibility_new" />Body map</ButtonLink>
+            <ButtonLink variant="secondary" to={`/patients/${patient.id}/orders`}><Icon name="list_alt" />Orders</ButtonLink>
+          </div>
+        </div>
         {entries === undefined ? <p role="status">Loading…</p> : entries.length === 0 ? <EmptyState text="Nothing recorded yet" /> : (
           <>
             {entries.slice(0, n).map((x) => <EntryRow key={x.entry.id} item={x} />)}

@@ -187,6 +187,10 @@ export function RecordMed() {
   const startEvent = (params.get('event') === 'rate_changed' && g === 'infusion' ? 'rate_changed' : 'administered') as MedEvent;
   const events: MedEvent[] = g === 'infusion' ? ['rate_changed', 'administered', 'held'] : ['administered', 'held', 'refused'];
   const prior = currentRate(order, data.meds).rate;
+  const recentSites = orderHistory(order, data.meds)
+    .filter((x) => x.entry.status === 'confirmed' && (x.child as MedAdmin).site)
+    .slice(0, 3)
+    .map((x) => ({ site: (x.child as MedAdmin).site!, time: x.entry.care_time }));
   return (
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Medicines', to: `${base}/meds` }, { label: order.drug_name ?? 'Order', to: `${base}/meds/${order.id}` }, { label: 'Record' }]} />
@@ -196,6 +200,7 @@ export function RecordMed() {
         initial={medFormFromOrder(order, startEvent)}
         events={events}
         priorRate={prior}
+        recentSites={recentSites}
         scheduledTime={validSlot}
         minCareTime={encounter?.admit_time}
         saveLabel="Save"

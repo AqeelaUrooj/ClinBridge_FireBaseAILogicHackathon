@@ -60,11 +60,13 @@ function SecondCheckDialog({ onDone, onCancel }: { onDone: (p: Practitioner) => 
 
 const field = (err?: string) => `h-12 rounded-lg border px-space-md bg-surface-container-lowest ${err ? 'border-error' : 'border-card-border'}`;
 
-export function MedEditor({ order, initial, events, priorRate, initialCareTime, scheduledTime, minCareTime, requireChangeReason, saveLabel, onSubmit, onCancel }: {
+export function MedEditor({ order, initial, events, priorRate, recentSites = [], initialCareTime, scheduledTime, minCareTime, requireChangeReason, saveLabel, onSubmit, onCancel }: {
   order: ActiveOrder;
   initial: MedForm;
   events: MedEvent[];
   priorRate: number | null;
+  /** Last few sites for this order (documented: helps rotate injection sites). Display only. */
+  recentSites?: { site: string; time: string }[];
   initialCareTime?: string;
   scheduledTime?: string | null;
   minCareTime?: string;
@@ -205,6 +207,9 @@ export function MedEditor({ order, initial, events, priorRate, initialCareTime, 
               <label htmlFor="site" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Site (optional)</label>
               <input id="site" list="site-words" value={form.site} onChange={set('site')} className={field()} placeholder="e.g. Abdomen, left side" />
               <datalist id="site-words">{SITE_WORDS.map((s) => <option key={s} value={s} />)}</datalist>
+              {recentSites.length > 0 && (
+                <span className="font-body-sm text-on-surface-variant">Last sites: {recentSites.map((r) => `${r.site} (${hm(r.time)})`).join(' · ')}</span>
+              )}
               <span className="font-body-sm text-secondary">Left and right mean the patient’s left and right.</span>
             </div>
           )}

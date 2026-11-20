@@ -1,6 +1,6 @@
 # P-03 — Add optional `note.body_site`
 
-Status: **waiting for approval**, and it depends on P-01 (which region list). Not applied.
+Status: **prepared, not applied** (owner: wait until the region ids are final). The first body map uses draft ids from the UI/UX 21-region model, for example `ABDOMEN_LEFT`, `LEFT_HEEL` (`src/features/body/regions.ts`).
 
 ## Schema change
 
@@ -17,7 +17,7 @@ body_site?: string | null;   // NEW. Optional. Region code from the approved P-0
 ## Migration (goes in the same Dexie version as P-02, or the next one)
 
 ```ts
-this.version(3) // or 2, if approved together with P-02
+this.version(3) // v2 is used by P-02 (entry.change_reason)
   .stores({ note: 'id, &entry_id, body_site' }) // index added so the body map can find notes per region
   .upgrade((tx) => tx.table('note').toCollection().modify((n) => { n.body_site ??= null; }));
 ```

@@ -9,6 +9,7 @@ import { Timeline } from './features/patient/Timeline';
 import { VitalsPage, RecordVitals } from './features/vitals/VitalsPages';
 import { EntryLayout, EntryDetail, EntryHistory, CorrectEntry } from './features/entries/EntryPages';
 import { MedsPage, OrderPage, RecordMed, OrdersPage } from './features/meds/MedsPages';
+import { BodyMapPage } from './features/body/BodyMapPage';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
 function RequireAuth() {
@@ -67,7 +68,7 @@ export function App() {
             <Route path="io" element={<NotBuilt title="Fluids" phase="Phase 4" />} />
             <Route path="notes" element={<NotBuilt title="Notes" phase="Phase 4" />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="body" element={<NotBuilt title="Body map" phase="Phase 6" />} />
+            <Route path="body" element={<BodyMapPage />} />
             <Route path="handoff" element={<NotBuilt title="Handover for this patient" phase="Phase 6" />} />
             <Route path="capture" element={<NotBuilt title="Photo of paper" phase="Phase 5" />} />
           </Route>
