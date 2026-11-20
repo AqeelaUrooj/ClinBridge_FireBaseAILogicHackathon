@@ -155,6 +155,21 @@ describe('cloud: only where authorised', () => {
     expect(calls[0]).toMatch(/googleapis\.com.*:generateContent/);
     const body = JSON.parse(String((fetchSpy.mock.calls.find((c) => String(c[0]).includes('googleapis'))![1] as RequestInit).body));
     expect(body.generationConfig.responseMimeType).toBe('application/json');
+    // Every field required + nullable, with the words nurses write (live finding: optional fields were skipped).
+    const schema = body.generationConfig.responseSchema;
+    expect(schema.required).toEqual(expect.arrayContaining(['bp_systolic', 'bp_diastolic', 'heart_rate', 'resp_rate', 'temp_c', 'spo2', 'pain_0_10', 'consciousness']));
+    expect(schema.properties.heart_rate).toMatchObject({ type: 'number', nullable: true });
+    expect(schema.properties.heart_rate.description).toMatch(/pulse/);
+    expect(schema.properties.spo2.description).toMatch(/sats/);
+    expect(schema.properties.bp_diastolic.description).toMatch(/second number/);
+  });
+
+  it('null means "not written": nulls are skipped, never shown as values or as dropped', () => {
+    const p = parseVitalsProposal('{"bp_systolic":128,"bp_diastolic":80,"heart_rate":86,"glucose_mgdl":null,"o2_flow_lpm":null,"consciousness":"Alert"}');
+    expect(p.values).toEqual({ bp_systolic: 128, bp_diastolic: 80, heart_rate: 86 });
+    expect(p.consciousness).toBe('Alert');
+    expect(p.dropped).toEqual([]);
+    expect(parseVitalsProposal('{"consciousness":null}')).toEqual({ values: {}, consciousness: null, dropped: [] });
   });
 
   it('compare on Real records, and second look before the network is cleared, are refused', async () => {

@@ -86,7 +86,7 @@ export function ReadinessPage() {
           <Check ok={persisted} label="Storage kept by the browser" detail={persisted ? 'The browser will not clear this data on its own.' : 'Not guaranteed. Avoid clearing browser data.'} />
           <Check ok={quota ? quota.used / Math.max(quota.total, 1) < 0.8 : null} label="Storage space" detail={quota ? `${(quota.used / 1e6).toFixed(1)} MB used of ${(quota.total / 1e9).toFixed(1)} GB` : 'Not reported by this browser.'} />
           <Check ok={data?.device ? true : null} label="Laptop registered" detail={data?.device ? `${data.device.label} · last clock check ${dateTimeLabel(data.device.last_clock_sync)}` : 'This laptop is not in the device list.'} />
-          <Check ok={ai ? true : null} label="On-device AI" detail={ai ? 'Chrome built-in AI found. Not used yet in this build.' : 'Not available here. Manual capture works without it.'} />
+          <Check ok={null} label="On-device AI" detail={ai ? 'Chrome Prompt API found. Whether this laptop can run the model: More → AI check. Manual capture works without it.' : 'Not available here. Manual capture works without it.'} />
         </ul>
       </Card>
       <Card>

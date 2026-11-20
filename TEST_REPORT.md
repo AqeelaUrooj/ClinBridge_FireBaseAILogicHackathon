@@ -11,6 +11,17 @@ Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on br
 | `npm run test:e2e` (Playwright) | **30 / 30 pass** (second server: AI build with fake Firebase values) |
 | Real AI model | **Not run.** Sandbox Chrome 153: Prompt API present, model "unavailable" |
 
+## Round 10: live tests on the owner's PC (20 Nov 2026)
+
+Full write-up: `docs/LIVE_TEST_RESULTS_2026-11-20.md`. Real Chrome 157 on DESKTOP-6NQ637E, real Firebase project `clinbridge-hackathon`, synthetic Practice data.
+
+- **Genuine cloud inference: PASS** (after fixes): gemini-3.5-flash-lite, HTTP 200, in_cloud, text 2.9–9.7 s, image 1080–1100 image tokens; App Check enforced (401 without a registered debug token).
+- **Gemini Nano: BLOCKED (hardware).** Prompt API present; text and image availability "unavailable".
+- **System Down (network logged): PASS.** Cloud blocked; on-device fallback message; manual photo capture saved and confirmed; 0 external requests; encrypted at rest after reload.
+- **Back online second look: PASS.** 7/7 values from the photo; differences shown; record unchanged.
+- **Defects found live and fixed** (branch `fix/app-check-cloud-instance`): (1) App Check not attached to cloud calls → separate cloud Firebase app, App Check before getAI; regression test `src/lib/ai/firebase.test.ts` (2) fails on old code. (2) Cloud model skipped written values → required+nullable described schema; tests in `service.test.ts`. Admin readiness no longer shows on-device AI green just because the API exists.
+- Automated after the fixes: typecheck, lint, Vitest **199 passed / 1 skipped**, build, Playwright **31/31**.
+
 ## Round 9 additions (AI)
 
 - `src/lib/ai/service.test.ts` (14). Real Firebase SDK 13.4.0 browser build, **mock** LanguageModel, fetch spy, App Check mocked:

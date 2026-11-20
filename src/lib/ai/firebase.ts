@@ -10,6 +10,11 @@ import type { AiConfig } from './config';
  * - Cloud models use InferenceMode.ONLY_IN_CLOUD and need App Check (enforced for AI Logic).
  * - App Check is initialised ONLY when a cloud model is first needed, so on-device use triggers no App Check /
  *   reCAPTCHA network traffic.
+ * - Cloud calls use a SEPARATE Firebase app instance ('clinbridge-cloud'). The AI SDK reads the App Check provider once,
+ *   when the AI instance is created (AIService constructor: appCheckProvider.getImmediate({ optional: true })). If the
+ *   AI instance exists before initializeAppCheck(), cloud requests go out with no App Check token and Firebase answers
+ *   401 "App Check token is invalid" (found live on 20 Nov 2026). So: App Check first, then getAI, on the cloud app only.
+ *   The on-device app ('clinbridge') never gets App Check.
  * Modules are imported lazily; the chunks are still precached by the service worker for offline use.
  */
 
@@ -25,19 +30,42 @@ export const DEFAULT_CLOUD_MODEL = 'gemini-3.5-flash-lite';
 
 let app: FirebaseApp | null = null;
 let ai: AI | null = null;
+let cloudApp: FirebaseApp | null = null;
+let cloudAi: AI | null = null;
 let appCheckReady = false;
+
+const DEVICE_APP_NAME = 'clinbridge';
+const CLOUD_APP_NAME = 'clinbridge-cloud';
 
 export async function getFirebaseAi(cfg: AiConfig): Promise<{ app: FirebaseApp; ai: AI }> {
   if (!cfg.firebase) throw new AiSetupError(`Firebase is not set up on this build (missing ${cfg.missing.join(', ')}).`);
   if (!app) {
     const { initializeApp, getApps } = await import('firebase/app');
-    app = getApps().find((a) => a.name === 'clinbridge') ?? initializeApp(cfg.firebase, 'clinbridge');
+    app = getApps().find((a) => a.name === DEVICE_APP_NAME) ?? initializeApp(cfg.firebase, DEVICE_APP_NAME);
   }
   if (!ai) {
     const { getAI, GoogleAIBackend } = await import('firebase/ai');
     ai = getAI(app, { backend: new GoogleAIBackend() });
   }
   return { app, ai };
+}
+
+/**
+ * Firebase app + AI instance for cloud calls: App Check is initialised on this app BEFORE its AI instance is created,
+ * so every cloud request carries an App Check token.
+ */
+async function getCloudAi(cfg: AiConfig): Promise<{ app: FirebaseApp; ai: AI }> {
+  if (!cfg.firebase) throw new AiSetupError(`Firebase is not set up on this build (missing ${cfg.missing.join(', ')}).`);
+  if (!cloudApp) {
+    const { initializeApp, getApps } = await import('firebase/app');
+    cloudApp = getApps().find((a) => a.name === CLOUD_APP_NAME) ?? initializeApp(cfg.firebase, CLOUD_APP_NAME);
+  }
+  await ensureAppCheck(cfg, cloudApp); // must come before getAI (see header)
+  if (!cloudAi) {
+    const { getAI, GoogleAIBackend } = await import('firebase/ai');
+    cloudAi = getAI(cloudApp, { backend: new GoogleAIBackend() });
+  }
+  return { app: cloudApp, ai: cloudAi };
 }
 
 /** App Check for cloud calls. Debug provider only in development builds (import.meta.env.DEV). */
@@ -77,8 +105,7 @@ export async function deviceModel(cfg: AiConfig, opts: DeviceModelOptions): Prom
 
 /** ONLY_IN_CLOUD model with JSON output. Callers must pass the cloud guard first (service.ts). */
 export async function cloudModel(cfg: AiConfig, responseSchema?: object): Promise<GenerativeModel> {
-  const { app: firebaseApp, ai: a } = await getFirebaseAi(cfg);
-  await ensureAppCheck(cfg, firebaseApp);
+  const { ai: a } = await getCloudAi(cfg);
   const { getGenerativeModel, InferenceMode } = await import('firebase/ai');
   return getGenerativeModel(a, {
     mode: InferenceMode.ONLY_IN_CLOUD,
@@ -104,5 +131,7 @@ export async function sdkInferenceSource(): Promise<{ readonly ON_DEVICE: string
 export function resetFirebaseForTests(): void {
   app = null;
   ai = null;
+  cloudApp = null;
+  cloudAi = null;
   appCheckReady = false;
 }
