@@ -82,6 +82,7 @@ export function MorePage() {
         <h2 className="font-headline-sm text-headline-sm text-primary">Signed in as {user?.name}</h2>
         <div className="flex flex-wrap gap-space-sm">
           <Button variant="secondary" onClick={() => { signOut(); navigate('/sign-in'); }}><Icon name="switch_account" />Switch user</Button>
+          <ButtonLink variant="secondary" to="/labs"><Icon name="science" />Ward labs</ButtonLink>
         </div>
       </Card>
       <Card className="flex flex-col gap-space-sm">

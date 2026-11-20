@@ -10,6 +10,7 @@ import { VitalsPage, RecordVitals } from './features/vitals/VitalsPages';
 import { EntryLayout, EntryDetail, EntryHistory, CorrectEntry } from './features/entries/EntryPages';
 import { MedsPage, OrderPage, RecordMed, OrdersPage } from './features/meds/MedsPages';
 import { BodyMapPage } from './features/body/BodyMapPage';
+import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 
 function RequireAuth() {
@@ -51,7 +52,7 @@ export function App() {
           <Route path="/handover" element={<NotBuilt title="Handover" phase="Phase 6" />} />
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/more" element={<MorePage />} />
-          <Route path="/labs" element={<NotBuilt title="Labs" phase="Phase 4" />} />
+          <Route path="/labs" element={<WardLabsPage />} />
           <Route path="/export" element={<NotBuilt title="Export" phase="Phase 7" />} />
           <Route path="/drill/compare" element={<NotBuilt title="Practice compare" phase="Phase 7" />} />
           <Route path="/setup" element={<NotBuilt title="First-time setup" phase="Phase 7" />} />
@@ -65,8 +66,12 @@ export function App() {
             <Route path="meds" element={<MedsPage />} />
             <Route path="meds/:order" element={<OrderPage />} />
             <Route path="meds/:order/record" element={<RecordMed />} />
-            <Route path="io" element={<NotBuilt title="Fluids" phase="Phase 4" />} />
-            <Route path="notes" element={<NotBuilt title="Notes" phase="Phase 4" />} />
+            <Route path="io" element={<IoPage />} />
+            <Route path="io/record" element={<RecordIo />} />
+            <Route path="notes" element={<NotesPage />} />
+            <Route path="notes/new" element={<RecordNote />} />
+            <Route path="labs" element={<PatientLabsPage />} />
+            <Route path="labs/record" element={<RecordLab />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="body" element={<BodyMapPage />} />
             <Route path="handoff" element={<NotBuilt title="Handover for this patient" phase="Phase 6" />} />

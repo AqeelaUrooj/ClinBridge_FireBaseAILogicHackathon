@@ -1,8 +1,10 @@
-import { createContext, useContext, useState } from 'react';
+import { Fragment, createContext, useContext, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { createEntry, getEntry, listPatientEntries, markEnteredInError, versionChain, type EntryWithChild } from '../../db/repos/entries';
-import type { MedAdmin, VitalSign } from '../../db/schema';
+import type { IntakeOutput, LabEvent, MedAdmin, Note, VitalSign } from '../../db/schema';
+import { ioLabel, labLabel, noteLabel } from '../../lib/charting';
+import { IoEditor, LabEditor, NoteEditor, ioToForm, labToForm, noteToForm } from '../charting/editors';
 import { legacyReason } from '../../db/db';
 import { isNurse, useApp, useSession } from '../../state/app';
 import { VITAL_RULES, type VitalKey } from '../../lib/vitals';
@@ -63,6 +65,32 @@ function VitalsValues({ v }: { v: VitalSign }) {
   );
 }
 
+function OtherValues({ type, child }: { type: string; child: unknown }) {
+  const rows: [string, string][] = [];
+  if (type === 'intake_output') {
+    const io = child as IntakeOutput;
+    rows.push(['In or out', io.direction === 'in' ? 'In' : 'Out'], ['Kind', ioLabel(io.direction, io.category)], ['Amount', `${io.volume_ml} mL`]);
+    if (io.method) rows.push(['How measured', io.method]);
+    if (io.start_time && io.end_time) rows.push(['Period', `${io.start_time.slice(11, 16)} – ${io.end_time.slice(11, 16)}`]);
+  } else if (type === 'note') {
+    const n = child as Note;
+    rows.push(['Type', noteLabel(n.category)]);
+    if (n.score_name) rows.push(['Score', `${n.score_name}: ${n.score_value ?? '—'}`]);
+    rows.push(['Note', n.text]);
+  } else if (type === 'lab_event') {
+    const l = child as LabEvent;
+    rows.push(['Test', l.test_name], ['Status', labLabel(l.status)]);
+    if (l.value_num != null || l.value_text) rows.push(['Result', `${l.value_num ?? l.value_text} ${l.unit ?? ''}`]);
+    if (l.specimen_time) rows.push(['Sample taken', dateTimeLabel(l.specimen_time)]);
+    if (l.status === 'critical') rows.push(['Told', l.called_to ?? '—'], ['Read back', l.read_back ? 'Yes' : 'No']);
+  }
+  return (
+    <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-1 font-body-md rounded-lg bg-surface-container-low p-space-md">
+      {rows.map(([k, v]) => <Fragment key={k}><dt className="text-secondary">{k}</dt><dd className="whitespace-pre-wrap">{v}</dd></Fragment>)}
+    </dl>
+  );
+}
+
 export function EntryDetail() {
   const item = useCurrentEntry();
   const { entry, child } = item;
@@ -90,6 +118,7 @@ export function EntryDetail() {
         </div>
         {entry.type === 'vital_sign' && child && <VitalsValues v={child as VitalSign} />}
         {entry.type === 'med_admin' && child && <MedValues m={child as MedAdmin} names={names} />}
+        {entry.type !== 'med_admin' && entry.type !== 'vital_sign' && child && <OtherValues type={entry.type} child={child} />}
         <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-1 font-body-md">
           <dt className="text-secondary">Measured / given</dt><dd className="font-code-tabular">{dateTimeLabel(entry.care_time)}</dd>
           <dt className="text-secondary">Typed in</dt><dd className="font-code-tabular">{dateTimeLabel(entry.entry_time)}</dd>
@@ -102,7 +131,7 @@ export function EntryDetail() {
           <p className="rounded-lg bg-surface-container-low p-space-md flex items-center gap-2"><Icon name="info" />This is an old version.<ButtonLink variant="ghost" to={`/entries/${supersededBy.id}`}>See the new one</ButtonLink></p>
         )}
         <div className="flex flex-wrap gap-space-sm">
-          {canChange && (entry.type === 'vital_sign' || entry.type === 'med_admin') && <ButtonLink to={`/entries/${entry.id}/correct`}><Icon name="edit" />Fix</ButtonLink>}
+          {canChange && <ButtonLink to={`/entries/${entry.id}/correct`}><Icon name="edit" />Fix</ButtonLink>}
           {canChange && <Button variant="danger" onClick={() => setMistake(true)}><Icon name="block" />Wrong patient or mistake</Button>}
           {(entry.supersedes_id || entry.status === 'corrected') && <ButtonLink variant="secondary" to={`/entries/${entry.id}/history`}><Icon name="history" />All versions</ButtonLink>}
         </div>
@@ -175,10 +204,37 @@ export function CorrectEntry() {
     return order ? { order, prior: med.prior_infusion_rate ?? currentRate(order, meds).rate } : null;
   }, [db, med?.order_id, entry.id, entry.patient_id]);
 
-  if (entry.status !== 'confirmed' || !(entry.type === 'vital_sign' || entry.type === 'med_admin') || !isNurse(user)) {
+  const orders = useLiveQuery(async () => (encounter ? db.active_order.where('encounter_id').equals(encounter.id).toArray() : []), [db, encounter?.id]);
+  if (entry.status !== 'confirmed' || !isNurse(user)) {
     return <EmptyState icon="block" text="This record cannot be fixed here." action={<ButtonLink variant="secondary" to={`/entries/${entry.id}`}>Back</ButtonLink>} />;
   }
   const actor = () => { if (!user) throw new Error('Sign in again.'); return { userId: user.id, deviceId }; };
+
+  const fix = { initialCareTime: entry.care_time, minCareTime: encounter?.admit_time ?? undefined, requireChangeReason: true, saveLabel: 'Save fix', onCancel: () => navigate(`/entries/${entry.id}`) };
+  const saveFix = async (type: 'intake_output' | 'note' | 'lab_event', values: never, careTime: string, changeReason?: string) => {
+    const e = await createEntry(db, clock, actor(), { type, patientId: entry.patient_id, careTime, values, supersedesId: entry.id, correctionReason: changeReason });
+    navigate(`/entries/${e.id}`, { replace: true });
+  };
+  if (entry.type === 'intake_output' || entry.type === 'note' || entry.type === 'lab_event') {
+    if (!orders) return <p role="status">Loading…</p>;
+    const title = entry.type === 'intake_output' ? 'Fix fluid record' : entry.type === 'note' ? 'Fix note' : 'Fix lab record';
+    return (
+      <>
+        <Crumbs last="Fix" />
+        <h1 className="font-headline-lg text-headline-lg text-primary">{title}</h1>
+        <p className="font-body-md text-on-surface-variant">The old record stays in the history. Your fix is saved as a new version.</p>
+        {entry.type === 'intake_output' && <IoEditor {...fix} initial={ioToForm(child as IntakeOutput)} ivOrders={orders.filter((o) => o.type === 'iv')}
+          onSubmit={({ values, careTime, changeReason }) => saveFix('intake_output', values as never, careTime, changeReason)} />}
+        {entry.type === 'note' && <NoteEditor {...fix} initial={noteToForm(child as Note)}
+          onSubmit={({ values, careTime, changeReason }) => saveFix('note', values as never, careTime, changeReason)} />}
+        {entry.type === 'lab_event' && <LabEditor {...fix} initial={labToForm(child as LabEvent)} labOrders={orders.filter((o) => o.type === 'lab')}
+          onSubmit={({ values, careTime, changeReason }) => {
+            const old = child as LabEvent;
+            return saveFix('lab_event', { ...values, order_time: old.order_time ?? null, specimen_source: old.specimen_source ?? null, result_time: values.status === 'resulted' || values.status === 'critical' ? careTime : null } as never, careTime, changeReason);
+          }} />}
+      </>
+    );
+  }
 
   if (entry.type === 'med_admin') {
     if (medCtx === undefined) return <p role="status">Loading…</p>;
