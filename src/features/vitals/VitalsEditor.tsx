@@ -4,6 +4,7 @@ import { useApp } from '../../state/app';
 import { CONSCIOUSNESS_OPTIONS, VITAL_RULES, isUnusual, validateVitals, type VitalKey, type VitalsForm, type VitalsValues } from '../../lib/vitals';
 import { dateTimeLabel, fromLocalInput, toLocalInput } from '../../lib/time';
 import { Badge, Button, Card, Icon, SectionLabel } from '../../components/ui';
+import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
 
 /**
  * Shared vitals form for "Record vitals" and "Fix" (correction).
@@ -12,6 +13,10 @@ import { Badge, Button, Card, Icon, SectionLabel } from '../../components/ui';
  */
 export interface VitalsSubmit { values: VitalsValues; careTime: string; reason?: string }
 
+const FIELD_ART: Partial<Record<VitalKey, MedicalAsset>> = {
+  bp_systolic: 'vitals/bp-monitor', bp_diastolic: 'vitals/bp-monitor', heart_rate: 'vitals/heart', spo2: 'vitals/pulse-oximeter',
+  temp_c: 'vitals/thermometer', resp_rate: 'vitals/lungs', glucose_mgdl: 'vitals/glucose-meter',
+};
 const MAIN: VitalKey[] = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'spo2', 'temp_c', 'resp_rate'];
 const MORE: VitalKey[] = ['pain_0_10', 'glucose_mgdl', 'o2_flow_lpm'];
 
@@ -20,7 +25,9 @@ function Field({ k, form, setForm, error }: { k: VitalKey; form: VitalsForm; set
   const id = `v-${k}`;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="font-label-uppercase text-label-uppercase text-secondary uppercase">{r.label}</label>
+      <label htmlFor={id} className="font-label-uppercase text-label-uppercase text-secondary uppercase flex items-center gap-1.5">
+        {FIELD_ART[k] && <MedIllustration name={FIELD_ART[k]!} size={20} />}{r.label}
+      </label>
       <div className={`flex items-center h-12 rounded-lg border bg-surface-container-lowest focus-within:ring-2 focus-within:ring-secondary ${error ? 'border-error' : 'border-card-border'}`}>
         <input
           id={id} inputMode={r.integer ? 'numeric' : 'decimal'} autoComplete="off"

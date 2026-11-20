@@ -5,6 +5,7 @@ import type { DowntimeDB } from '../../db/db';
 import { useApp, useSession } from '../../state/app';
 import { ageOn, hm } from '../../lib/time';
 import { Badge, Icon, PageTitle } from '../../components/ui';
+import { MedIllustration } from '../../components/MedIllustration';
 import { VerifyPatientDialog } from '../patient/PatientLayout';
 import { fullName, isNoKnownAllergy, loadPatient, type PatientBundle } from '../patient/patientData';
 
@@ -91,9 +92,9 @@ export function WardBoard() {
                 {r.critical ? (
                   <span className="flex items-center gap-2 px-3 py-2 rounded-lg bg-clinical-red-bg text-clinical-red font-body-lg text-body-lg font-semibold"><Icon name="emergency" className="text-[18px]" />Critical lab · {r.critical}</span>
                 ) : r.drafts ? (
-                  <span className="flex items-center gap-2 px-3 py-2 rounded-lg bg-downtime-amber-bg text-[#6b4a0e] font-body-lg text-body-lg font-semibold"><Icon name="rule" className="text-[18px]" />{r.drafts} to check</span>
+                  <span className="flex items-center gap-2 px-3 py-2 rounded-lg bg-downtime-amber-bg text-[#6b4a0e] font-body-lg text-body-lg font-semibold"><MedIllustration name="workflows/checklist" size={22} />{r.drafts} to check</span>
                 ) : (
-                  <span className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-low text-primary font-body-lg text-body-lg"><Icon name="vital_signs" className="text-[18px]" />{r.lastVitals ? `Last vitals ${hm(r.lastVitals)}` : 'No vitals yet'}</span>
+                  <span className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container-low text-primary font-body-lg text-body-lg"><MedIllustration name="vitals/heart" size={20} />{r.lastVitals ? `Last vitals ${hm(r.lastVitals)}` : 'No vitals yet'}</span>
                 )}
               </button>
             );

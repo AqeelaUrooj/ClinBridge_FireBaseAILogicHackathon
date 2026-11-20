@@ -15,6 +15,7 @@ import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
 import { HighAlertBar, MedEditor } from './MedEditor';
+import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
 
 const GROUP_LABEL: Record<OrderGroup, string> = { scheduled: 'Scheduled', prn: 'As needed', infusion: 'Drips (infusions)' };
 
@@ -41,12 +42,24 @@ function SlotChip({ slot }: { slot: Slot }) {
   return <Badge tone={s.tone} icon={s.icon}><span className="font-code-tabular">{hm(slot.time)}</span> {s.label}</Badge>;
 }
 
+/** Picture by how the drug is given (route), not by its form: the order does not say tablet vs liquid. Decorative only. */
+export function orderArt(o: ActiveOrder): MedicalAsset | null {
+  if (orderGroup(o) === 'infusion' || o.type === 'iv') return 'medication/iv-bag';
+  switch (o.route) {
+    case 'IV': return 'medication/vial';
+    case 'SC': case 'IM': return 'medication/syringe';
+    case 'PO': case 'SL': return 'medication/capsule';
+    case 'TOP': return 'medication/tube';
+    default: return null;
+  }
+}
+
 function DrugTitle({ order }: { order: ActiveOrder }) {
   const high = isHighAlert(order.drug_name);
   return (
     <div className="flex items-center gap-space-sm">
-      <span className={`w-10 h-10 rounded-full grid place-items-center ${high ? 'ring-2 ring-clinical-red bg-clinical-red-bg text-clinical-red' : 'bg-secondary-fixed text-on-secondary-fixed'}`}>
-        <Icon name={orderGroup(order) === 'infusion' ? 'water_drop' : order.route === 'IV' || order.route === 'SC' ? 'vaccines' : 'medication'} className="text-[20px]" />
+      <span className={`w-12 h-12 rounded-full grid place-items-center bg-[#FBF8F2] ${high ? 'ring-2 ring-clinical-red' : 'ring-1 ring-card-border'}`}>
+        {orderArt(order) ? <MedIllustration name={orderArt(order)!} size={34} /> : <Icon name="medication" className="text-[22px] text-secondary" />}
       </span>
       <div>
         <span className="block font-headline-sm text-headline-sm text-primary">{order.drug_name ?? order.text}</span>

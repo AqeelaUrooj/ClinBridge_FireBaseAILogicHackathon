@@ -85,7 +85,7 @@ test('wrong PIN is refused and locks after 5 tries', async ({ page }) => {
   await expect(page.getByRole('button', { name: '1', exact: true })).toBeDisabled();
 });
 
-test('app opens offline after first load', async ({ page, context }) => {
+test('app works offline after first load: sign in, illustrations, body map, save survives reload', async ({ page, context }) => {
   await page.goto('/sign-in');
   await page.waitForFunction(async () => (await navigator.serviceWorker.getRegistration())?.active?.state === 'activated');
   await page.reload(); // let the service worker take control
@@ -93,5 +93,28 @@ test('app opens offline after first load', async ({ page, context }) => {
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Who are you?' })).toBeVisible();
+  await signIn(page);
+  // Illustrations on the ward board load from the local cache.
+  const imgs = page.locator('img[data-asset]');
+  await expect(imgs.first()).toBeVisible();
+  const broken = await imgs.evaluateAll((els) => els.filter((e) => !(e as HTMLImageElement).complete || (e as HTMLImageElement).naturalWidth === 0).length);
+  expect(broken).toBe(0);
+  await openSam(page);
+  await page.getByRole('link', { name: /Vitals/ }).first().click();
+  await page.getByRole('link', { name: 'Record vitals' }).click();
+  await page.getByLabel('Pulse').fill('81');
+  await page.getByRole('button', { name: 'Review' }).click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved on this laptop.')).toBeVisible();
+  const vitalsImgs = await page.locator('img[data-asset]').evaluateAll((els) => els.map((e) => (e as HTMLImageElement).naturalWidth));
+  expect(vitalsImgs.length).toBeGreaterThan(0);
+  expect(vitalsImgs.every((w) => w > 0)).toBe(true);
+  await page.reload(); // still offline
+  await signIn(page);
+  await openSam(page);
+  await page.getByRole('link', { name: 'View details' }).click();
+  await expect(page.getByText('Pulse 81')).toBeVisible();
+  await page.getByRole('link', { name: 'Body map' }).click();
+  await expect(page.locator('svg[data-view] [data-region="HEAD"]').first()).toBeVisible();
   await context.setOffline(false);
 });

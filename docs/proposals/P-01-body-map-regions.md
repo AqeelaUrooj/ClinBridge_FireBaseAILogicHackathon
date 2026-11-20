@@ -104,3 +104,15 @@ Changed (minimal, for correctness):
 3. The back view had no gradient definitions of its own (it borrowed the front view's). A copy was added with renamed ids, so it looks the same when shown alone.
 
 Tap areas are a separate transparent layer drawn on top; each is keyboard reachable. "Patient's R / Patient's L" labels sit above each view.
+
+---
+
+## Round 4 (20 Nov 2026): new artwork, same 21 regions
+
+- The Stitch figures are replaced by **original vector anatomy** in the Theme 2 style (`src/features/body/anatomy.ts`, see `docs/ASSETS.md`). The Stitch files stay in the repo for reference.
+- **Region ids, labels and the site → region table are unchanged.**
+- What changed in how regions are drawn (not in the model):
+  - Tap areas are clipped to the body part they belong to, so highlights never spill outside the figure.
+  - Head and limb regions can be picked from **either** view (same id: "Left forearm" includes the back of the forearm). Markers for them show in the front view only.
+  - Feet are picked in the front view and heels in the back view (from behind, the foot shows its heel).
+- Still not covered by the 21 regions (same as before): neck, groin/perineum, hips/front of pelvis. The artwork shows them, but they cannot be selected.

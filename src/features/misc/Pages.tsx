@@ -5,6 +5,7 @@ import { useApp, useSession } from '../../state/app';
 import { resetPractice } from '../../db/seed';
 import { verifyChain } from '../../db/audit';
 import { backupDb } from '../../db/backup';
+import { MedIllustration } from '../../components/MedIllustration';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
 import { Button, ButtonLink, Card, Dialog, EmptyState, Icon, PageTitle } from '../../components/ui';
@@ -40,7 +41,7 @@ export function AlertsPage() {
     <>
       <PageTitle>Alerts</PageTitle>
       <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Records to check</h2>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name={drafts && drafts.length ? 'workflows/bell-alert' : 'workflows/bell-ok'} size={30} />Records to check</h2>
         {drafts === undefined ? <p role="status">Loading…</p> : drafts.length === 0 ? <EmptyState text="Nothing to check" /> : (
           <ul className="flex flex-col gap-space-sm">
             {drafts.map((d) => (

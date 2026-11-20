@@ -4,6 +4,7 @@ import type { EntryWithChild } from '../../db/repos/entries';
 import { vitalsSummary } from '../../lib/vitals';
 import { formatDose } from '../../lib/dose';
 import { hm } from '../../lib/time';
+import { ioLabel } from '../../lib/charting';
 import { Badge, Icon } from '../../components/ui';
 
 export const TYPE_LABEL: Record<EntryType, string> = { vital_sign: 'Vitals', med_admin: 'Medicine', intake_output: 'Fluids', note: 'Note', lab_event: 'Lab' };
@@ -19,7 +20,7 @@ export function entrySummary({ entry, child }: EntryWithChild): string {
       if (m.event === 'rate_changed') return `${m.drug_name} · rate ${formatDose(m.prior_infusion_rate)} → ${formatDose(m.infusion_rate)} ${m.infusion_rate_unit ?? ''}`;
       return `${m.drug_name}${m.dose_given != null ? ` ${formatDose(m.dose_given)} ${m.dose_given_unit ?? ''}` : ''} · ${EVENT[m.event] ?? m.event}`;
     }
-    case 'intake_output': { const io = child as IntakeOutput; return `${io.direction === 'in' ? 'In' : 'Out'} · ${io.category} ${io.volume_ml} mL`; }
+    case 'intake_output': { const io = child as IntakeOutput; return `${io.direction === 'in' ? 'In' : 'Out'} · ${ioLabel(io.direction, io.category)} ${io.volume_ml} mL`; }
     case 'note': { const n = child as Note; return n.text.length > 70 ? `${n.text.slice(0, 68)}…` : n.text; }
     case 'lab_event': { const l = child as LabEvent; return `${l.test_name}${l.value_num != null ? ` ${l.value_num} ${l.unit ?? ''}` : ''} · ${l.status}`; }
   }

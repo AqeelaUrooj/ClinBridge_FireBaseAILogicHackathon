@@ -6,126 +6,124 @@ import { useApp } from '../../state/app';
 import { formatDose } from '../../lib/dose';
 import { dateTimeLabel } from '../../lib/time';
 import { Breadcrumbs, Card, Icon } from '../../components/ui';
+import { MedIllustration } from '../../components/MedIllustration';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
-import frontArt from './art/front.svg?raw';
-import backArt from './art/back.svg?raw';
-import { REGIONS, centre, siteRegion, type Region, type Shape, type View } from './regions';
-
-type MarkerKind = 'injection' | 'iv';
-interface Marker { region: Region; kind: MarkerKind; item: EntryWithChild }
+import { BodyFigure, type FigureMarker, type MarkerKind } from './BodyFigure';
+import { REGIONS, regionById, siteRegion, type View } from './regions';
 
 const markerKind = (m: MedAdmin): MarkerKind => ((m.site ?? '').includes('IV line') || m.route === 'IV' ? 'iv' : 'injection');
-
-function ShapeEl({ s, ...rest }: { s: Shape } & React.SVGProps<SVGElement>) {
-  if (s.kind === 'rect') return <rect x={s.x} y={s.y} width={s.w} height={s.h} rx={4} {...(rest as React.SVGProps<SVGRectElement>)} />;
-  if (s.kind === 'ellipse') return <ellipse cx={s.cx} cy={s.cy} rx={s.rx} ry={s.ry} {...(rest as React.SVGProps<SVGEllipseElement>)} />;
-  return <polygon points={s.points.map((p) => p.join(',')).join(' ')} {...(rest as React.SVGProps<SVGPolygonElement>)} />;
-}
-
-function Figure({ view, art, markers, selected, onSelect }: { view: View; art: string; markers: Marker[]; selected: string | null; onSelect: (id: string) => void }) {
-  const regions = REGIONS.filter((r) => r.view === view);
-  // Patient's left/right labels: front view mirrors the viewer.
-  const [leftLabel, rightLabel] = view === 'front' ? ["Patient's R", "Patient's L"] : ["Patient's L", "Patient's R"];
-  return (
-    <figure className="flex flex-col items-center gap-space-sm">
-      <figcaption className="font-label-uppercase text-label-uppercase text-secondary uppercase">{view === 'front' ? 'Front' : 'Back'}</figcaption>
-      <div className="relative w-[280px] h-[588px]">
-        {/* Supplied Stitch artwork, bundled with the app (works offline). */}
-        <div className="absolute inset-0" dangerouslySetInnerHTML={{ __html: art }} />
-        <svg viewBox="0 0 200 420" className="absolute inset-0 w-full h-full" role="group" aria-label={`${view} view body areas`}>
-          <text x="6" y="14" fontSize="8" fill="#4A6078" fontFamily="Inter" fontWeight="700">{leftLabel}</text>
-          <text x="194" y="14" fontSize="8" fill="#4A6078" fontFamily="Inter" fontWeight="700" textAnchor="end">{rightLabel}</text>
-          {regions.map((r) => {
-            const count = markers.filter((m) => m.region.id === r.id).length;
-            const isSel = selected === r.id;
-            return (
-              <g key={r.id} role="button" tabIndex={0} aria-pressed={isSel} aria-label={`${r.label}${count ? `, ${count} marked` : ''}`}
-                data-region={r.id} className="cursor-pointer outline-none group"
-                onClick={() => onSelect(r.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }}>
-                <ShapeEl s={r.shape} fill={isSel ? '#4A6078' : '#4A6078'} fillOpacity={isSel ? 0.22 : 0}
-                  stroke="#1C2536" strokeOpacity={isSel ? 0.9 : 0} strokeWidth={1.2}
-                  className="transition-[fill-opacity,stroke-opacity] group-hover:[fill-opacity:0.12] group-focus-visible:[stroke-opacity:1] group-focus-visible:[fill-opacity:0.15]" />
-              </g>
-            );
-          })}
-          {regions.map((r) => {
-            const ms = markers.filter((m) => m.region.id === r.id);
-            if (!ms.length) return null;
-            const [cx, cy] = centre(r.shape);
-            const iv = ms.some((m) => m.kind === 'iv');
-            return (
-              <g key={`m-${r.id}`} pointerEvents="none" aria-hidden="true">
-                <circle cx={cx} cy={cy} r={6} fill={iv ? '#4A6078' : '#277453'} stroke="#fff" strokeWidth={1.5} />
-                {ms.length > 1 && <text x={cx} y={cy + 2.6} fontSize="7" textAnchor="middle" fill="#fff" fontFamily="Inter" fontWeight="700">{ms.length}</text>}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </figure>
-  );
-}
+type ViewChoice = View | 'both';
 
 export function BodyMapPage() {
   const { patient } = useCurrentPatient();
   const { db } = useApp();
   const [selected, setSelected] = useState<string | null>(null);
+  const [view, setView] = useState<ViewChoice>(() => (typeof window !== 'undefined' && window.innerWidth >= 1280 ? 'both' : 'front'));
   const meds = useLiveQuery(async () => (await listPatientEntries(db, patient.id))
     .filter((x) => x.entry.type === 'med_admin' && x.entry.status === 'confirmed' && (x.child as MedAdmin | undefined)?.site), [db, patient.id]);
-  const markers: Marker[] = [];
+
+  const marked: { item: EntryWithChild; regionId: string; kind: MarkerKind }[] = [];
   const unmapped: EntryWithChild[] = [];
   for (const item of meds ?? []) {
     const m = item.child as MedAdmin;
-    const region = siteRegion(m.site);
-    if (region) markers.push({ region, kind: markerKind(m), item });
+    const r = siteRegion(m.site);
+    if (r) marked.push({ item, regionId: r.id, kind: markerKind(m) });
     else unmapped.push(item);
   }
+  const figureMarkers: FigureMarker[] = marked.map((m) => ({ regionId: m.regionId, kind: m.kind, key: m.item.entry.id }));
+  const recentInjections = marked.filter((m) => m.kind === 'injection').slice(0, 3);
+  const sel = selected ? regionById(selected) : undefined;
+  const inSel = marked.filter((m) => m.regionId === selected);
   const base = `/patients/${patient.id}`;
-  const sel = REGIONS.find((r) => r.id === selected);
-  const inSel = markers.filter((m) => m.region.id === selected);
+
+  function choose(id: string) {
+    setSelected(id);
+    const r = regionById(id);
+    if (r && view !== 'both' && !r.zones[view]) setView(r.primary);
+  }
 
   return (
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'History', to: `${base}/timeline` }, { label: 'Body map' }]} />
-      <h1 className="font-headline-lg text-headline-lg text-primary">Body map</h1>
-      <div className="grid grid-cols-1 xl:grid-cols-[auto_1fr] gap-space-lg items-start">
-        <Card className="flex gap-space-md justify-center">
-          <Figure view="front" art={frontArt} markers={markers} selected={selected} onSelect={setSelected} />
-          <Figure view="back" art={backArt} markers={markers} selected={selected} onSelect={setSelected} />
+      <div className="flex flex-wrap items-center justify-between gap-space-md">
+        <h1 className="font-headline-lg text-headline-lg text-primary">Body map</h1>
+        <div className="flex flex-wrap items-center gap-space-md">
+          <div className="flex items-center bg-surface-container-low rounded-lg p-0.5 border border-card-border" role="group" aria-label="Which view">
+            {(['front', 'back', 'both'] as const).map((v) => (
+              <button key={v} aria-pressed={view === v} onClick={() => setView(v)}
+                className={`min-h-10 px-4 rounded font-body-md ${view === v ? 'bg-surface-container-lowest text-primary font-semibold shadow-sm' : 'text-on-surface-variant'}`}>
+                {v === 'front' ? 'Front' : v === 'back' ? 'Back' : 'Both'}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 font-body-md">
+            <span className="text-secondary">Body area</span>
+            <select value={selected ?? ''} onChange={(e) => e.target.value && choose(e.target.value)} className="h-10 rounded-lg border border-card-border bg-surface-container-lowest px-2" aria-label="Choose body area from a list">
+              <option value="">Choose…</option>
+              {REGIONS.map((r) => {
+                const n = marked.filter((m) => m.regionId === r.id).length;
+                return <option key={r.id} value={r.id}>{r.label}{n ? ` (${n})` : ''}</option>;
+              })}
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-space-lg items-start">
+        <Card className="bg-[#FBF8F2]">
+          <div className={`grid gap-space-md ${view === 'both' ? 'grid-cols-2' : 'grid-cols-1'} max-w-[720px] mx-auto`}>
+            {(view === 'both' ? (['front', 'back'] as const) : [view]).map((v) => (
+              <figure key={v} className="flex flex-col items-center gap-1 w-full max-w-[340px] mx-auto">
+                <figcaption id={`bm-${v}`} className="font-label-uppercase text-label-uppercase text-secondary uppercase">{v === 'front' ? 'Front' : 'Back'}</figcaption>
+                <BodyFigure view={v} markers={figureMarkers} selected={selected} onSelect={choose} titleId={`bm-${v}`} />
+              </figure>
+            ))}
+          </div>
+          <div className="flex flex-wrap justify-center gap-space-lg mt-space-sm font-body-sm text-on-surface-variant" aria-label="Marker key">
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-primary-container" />Injection</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-secondary" />IV line</span>
+            <span className="flex items-center gap-1 opacity-60"><span className="w-3 h-3 rounded-full border border-secondary" />Pain, skin: need notes linked to a body area (pending)</span>
+          </div>
         </Card>
+
         <div className="flex flex-col gap-space-md">
           <Card>
-            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">{sel ? sel.label : 'Tap a body area'}</h2>
-            {sel ? (inSel.length ? inSel.map((m) => <EntryRow key={m.item.entry.id} item={m.item} />) : <p className="text-secondary">Nothing marked here.</p>)
-              : <p className="text-secondary">Left and right are the patient’s own left and right.</p>}
+            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm" aria-live="polite">{sel ? sel.label : 'Tap a body area'}</h2>
+            {sel ? (inSel.length ? inSel.map((m) => <EntryRow key={m.item.entry.id} item={m.item} />) : <p className="text-secondary">Nothing recorded here.</p>)
+              : <p className="text-secondary">Left and right are the patient’s own left and right. You can also pick from the list above.</p>}
+          </Card>
+          <Card>
+            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name="medication/syringe" size={28} />Recent injection sites</h2>
+            {recentInjections.length ? (
+              <ul className="flex flex-col gap-1" data-testid="recent-injections">
+                {recentInjections.map((m) => {
+                  const ma = m.item.child as MedAdmin;
+                  return <li key={m.item.entry.id} className="font-body-md"><strong className="text-primary">{regionById(m.regionId)!.label}</strong> · {ma.drug_name} · {dateTimeLabel(m.item.entry.care_time)}</li>;
+                })}
+              </ul>
+            ) : <p className="text-secondary">None recorded.</p>}
+            <p className="font-body-sm text-secondary mt-space-sm">For reference only. Not a recommendation for the next site.</p>
           </Card>
           <Card>
             <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">All marked sites</h2>
-            <div className="flex gap-space-md mb-space-sm font-body-sm text-secondary">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-sync-green" />Injection</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-secondary" />IV line</span>
-            </div>
-            {markers.length === 0 && unmapped.length === 0 ? <p className="text-secondary">No sites recorded.</p> : (
+            {marked.length === 0 && unmapped.length === 0 ? <p className="text-secondary">No sites recorded.</p> : (
               <ul className="flex flex-col gap-1">
-                {markers.map((m) => {
+                {marked.map((m) => {
                   const ma = m.item.child as MedAdmin;
                   return (
                     <li key={m.item.entry.id} className="flex flex-wrap items-center gap-x-2 font-body-md">
                       <Icon name={m.kind === 'iv' ? 'water_drop' : 'vaccines'} className="text-secondary text-[18px]" />
-                      <button className="underline decoration-dotted text-primary whitespace-nowrap" onClick={() => setSelected(m.region.id)}>{m.region.label}</button>
+                      <button className="underline decoration-dotted text-primary whitespace-nowrap" onClick={() => choose(m.regionId)}>{regionById(m.regionId)!.label}</button>
                       <span className="text-on-surface-variant">· {ma.drug_name}{ma.dose_given != null ? ` ${formatDose(ma.dose_given)} ${ma.dose_given_unit ?? ''}` : ''} · {dateTimeLabel(m.item.entry.care_time)}</span>
                     </li>
                   );
                 })}
-                {unmapped.map((x) => (
-                  <li key={x.entry.id} className="font-body-md text-on-surface-variant">Site not on the map: “{(x.child as MedAdmin).site}”</li>
-                ))}
+                {unmapped.map((x) => <li key={x.entry.id} className="font-body-md text-on-surface-variant">Site not on the map: “{(x.child as MedAdmin).site}”</li>)}
               </ul>
             )}
           </Card>
-          <p className="font-body-sm text-secondary">Skin and pain markers will appear once notes can be linked to a body area (waiting on the final region list).</p>
         </div>
       </div>
     </>

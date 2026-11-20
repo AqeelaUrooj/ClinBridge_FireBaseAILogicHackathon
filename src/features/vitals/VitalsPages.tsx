@@ -10,8 +10,14 @@ import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
 import { VitalsEditor } from './VitalsEditor';
+import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
 
 const CARDS: VitalKey[] = ['bp_systolic', 'heart_rate', 'spo2', 'temp_c', 'resp_rate'];
+/** Pictures for each measure. Decorative: the number and label carry the meaning. */
+export const VITAL_ART: Partial<Record<VitalKey, MedicalAsset>> = {
+  bp_systolic: 'vitals/bp-monitor', bp_diastolic: 'vitals/bp-monitor', heart_rate: 'vitals/heart', spo2: 'vitals/pulse-oximeter',
+  temp_c: 'vitals/thermometer', resp_rate: 'vitals/lungs', glucose_mgdl: 'vitals/glucose-meter',
+};
 
 function useVitals(patientId: string) {
   const { db } = useApp();
@@ -76,7 +82,10 @@ export function VitalsPage() {
                 const out = isUnusual(k, n);
                 return (
                   <div key={k} className={`rounded-xl border p-space-md bg-surface-container-lowest ${out ? 'border-downtime-amber-border' : 'border-card-border'}`}>
-                    <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">{k === 'bp_systolic' ? 'Blood pressure' : r.label}</span>
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">{k === 'bp_systolic' ? 'Blood pressure' : r.label}</span>
+                      {VITAL_ART[k] && <MedIllustration name={VITAL_ART[k]!} size={30} />}
+                    </span>
                     <span className="block font-code-tabular text-[26px] font-bold text-primary">
                       {n == null ? '—' : k === 'bp_systolic' ? `${n}/${lv?.bp_diastolic ?? '?'}` : n}
                       <span className="text-body-sm font-normal text-secondary"> {n == null ? '' : r.unit}</span>

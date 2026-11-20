@@ -11,7 +11,7 @@ export default defineConfig({
       injectRegister: 'auto',
       workbox: {
         // Everything the app needs offline is bundled: JS, CSS, Inter, Material Symbols, seed data.
-        globPatterns: ['**/*.{js,css,html,woff2,svg,png,json,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,woff2,svg,png,webp,json,webmanifest}'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
       },

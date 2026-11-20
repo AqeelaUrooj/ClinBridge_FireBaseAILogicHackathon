@@ -7,12 +7,15 @@ import { hm } from '../../lib/time';
 import { Card, EmptyState, Icon, SectionLabel, ButtonLink } from '../../components/ui';
 import { EntryRow, isRetired } from '../entries/entryView';
 import { useCurrentPatient } from './PatientLayout';
+import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
 
-function ActionCard({ to, icon, kicker, title, children, disabledReason }: { to: string; icon: string; kicker: string; title: string; children?: React.ReactNode; disabledReason?: string }) {
+function ActionCard({ to, icon, art, kicker, title, children, disabledReason }: { to: string; icon: string; art?: MedicalAsset; kicker: string; title: string; children?: React.ReactNode; disabledReason?: string }) {
   const body = (
     <>
       <div className="flex items-center gap-2">
-        <div className="w-10 h-10 rounded-lg bg-secondary-fixed text-on-secondary-fixed grid place-items-center"><Icon name={icon} className="text-[22px]" /></div>
+        {art
+          ? <div className="w-11 h-11 rounded-lg bg-[#FBF8F2] ring-1 ring-card-border grid place-items-center"><MedIllustration name={art} size={32} /></div>
+          : <div className="w-11 h-11 rounded-lg bg-secondary-fixed text-on-secondary-fixed grid place-items-center"><Icon name={icon} className="text-[22px]" /></div>}
         <div>
           <SectionLabel>{kicker}</SectionLabel>
           <span className="block font-headline-sm text-headline-sm text-primary">{title}</span>
@@ -40,8 +43,8 @@ export function PatientSummary() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-space-md">
-        <ActionCard to={`${base}/meds`} icon="vaccines" kicker="Medicine" title="Give medicine" disabledReason={nurseOnly} />
-        <ActionCard to={`${base}/vitals`} icon="vital_signs" kicker="Observation" title="Vitals" disabledReason={nurseOnly}>
+        <ActionCard to={`${base}/meds`} icon="vaccines" art="medication/capsule" kicker="Medicine" title="Give medicine" disabledReason={nurseOnly} />
+        <ActionCard to={`${base}/vitals`} icon="vital_signs" art="vitals/heart" kicker="Observation" title="Vitals" disabledReason={nurseOnly}>
           {v ? (
             <span className="font-code-tabular text-code-tabular text-on-surface-variant">
               {v.bp_systolic != null && `BP ${v.bp_systolic}/${v.bp_diastolic} · `}{v.heart_rate != null && `Pulse ${v.heart_rate} · `}{hm(lastVitals!.entry.care_time)}
@@ -49,8 +52,8 @@ export function PatientSummary() {
           ) : <span className="font-body-sm text-body-sm text-secondary">No vitals yet</span>}
         </ActionCard>
         <ActionCard to={`${base}/io`} icon="water_drop" kicker="Intake/Output" title="Fluids" disabledReason={nurseOnly} />
-        <ActionCard to={`${base}/notes`} icon="description" kicker="Nursing" title="Note" disabledReason={nurseOnly} />
-        <ActionCard to={`${base}/capture`} icon="photo_camera" kicker="Paper form" title="Photo of paper" disabledReason={nurseOnly} />
+        <ActionCard to={`${base}/notes`} icon="description" art="workflows/checklist" kicker="Nursing" title="Note" disabledReason={nurseOnly} />
+        <ActionCard to={`${base}/capture`} icon="photo_camera" art="workflows/paper-photo" kicker="Paper form" title="Photo of paper" disabledReason={nurseOnly} />
       </div>
       <Card>
         <div className="flex items-center justify-between mb-space-sm">
