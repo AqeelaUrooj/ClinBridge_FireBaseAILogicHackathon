@@ -1,15 +1,37 @@
 # Test report
 
-Run: 20 Nov 2026 (round 8), local (Linux, Node 22, Chrome) on branch `feat/cleanup` (stacked on `feat/enrollment`). All runs below happened after the last code change.
+Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on branch `feat/ai-hybrid`. All runs below happened after the last code change.
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | Pass (exit 0) |
 | `npm run lint` | Pass (exit 0) |
-| `npm test` (Vitest) | **165 pass, 1 skipped** (24 files + 1 skipped). The skipped file only writes the export for CI. |
-| `npm run build` | Pass (PWA, 22 files precached) |
-| `npm run test:e2e` (Playwright) | **27 / 27 pass** |
-| HL7 FHIR Validator 7.0.6 (GitHub Actions, PR #4 merge) | **0 errors, 11 warnings**, 418 information |
+| `npm test` (Vitest) | **185 pass, 1 skipped** (27 files + 1 skipped) |
+| `npm run build` | Pass (PWA, 26 files precached incl. the Firebase chunks) |
+| `npm run test:e2e` (Playwright) | **30 / 30 pass** (second server: AI build with fake Firebase values) |
+| Real AI model | **Not run.** Sandbox Chrome 153: Prompt API present, model "unavailable" |
+
+## Round 9 additions (AI)
+
+- `src/lib/ai/service.test.ts` (14). Real Firebase SDK 13.4.0 browser build, **mock** LanguageModel, fetch spy, App Check mocked:
+  - The SDK pitfall: ONLY_ON_DEVICE without the Prompt API goes to the cloud.
+  - System down: refused without the Prompt API; on-device proposal labelled on_device with 0 network; unavailable and not-downloaded reasons; a network attempt discards the result; not configured.
+  - Cloud refused for every purpose in System down.
+  - PNG image part sent to the device; WebP refused, not uploaded.
+  - Practice cloud compare: ONLY_IN_CLOUD, labelled in_cloud, schema sent. Compare on Real records, second look before clearance, and a missing App Check key are all refused.
+  - Parsing and diff.
+- `src/lib/ai/readiness.test.ts` (5): Chrome 148 ready; installed but not downloaded; text OK but image off → flag hint; old Chrome / no API / no config / System down; version parsing.
+- `src/db/repos/drill.test.ts` (1): practice outage drill, audited, admin and Practice only.
+- `e2e/ai.spec.ts` (3, **mock** Prompt API, fake Firebase values):
+  - System-down drill → photo → on-device proposal labelled ONLY_ON_DEVICE → nurse edits → draft → "Device AI", with **0 external requests**.
+  - No usable on-device AI → clear message, nothing sent, manual save works.
+  - The AI check page shows "Not downloaded yet" even though Chrome is installed, Firebase initialised, and the System-down mode as ONLY_ON_DEVICE.
+- `e2e/capture.spec.ts`: seed proposals are shown as "simulated, not a model answer".
+- Pre-merge checks for PR #7 (owner's final checks A and B):
+  - `service.test.ts` +11 (now 25): **cloud request during a mode change** (7): pending request + System down → aborted, answer discarded; server answers anyway → discarded; System down in the database before send → refused, 0 requests; phase flips in the database while in flight → discarded; stale screen snapshot → refused; second look aborted when Back online ends, compare aborted on dataset switch; unreadable phase → refused. **inferenceSource contract** (4): SDK version and constant values pinned; runtime value from the real SDK is `InferenceSource.ON_DEVICE` (`'on_device'`); other spellings / unknown / missing rejected; the on-device path never accepts a cloud-labelled answer.
+  - Mutation check: with the gate's abort and on-arrival check disabled, 4 of the 7 mode-change tests fail.
+  - `e2e/ai.spec.ts` +1 (now 4): pending cloud compare, then a second tab declares a practice outage → request cancelled, "Cloud answer discarded", late answer never shown. reCAPTCHA, App Check and Gemini are local stand-ins (no Google traffic).
+- **No real model has been run.** Live results: `docs/LIVE_AI_TEST_CHECKLIST.md` (owner).
 
 ## Round 8 additions
 

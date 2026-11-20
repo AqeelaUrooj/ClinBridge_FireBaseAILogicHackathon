@@ -5,11 +5,12 @@ import { useApp, useSession } from '../../state/app';
 import { buildWorklist, signOffItem } from '../../db/repos/worklist';
 import { getEntry, listPatientEntries, versionChain } from '../../db/repos/entries';
 import { prepareExport, recordExport } from '../../db/repos/export';
-import type { WorklistFlag } from '../../db/schema';
+import type { VitalSign, WorklistFlag } from '../../db/schema';
 import { FLAG_TEXT, flagEntry } from '../../lib/recovery';
 import { dateTimeLabel } from '../../lib/time';
 import { Badge, Breadcrumbs, Button, ButtonLink, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { MedIllustration } from '../../components/MedIllustration';
+import { SecondLookCard } from '../ai/AiPages';
 import { EntryRow, StatusBadge, entrySummary } from '../entries/entryView';
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
@@ -124,6 +125,7 @@ export function RecoveryItemPage() {
         {error && <p role="alert" className="text-error">{error}</p>}
         <p className="font-body-sm text-secondary">Sign off means a person checked this record against the paper and fixed it if needed. Fixes are new versions; nothing is deleted.</p>
       </Card>
+      {newest && <SecondLookCard entry={newest.entry} child={newest.child as VitalSign | undefined} />}
     </>
   );
 }

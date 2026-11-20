@@ -5,6 +5,7 @@ import { vitalsSummary } from '../../lib/vitals';
 import { formatDose } from '../../lib/dose';
 import { hm } from '../../lib/time';
 import { ioLabel } from '../../lib/charting';
+import { aiMeta } from '../../lib/ai/proposal';
 import { Badge, Icon } from '../../components/ui';
 
 export const TYPE_LABEL: Record<EntryType, string> = { vital_sign: 'Vitals', med_admin: 'Medicine', intake_output: 'Fluids', note: 'Note', lab_event: 'Lab' };
@@ -33,9 +34,11 @@ export function StatusBadge({ entry }: { entry: Entry }) {
   return <Badge tone="green" icon="check">Confirmed</Badge>;
 }
 
+/** Where an AI proposal came from. Seed proposals (no `_ai` block) are simulated practice data, said so. */
 export function SourceBadge({ entry }: { entry: Entry }) {
-  if (entry.inference_source === 'on_device') return <Badge tone="navy" icon="memory">Device</Badge>;
-  if (entry.inference_source === 'in_cloud') return <Badge tone="blue" icon="cloud">Cloud</Badge>;
+  const real = aiMeta(entry);
+  if (real) return real.source === 'on_device' ? <Badge tone="navy" icon="memory">Device AI</Badge> : <Badge tone="blue" icon="cloud">Cloud AI</Badge>;
+  if (entry.inference_source) return <Badge icon="science">Simulated proposal</Badge>;
   return null;
 }
 

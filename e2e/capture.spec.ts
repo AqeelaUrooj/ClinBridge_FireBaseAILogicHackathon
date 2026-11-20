@@ -69,6 +69,6 @@ test('practice draft with a stored proposal is labelled as simulated, not live A
   await page.getByRole('complementary').getByRole('link', { name: /Alerts/ }).click();
   await page.getByRole('link', { name: /Draft vital sign/ }).click();
   await page.getByRole('button', { name: 'Yes, open' }).click();
-  await expect(page.getByText(/This build does not run AI/)).toBeVisible();
+  await expect(page.getByText(/simulated, not a model answer/)).toBeVisible(); // seed proposal: never shown as a real model answer
   await expect(page.getByText(/Photo file is not on this laptop/)).toBeVisible();
 });

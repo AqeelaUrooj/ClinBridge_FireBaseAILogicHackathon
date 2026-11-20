@@ -41,8 +41,8 @@ export function ButtonLink({ variant = 'primary', className = '', children, ...r
   );
 }
 
-export function Card({ className = '', children, as: As = 'section' }: { className?: string; children: ReactNode; as?: 'section' | 'div' | 'article' }) {
-  return <As className={`bg-surface-container-lowest rounded-xl border border-card-border p-space-md ${className}`}>{children}</As>;
+export function Card({ className = '', children, as: As = 'section', ...aria }: { className?: string; children: ReactNode; as?: 'section' | 'div' | 'article'; 'aria-label'?: string }) {
+  return <As className={`bg-surface-container-lowest rounded-xl border border-card-border p-space-md ${className}`} {...aria}>{children}</As>;
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {

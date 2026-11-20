@@ -13,6 +13,12 @@ import { openWithMigration } from '../db/backup';
 import type { DowntimeEvent, Practitioner, Snapshot } from '../db/schema';
 import { derivePhase, currentEvent, type Phase } from '../lib/phase';
 import { liveClock, practiceClock, type Clock } from '../lib/time';
+import { publishCloudContext, type CloudContext } from '../lib/cloudGate';
+
+/** Fresh read of the authoritative phase for the cloud gate (right before a cloud request is sent, and after it returns). */
+export async function readCloudContext(db: DowntimeDB, dataset: Dataset): Promise<CloudContext> {
+  return { dataset, phase: derivePhase(await db.downtime_event.toArray()) };
+}
 
 /**
  * App-wide context: which dataset is open, its database, clock, phase and this laptop's device id.
@@ -178,6 +184,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const snapshot = useLiveQuery(() => (usable ? db.snapshot.orderBy('taken_at').last() : undefined), [db, usable]);
   const devices = useLiveQuery(() => (usable ? db.device.toArray() : []), [db, usable], []);
 
+  // Tell the cloud gate about every phase/dataset change: a running cloud request that is no longer allowed is aborted.
+  // While the records can't be read (locked, booting), fail closed as if the system were down.
+  const phaseNow = derivePhase(events);
+  useEffect(() => {
+    publishCloudContext({ dataset, phase: usable ? phaseNow : 'down' });
+  }, [dataset, phaseNow, usable]);
+
   const setDataset = useCallback((d: Dataset) => {
     try {
       localStorage.setItem(DATASET_KEY, d);
@@ -192,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDataset,
     db,
     clock,
-    phase: derivePhase(events),
+    phase: phaseNow,
     event: currentEvent(events),
     snapshot,
     deviceId: dataset === 'practice' ? PRACTICE_DEVICE : devices[0]?.id ?? 'unregistered',
