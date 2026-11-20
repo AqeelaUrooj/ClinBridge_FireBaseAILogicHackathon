@@ -27,7 +27,7 @@ Copy `.env.example` to `.env.local` and fill in Firebase values when AI is added
 ## GitHub
 
 CI runs on every push/PR: typecheck, lint, unit tests, build, Playwright (`.github/workflows/ci.yml`).
-Repo is local only for now. Pushing waits for the repo owner/name (D-04) and the owner's approval.
+Repo: https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon. CI also runs the official HL7 FHIR validator (fails on errors).
 
 ## Vercel (optional)
 

@@ -48,15 +48,21 @@
 | D-49 | FHIR narrative `text.status = generated`, built only from each resource's fields | dom-6 warnings; no invented content |
 | D-50 | Vault idle lock 60 min, PBKDF2 600,000 iterations: prototype values in `securityPolicy.ts`, shown "Not approved" | Hospital IT decides |
 
+| D-51 | Sealed format v2: AES-GCM associated data = table + canonical JSON of all index fields; v1 read only until resealed after unlock | Owner review of PR #4 (authenticate indexed metadata), no schema change |
+| D-52 | F1 enrollment: no credential in the file; device id made on laptop 2; pending accounts marked by a non-hash `pin_hash` value (no schema change); "New PIN" refused for them | Owner decision F1 |
+| D-53 | Enrollment file valid 24 h (prototype, not approved); fingerprint compared in person before opening | Passphrase alone doesn't prove the sender |
+| D-54 | Cleanup needs a fresh backup + restore test in a temporary database + typed confirmation; Real records refused in code | Owner conditions (section 3) |
+| D-55 | Photo stores are per clinical database (app names unchanged) | Needed for the temporary restore-test database |
+
 ## Open — need an answer
 
 | ID | Question | What the app does now |
 |---|---|---|
 | P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
-| P-05 | Second-laptop credential activation: F1 admin-supervised (recommended), F2 one-time codes, or both — `docs/proposals/P-05-second-laptop-enrollment.md` | Not built; no PIN hashes move between laptops |
-| P-04-D6 | Cleanup of plain copies: proposal in P-04 (needs a fresh encrypted backup first; removes only unencrypted safety copies) | Not done; plain copies kept |
-| P-04-RM | Encrypting an existing Real-records database that already holds plain data (irreversible step): proposal in P-04 | Not done; app shows "not encrypted" |
+| P-05-SIG | Optional stronger sender authenticity for enrollment files (a unit signing key trusted in advance) | Not built; process controls only (P-05) |
+| P-04-D6 | Running the cleanup on Real records (workflow built and tested on synthetic data) | Refused in code; Practice only |
+| P-04-RM | Encrypting an existing Real-records database (P-06: algorithm, rollback, evidence, risks, review plan) | Refused in code; app shows "not encrypted" |
 | P-04-IT | Hospital IT/security review of the encryption design, idle-lock time and iteration count | Prototype values, marked not approved |
 | D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`. Old commits had an author email that GitHub maps to an unrelated account; owner chose to rewrite authorship before publishing | **Resolved 20 Nov 2026:** all 13 commits re-authored as `Aqeela Urooj <38668564+AqeelaUrooj@users.noreply.github.com>` (owner confirmed); file content and messages unchanged; pushed |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
