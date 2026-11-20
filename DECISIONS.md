@@ -38,6 +38,7 @@
 | D-39 | Storage full (quota error) on any save → plain message to use paper and tell the charge nurse/IT; nothing partly saved | Reliability test found the raw browser error reaching nurses |
 | D-40 | FHIR fixes from the HL7 validator: allergy `clinicalStatus` from the existing `allergy.status`, `reaction.severity` from `allergy.severity`, MRN identifier coded `MR` (HL7 v2-0203), no dosage block for a held/refused dose without dose or rate | Exact matches to existing fields; nothing guessed |
 | D-41 | Official HL7 FHIR Validator 7.0.6 (pinned), R4 4.0.1, runs in GitHub Actions; fails on errors, reports warnings | The sandbox can't reach the HL7 package servers |
+| D-42 | Encryption at rest (P-04): A1 modified (unit passphrase unlocks the vault; PINs identify and authorise), B1 encrypted backups, C1 Practice encrypted with a published passphrase, D1 staged migration on Practice first | Owner decision 20 Nov 2026; irreversible steps need separate approval |
 
 ## Open — need an answer
 
@@ -45,8 +46,9 @@
 |---|---|---|
 | P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
-| P-04 | Encryption at rest: unlock secret (A), backups (B), practice data (C), how to move existing plain data (D, irreversible) — `docs/proposals/P-04-encryption-at-rest.md` | Not built; data is plain |
-| P-05 | Second-laptop enrollment — `docs/proposals/P-05-second-laptop-enrollment.md` (depends on P-04 A) | Not built |
+| P-05 | Second-laptop credential activation: F1 admin-supervised (recommended), F2 one-time codes, or both — `docs/proposals/P-05-second-laptop-enrollment.md` | Not built; no PIN hashes move between laptops |
+| P-04-D6 | Cleanup of plain copies (pre-encryption checkpoint, older safety copies) after the Practice migration tests pass | Not done; plain copies kept |
+| P-04-RM | Encrypting an existing Real-records database that already holds plain data (irreversible step) | Not done; app shows "not encrypted" |
 | D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`. Old commits had an author email that GitHub maps to an unrelated account; owner chose to rewrite authorship before publishing | **Resolved 20 Nov 2026:** all 13 commits re-authored as `Aqeela Urooj <38668564+AqeelaUrooj@users.noreply.github.com>` (owner confirmed); file content and messages unchanged; pushed |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |
