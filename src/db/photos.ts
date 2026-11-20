@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import type { Dataset, DowntimeDB } from './db';
 import { buildAuditRow } from './audit';
+import { guardStorage } from './errors';
 import type { Clock } from '../lib/time';
 
 /**
@@ -48,10 +49,10 @@ export async function savePhoto(db: DowntimeDB, clock: Clock, actor: { userId: s
   const sha256 = await blobHash(blob);
   const ref = `vault/raw/${crypto.randomUUID()}.${EXT[blob.type] ?? 'img'}`;
   const row: StoredPhoto = { ref, blob, type: blob.type, size: blob.size, sha256, saved_at: clock.nowIso(), patient_id: patientId };
-  await photoDb(db.dataset).photos.add(row);
+  await guardStorage(() => photoDb(db.dataset).photos.add(row));
   const last = await db.audit_log.orderBy('seq').last();
   const audit = await buildAuditRow({ last, time: row.saved_at, userId: actor.userId, deviceId: actor.deviceId, action: 'photo_saved', entity: ref, after: { patient_id: patientId, sha256, size: blob.size, type: blob.type } });
-  await db.audit_log.add(audit);
+  await guardStorage(() => db.audit_log.add(audit));
   return row;
 }
 

@@ -35,6 +35,9 @@
 | D-36 | Network clearance = prototype checklist (3 items, wording not approved) + admin PIN re-entry; end downtime only when the worklist is signed off | Implementation Plan gate; UI/UX "end only when the worklist is finished" |
 | D-37 | FHIR export: collection Bundle; text-only codes where no code is agreed (fluids, risk scores, labs, consciousness); `https://clinbridge.example/fhir` as placeholder base URL; handoff/audit not exported (post-hackathon list) | Data plan §7 |
 | D-38 | Snapshot import only into Real records; files marked fake are refused; only the 6 patient-list tables are accepted | Keeps practice and real data apart |
+| D-39 | Storage full (quota error) on any save → plain message to use paper and tell the charge nurse/IT; nothing partly saved | Reliability test found the raw browser error reaching nurses |
+| D-40 | FHIR fixes from the HL7 validator: allergy `clinicalStatus` from the existing `allergy.status`, `reaction.severity` from `allergy.severity`, MRN identifier coded `MR` (HL7 v2-0203), no dosage block for a held/refused dose without dose or rate | Exact matches to existing fields; nothing guessed |
+| D-41 | Official HL7 FHIR Validator 7.0.6 (pinned), R4 4.0.1, runs in GitHub Actions; fails on errors, reports warnings | The sandbox can't reach the HL7 package servers |
 
 ## Open — need an answer
 
@@ -42,6 +45,8 @@
 |---|---|---|
 | P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
+| P-04 | Encryption at rest: unlock secret (A), backups (B), practice data (C), how to move existing plain data (D, irreversible) — `docs/proposals/P-04-encryption-at-rest.md` | Not built; data is plain |
+| P-05 | Second-laptop enrollment — `docs/proposals/P-05-second-laptop-enrollment.md` (depends on P-04 A) | Not built |
 | D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`. Old commits had an author email that GitHub maps to an unrelated account; owner chose to rewrite authorship before publishing | **Resolved 20 Nov 2026:** all 13 commits re-authored as `Aqeela Urooj <38668564+AqeelaUrooj@users.noreply.github.com>` (owner confirmed); file content and messages unchanged; pushed |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |

@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 5)
+Last updated: 20 Nov 2026 (round 6)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -12,7 +12,7 @@ Last updated: 20 Nov 2026 (round 5)
 | 5 | Photo of paper form (on-device AI) | **Manual capture done**; AI not integrated (see docs/AI_INTEGRATION.md) |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | **Done** except practice compare (needs AI) |
-| 8 | Offline/security hardening, encryption at rest, deploy | Partly (offline shell works) |
+| 8 | Offline/security hardening, encryption at rest, deploy | Partly: offline shell, restart-offline test, reliability tests, HL7 validation done; encryption waits for P-04 approval |
 
 ## Phase 2 slice — working end to end
 
@@ -34,6 +34,14 @@ Also working:
 - High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride): red bar, and Save stays locked until a **different** eligible nurse picks their name and enters their own PIN. The database layer refuses the save too, so the rule cannot be skipped from the screen.
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
+
+## Round 6
+
+- **Reliability tests:** interrupted writes, failed migration, storage full, browser killed mid-form, restart with the network off, wrong clock, duplicate worklist builds, interrupted export, safety copy restore. One defect found and fixed (raw "quota" error shown to nurses).
+- **FHIR:** official HL7 validator in CI. First run 10 errors, now 0. Free-text parts are listed honestly in docs/FHIR_VALIDATION.md.
+- **Security review:** encryption design and the decisions it needs in P-04 (PR #2). Nothing irreversible done.
+- **Second laptop:** options in P-05 (PR #2).
+- **AI preparation:** docs/AI_INTEGRATION.md rewritten with checked browser and hardware facts (PR #3). Manual capture and rules-only recovery stay the default.
 
 ## Round 5
 
@@ -70,7 +78,7 @@ Also working:
 
 ## Waiting on you
 
-- **GitHub push** (blocked on the permission step, see the report).
+- **P-04 encryption decisions** (A, B, C, D) and **P-05** second laptop.
 - **Final body map region model** (P-01). Then `note.body_site` (P-03).
 - **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
