@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
 import { verifyChain } from '../../db/audit';
-import { addStaff, clearNetwork, declareDowntime, endDowntime, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
+import { addStaff, clearNetwork, declareDowntime, endDowntime, startPracticeOutageDrill, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
 import type { Role } from '../../db/schema';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
@@ -107,7 +107,7 @@ export function ReadinessPage() {
 /* ------------------------------ Downtime lifecycle ------------------------------ */
 
 export function DowntimePage() {
-  const { db, clock, deviceId, phase, event } = useApp();
+  const { db, clock, deviceId, phase, event, dataset } = useApp();
   const { user } = useSession();
   const [ticked, setTicked] = useState<string[]>([]);
   const [pin, setPin] = useState('');
@@ -154,6 +154,13 @@ export function DowntimePage() {
         )}
         <Err e={error} />
       </Card>
+      {dataset === 'practice' && phase !== 'down' && (
+        <Card className="flex flex-col gap-space-sm">
+          <h2 className="font-headline-sm text-headline-sm text-primary">Practice drill</h2>
+          <p className="text-on-surface-variant">Start a new outage on the fictional ward: the current practice downtime is closed (marked as a drill) and System down is declared. Practice data only.</p>
+          <Button variant="danger" className="self-start" disabled={busy} onClick={() => run(() => startPracticeOutageDrill(db, clock, actor))}><Icon name="power_off" />Start a practice outage</Button>
+        </Card>
+      )}
       <Card>
         <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">History</h2>
         <ul>{(history ?? []).map((h) => (

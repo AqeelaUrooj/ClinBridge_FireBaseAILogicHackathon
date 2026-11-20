@@ -114,6 +114,22 @@ export async function endDowntime(db: DowntimeDB, clock: Clock, actor: Actor): P
   await commit(db, row, () => db.downtime_event.update(ev.id, { ended_at: now }));
 }
 
+/**
+ * Practice only (demo/training): close the seed story's downtime and declare a fresh one, so a drill can start
+ * from System down without signing off the whole seed worklist. Never available for Real records.
+ */
+export async function startPracticeOutageDrill(db: DowntimeDB, clock: Clock, actor: Actor): Promise<string> {
+  if (db.dataset !== 'practice') throw new EntryWriteError('Drills run on Practice data only.');
+  await requireAdmin(db, actor);
+  const open = await db.downtime_event.filter((e) => !e.ended_at).toArray();
+  for (const ev of open) {
+    const now = clock.nowIso();
+    const row = await audit(db, clock, actor, 'practice_drill_closed', `downtime_event/${ev.id}`, { ended_at: now, practice_drill: true }, { ended_at: null });
+    await commit(db, row, () => db.downtime_event.update(ev.id, { ended_at: now }));
+  }
+  return declareDowntime(db, clock, actor);
+}
+
 /* ------------------------------ Snapshot import (Real records only) ------------------------------ */
 
 const SNAPSHOT_TABLES = ['snapshot', 'patient', 'encounter', 'allergy', 'active_order', 'snapshot_result'] as const;

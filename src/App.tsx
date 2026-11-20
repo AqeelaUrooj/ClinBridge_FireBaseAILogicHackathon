@@ -17,6 +17,7 @@ import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
 import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
 import { RecoveryListPage, RecoveryItemPage, ExportPage } from './features/recovery/RecoveryPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
+import { AiCheckPage, PracticeComparePage } from './features/ai/AiPages';
 
 function RequireAuth() {
   const { user, locked } = useSession();
@@ -63,7 +64,8 @@ export function App() {
           <Route path="/more" element={<MorePage />} />
           <Route path="/labs" element={<WardLabsPage />} />
           <Route path="/export" element={<ExportPage />} />
-          <Route path="/drill/compare" element={<NotBuilt title="Practice compare" phase="Phase 7" />} />
+          <Route path="/drill/compare" element={<PracticeComparePage />} />
+          <Route path="/ai" element={<AiCheckPage />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<ReadinessPage />} />
             <Route path="downtime" element={<DowntimePage />} />
