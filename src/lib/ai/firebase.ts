@@ -89,6 +89,17 @@ export async function cloudModel(cfg: AiConfig, responseSchema?: object): Promis
   });
 }
 
+/**
+ * The SDK's own InferenceSource constant. Verified for firebase@13.4.0 (@firebase/ai 3.1.0):
+ *   InferenceSource = { ON_DEVICE: 'on_device', IN_CLOUD: 'in_cloud' }
+ * The Firebase docs write `InferenceSource.ON_DEVICE` / `IN_CLOUD`: those are the constant NAMES; the runtime VALUES
+ * set on `response.inferenceSource` are the lowercase strings. We compare against the constant, never a hand-typed string.
+ */
+export async function sdkInferenceSource(): Promise<{ readonly ON_DEVICE: string; readonly IN_CLOUD: string }> {
+  const { InferenceSource } = await import('firebase/ai');
+  return InferenceSource;
+}
+
 /** Test hook: forget cached instances. */
 export function resetFirebaseForTests(): void {
   app = null;

@@ -17,7 +17,7 @@ npm run dev          # http://localhost:5173
 Sign in to Practice: pick any person, PIN **2468** (practice only).
 Records are encrypted at rest. After a reload or restart the app asks for the unit passphrase first; for Practice press **Use practice passphrase** (`practice only fake patients`, public on purpose: it protects nothing and is only for fake data). Real records get their own passphrase and a recovery key at first-time setup.
 
-**AI (optional):** copy `.env.example` to `.env.local` and fill in your Firebase web config and App Check site key (never commit it). Then use desktop Chrome 148+ and go to More → AI check → Prepare on-device model. Details: docs/AI_INTEGRATION.md. Demo steps: docs/DEMO_READINESS.md.
+**AI (optional):** copy `.env.example` to `.env.local` and fill in your Firebase web config and App Check site key (never commit it). Then use desktop Chrome 148+ and go to More → AI check → Prepare on-device model. Details: docs/AI_INTEGRATION.md. Firebase console setup: docs/FIREBASE_SETUP.md. Live test checklist: docs/LIVE_AI_TEST_CHECKLIST.md. Demo steps: docs/DEMO_READINESS.md. **AI has been tested with mocks only so far; no real model run yet.**
 
 ## Scripts
 

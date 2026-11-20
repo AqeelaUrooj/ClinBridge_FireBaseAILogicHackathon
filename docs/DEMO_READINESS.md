@@ -4,19 +4,19 @@ Reviewed 20 Nov 2026. Deadline 30 Nov 2026. **Synthetic data only.**
 
 ## The honest headline
 
-Hybrid AI with Firebase AI Logic is **built** (branch `feat/ai-hybrid`), but it has only been tested with **mocks**. No real Gemini Nano or Gemini cloud answer has been produced yet; see `docs/AI_TEST_MATRIX.md`. The demo needs a prepared laptop and the owner's Firebase config. Everything else (offline charting, encryption, recovery, FHIR export) works without AI, by design.
+Hybrid AI with Firebase AI Logic is **built** (merged to `main` via PR #7), but it has only been tested with **mocks**. It is **not** a completed, working hybrid-AI demonstration until the live test in `docs/LIVE_AI_TEST_CHECKLIST.md` passes. No real Gemini Nano or Gemini cloud answer has been produced yet; see `docs/AI_TEST_MATRIX.md`. The demo needs a prepared laptop and the owner's Firebase config. Everything else (offline charting, encryption, recovery, FHIR export) works without AI, by design.
 
 ## Demo instructions (synthetic data only)
 
 **Before the demo (network on):**
-1. Build with `.env.local` filled (see `.env.example`): Firebase web config and an App Check reCAPTCHA Enterprise site key registered for the demo domain. Deploy, or `npm run build && npm run preview`.
+1. Fill `.env.local` per `docs/FIREBASE_SETUP.md`. On localhost use `npm run dev` with the App Check debug token (cloud needs it; reCAPTCHA keys must not list localhost). On a deployed domain use `npm run build` with a reCAPTCHA Enterprise key for that domain.
 2. Laptop: desktop Chrome 148+, with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled and Chrome restarted.
 3. Open ClinBridge once (caches the app). Unlock with **Use practice passphrase**, sign in as Kim Ellis (PIN 2468) → More → **AI check**. Press **Prepare on-device model** and wait for "ready". Every row should be OK. If "Not downloaded" or "can't run" shows, fix that first.
 4. Print or open a synthetic paper vitals form. Or use Device vs Cloud with the synthetic paper form option, which draws one on screen.
 
 **Scenario 1: hospital outage (on-device only)**
 1. Kim Ellis → Admin → Downtime → **Start a practice outage**. The banner shows SYSTEM DOWN.
-2. Turn the network off (Wi-Fi off, or DevTools → Offline).
+2. Turn the network off (Wi-Fi off). With `npm run dev`, don't use DevTools → Offline: it also blocks the local dev server.
 3. Switch user → Daniel Okafor → patient → **Photo of paper** → Vitals sheet → take or choose the synthetic form photo.
 4. **Propose values from the photo**. The card shows "On this laptop · ONLY_ON_DEVICE · N ms" and the proposed values.
 5. **Put these values in the form** → correct anything against the paper → Review → **Save as draft** → **Check and confirm** beside the photo.
@@ -54,7 +54,7 @@ Suggested 3-minute story: 1 → 2 (go offline in DevTools first) → 5 → 6 →
 
 1. **Firebase project + App Check:** web config and reCAPTCHA Enterprise site key in `.env.local`. Never paste keys into chat or commit them.
 2. **A laptop with desktop Chrome 148+** that can run Gemini Nano, with the model prepared. The sandbox's Chrome reports the model "unavailable".
-3. **One real run of the three scenarios**, recorded in TEST_REPORT before the submission claims live results.
+3. **One real run of the three scenarios** (`docs/LIVE_AI_TEST_CHECKLIST.md`), recorded in TEST_REPORT before the submission claims live results.
 
 ## Other risks for the demo
 

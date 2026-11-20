@@ -26,6 +26,8 @@ So the real browser API was exercised for availability only, and ClinBridge's "c
 | Paper photo → proposal (image input) | **Mock** model; real image pipeline in Chrome | Browser | PNG goes to the device as an image part; nurse confirms beside the photo |
 | Back-online cloud second look | Not run against a model | Code path + guard unit tests | Button only after network clearance; never edits the record |
 | Inference-source labels | Real SDK `response.inferenceSource` (mock / canned backends) | Unit + browser | Labels come from the SDK value, not from the mode we asked for |
+| inferenceSource contract (SDK 13.4.0) | Real SDK source + runtime value with a **mock** Prompt API | Unit | Constant `{ ON_DEVICE: 'on_device', IN_CLOUD: 'in_cloud' }`; runtime value `'on_device'`; `'ON_DEVICE'`, unknown and missing values rejected |
+| Cloud request running, then System down | Real SDK + **held canned** HTTP response | Unit (7) + browser (second tab declares the outage; fake reCAPTCHA/App Check/Gemini stand-ins) | Request aborted; a late answer is discarded (`CloudRevokedError`), never shown or saved; phase re-read from the database before sending and on arrival |
 
 ## What still needs a real run (owner, on a prepared laptop)
 
@@ -36,3 +38,5 @@ So the real browser API was exercised for availability only, and ClinBridge's "c
    - **Practice → Device vs Cloud:** the synthetic note, then the synthetic form. Note both sources and the differences.
    - **Back online → Recovery item with a photo → Cloud second look.**
 4. Put the observed results in TEST_REPORT. Until then, ClinBridge must not claim live AI results.
+
+Step-by-step version with a results template: `docs/LIVE_AI_TEST_CHECKLIST.md`. Firebase console setup: `docs/FIREBASE_SETUP.md`.

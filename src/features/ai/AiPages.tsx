@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
-import { useApp, useSession, isNurse } from '../../state/app';
+import { useApp, useSession, isNurse, readCloudContext } from '../../state/app';
 import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { readAiConfig } from '../../lib/ai/config';
 import { checkReadiness, type ReadinessItem } from '../../lib/ai/readiness';
 import { deviceModel } from '../../lib/ai/firebase';
 import { cloudDecision, CloudBlockedError } from '../../lib/cloud';
+import { CloudRevokedError } from '../../lib/cloudGate';
 import {
   AiUnavailableError, diffProposals, proposeVitalsInCloud, proposeVitalsOnDevice, type AiRaw, type VitalsProposal,
 } from '../../lib/ai/service';
@@ -19,6 +20,7 @@ import type { Entry, VitalSign } from '../../db/schema';
 import { fullName } from '../patient/patientData';
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const cloudMsg = (e: unknown) => (e instanceof CloudRevokedError ? `${e.message} Nothing from that request is shown or saved.` : e instanceof CloudBlockedError ? `Cloud blocked: ${e.message}` : msg(e));
 const TONE: Record<ReadinessItem['status'], 'green' | 'amber' | 'red' | 'blue'> = { ok: 'green', warn: 'amber', fail: 'red', info: 'blue' };
 const LABEL: Record<ReadinessItem['status'], string> = { ok: 'OK', warn: 'Check', fail: 'Not ready', info: 'Info' };
 
@@ -167,11 +169,16 @@ export function PracticeComparePage() {
   const [dev, setDev] = useState<Side>({ busy: false });
   const [cld, setCld] = useState<Side>({ busy: false });
   const [error, setError] = useState<string | null>(null);
+  const gen = useRef(0); // bumps when the input changes: an answer for an older input is ignored
   const src = sources?.find((s) => s.entry.id === pick);
   const note = src ? syntheticNote(src.v, src.entry.care_time.slice(11, 16)) : '';
   const cloud = cloudDecision({ dataset, phase, purpose: 'compare' });
 
+  // Cloud no longer allowed (System down declared, dataset switched): drop any cloud answer already on screen.
+  useEffect(() => { if (!cloud.allowed) setCld({ busy: false }); }, [cloud.allowed]);
+
   useEffect(() => {
+    gen.current += 1;
     setDev({ busy: false }); setCld({ busy: false });
     if (!src || kind !== 'image') { setImage(null); return; }
     let url = '';
@@ -181,14 +188,27 @@ export function PracticeComparePage() {
 
   if (dataset !== 'practice') return <EmptyState icon="science" text="Device vs Cloud compare runs on Practice (fictional) data only." />;
   const input = () => (kind === 'image' && image ? { prompt: 'Read the vital signs on this paper form.', image: image.blob } : { prompt: note });
-  const runDev = async () => { setDev({ busy: true }); try { setDev({ busy: false, result: await proposeVitalsOnDevice({ dataset, phase }, input()) }); } catch (e) { setDev({ busy: false, error: msg(e) }); } };
-  const runCloud = async () => { setCld({ busy: true }); try { setCld({ busy: false, result: await proposeVitalsInCloud({ dataset, phase }, 'compare', input()) }); } catch (e) { setCld({ busy: false, error: e instanceof CloudBlockedError ? `Cloud blocked: ${e.message}` : msg(e) }); } };
+  const runDev = async () => {
+    const g = gen.current; setDev({ busy: true });
+    try { const result = await proposeVitalsOnDevice({ dataset, phase }, input()); if (g === gen.current) setDev({ busy: false, result }); }
+    catch (e) { if (g === gen.current) setDev({ busy: false, error: msg(e) }); }
+  };
+  const runCloud = async () => {
+    const g = gen.current; setCld({ busy: true });
+    try { const result = await proposeVitalsInCloud({ dataset, phase, readLive: () => readCloudContext(db, dataset) }, 'compare', input()); if (g === gen.current) setCld({ busy: false, result }); }
+    catch (e) { if (g === gen.current) setCld({ busy: false, error: cloudMsg(e) }); }
+  };
   const diffs = dev.result && cld.result ? diffProposals(dev.result.proposal, cld.result.proposal) : null;
 
   const saveDraft = async (side: { proposal: VitalsProposal; raw: AiRaw }) => {
     setError(null);
     try {
       if (!src) return;
+      if (side.raw.source === 'in_cloud') {
+        const live = await readCloudContext(db, dataset);
+        const d = cloudDecision({ ...live, purpose: 'compare' });
+        if (!d.allowed) { setCld({ busy: false }); throw new CloudRevokedError(d.reason); }
+      }
       const actor = { userId: user!.id, deviceId };
       let ref: string | undefined;
       if (kind === 'image' && image) ref = (await savePhoto(db, clock, actor, src.entry.patient_id, image.blob)).ref;
@@ -198,7 +218,7 @@ export function PracticeComparePage() {
         rawInputKind: ref ? 'photo' : 'typed', rawInputRef: ref, aiProposal: proposalRecord(side.proposal, side.raw, clock.nowIso()), inferenceSource: side.raw.source,
       });
       navigate(`/capture/${e.id}/confirm`);
-    } catch (e) { setError(msg(e)); }
+    } catch (e) { setError(cloudMsg(e)); }
   };
 
   const sideCard = (title: string, s: Side, run: () => void, enabled: boolean, why: string) => (
@@ -207,7 +227,7 @@ export function PracticeComparePage() {
       {!s.result && <Button variant="secondary" className="self-start" disabled={!src || s.busy || !enabled || (kind === 'image' && !image)} onClick={run}>{s.busy ? 'Running…' : `Run ${title.toLowerCase()}`}</Button>}
       {!enabled && <p className="font-body-sm text-secondary">{why}</p>}
       {s.error && <p role="alert" className="text-[#7a5410]">{s.error}</p>}
-      {s.result && <><SourceLabel raw={s.result.raw} /><ProposalTable p={s.result.proposal} />
+      {s.result && (s.result.raw.source === 'on_device' || cloud.allowed) && <><SourceLabel raw={s.result.raw} /><ProposalTable p={s.result.proposal} />
         {isNurse(user) && <Button variant="secondary" className="self-start" onClick={() => void saveDraft(s.result!)}>Review this one as a draft</Button>}</>}
     </Card>
   );
@@ -255,14 +275,15 @@ export function SecondLookCard({ entry, child }: { entry: Entry; child: VitalSig
   const { db, dataset, phase } = useApp();
   const decision = cloudDecision({ dataset, phase, purpose: 'second_look' });
   const [s, setS] = useState<{ busy: boolean; result?: { proposal: VitalsProposal; raw: AiRaw }; error?: string }>({ busy: false });
+  useEffect(() => { if (!decision.allowed) setS((cur) => (cur.result ? { busy: false } : cur)); }, [decision.allowed]);
   if (entry.type !== 'vital_sign' || entry.raw_input_kind !== 'photo' || !child) return null;
   const run = async () => {
     setS({ busy: true });
     try {
       const photo = await getPhoto(db, entry.raw_input_ref);
       if (!photo) throw new Error('The source photo is not on this laptop, so there is nothing to re-read.');
-      setS({ busy: false, result: await proposeVitalsInCloud({ dataset, phase }, 'second_look', { prompt: 'Read the vital signs on this paper form.', image: photo.blob }) });
-    } catch (e) { setS({ busy: false, error: e instanceof CloudBlockedError ? `Cloud blocked: ${e.message}` : msg(e) }); }
+      setS({ busy: false, result: await proposeVitalsInCloud({ dataset, phase, readLive: () => readCloudContext(db, dataset) }, 'second_look', { prompt: 'Read the vital signs on this paper form.', image: photo.blob }) });
+    } catch (e) { setS({ busy: false, error: cloudMsg(e) }); }
   };
   const recorded: VitalsProposal = { values: Object.fromEntries((Object.keys(VITAL_RULES) as VitalKey[]).filter((k) => child[k] != null).map((k) => [k, child[k] as number])), consciousness: child.consciousness ?? null, dropped: [] };
   const diffs = s.result ? diffProposals(recorded, s.result.proposal) : null;
@@ -273,7 +294,7 @@ export function SecondLookCard({ entry, child }: { entry: Entry; child: VitalSig
       {!decision.allowed && <p className="font-body-sm text-secondary">Not available now: {decision.reason}</p>}
       {!s.result && <Button variant="secondary" className="self-start" disabled={!decision.allowed || s.busy} onClick={() => void run()}>{s.busy ? 'Asking the cloud…' : 'Run cloud second look'}</Button>}
       {s.error && <p role="alert" className="text-[#7a5410]">{s.error}</p>}
-      {s.result && diffs && (
+      {s.result && diffs && decision.allowed && (
         <>
           <SourceLabel raw={s.result.raw} />
           {diffs.length === 0 ? <p>No differences from the confirmed record. That does not prove either is correct.</p> : (

@@ -12,11 +12,13 @@ vi.mock('firebase/app-check', () => ({
   ReCaptchaEnterpriseProvider: vi.fn(),
 }));
 
+import { readFileSync } from 'node:fs';
 import { CloudBlockedError } from '../cloud';
+import { CloudRevokedError, inflightCloudRequests, publishCloudContext, resetCloudGateForTests, type CloudContext } from '../cloudGate';
 import type { AiConfig } from './config';
 import { resetFirebaseForTests, AiSetupError } from './firebase';
 import {
-  AiUnavailableError, diffProposals, parseVitalsProposal, proposeVitalsInCloud, proposeVitalsOnDevice, runOnDevice, VITALS_JSON_SCHEMA,
+  AiUnavailableError, classifySource, diffProposals, parseVitalsProposal, proposeVitalsInCloud, proposeVitalsOnDevice, runOnDevice, VITALS_JSON_SCHEMA,
 } from './service';
 
 const CFG: AiConfig = { firebase: { apiKey: 'test-key', projectId: 'test-project', appId: '1:1:web:1' }, appCheckSiteKey: 'test-site-key', appCheckDebug: false, cloudModel: null, missing: [] };
@@ -164,6 +166,141 @@ describe('cloud: only where authorised', () => {
   it('no App Check site key: cloud refused before any request', async () => {
     await expect(proposeVitalsInCloud({ dataset: 'practice', phase: 'online', cfg: { ...CFG, appCheckSiteKey: null } }, 'compare', { prompt: 'x' })).rejects.toBeInstanceOf(AiSetupError);
     expect(networkCalls()).toEqual([]);
+  });
+});
+
+/* Holds the cloud generateContent request open until release(); records the AbortSignal the SDK passed to fetch. */
+function holdCloudFetch(honourAbort: boolean) {
+  let release!: () => void;
+  let started!: () => void;
+  const sent = new Promise<void>((r) => { started = r; });
+  const gate = new Promise<void>((r) => { release = r; });
+  let signal: AbortSignal | undefined;
+  fetchSpy.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (/^data:/.test(url)) return realFetch(input);
+    signal = init?.signal ?? undefined;
+    started();
+    if (honourAbort && signal) {
+      await Promise.race([gate, new Promise((_, reject) => signal!.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true }))]);
+    } else {
+      await gate; // a server that answers anyway (the request was already transmitted)
+    }
+    return new Response(JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: ANSWER }] }, finishReason: 'STOP', index: 0 }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+  });
+  return { sent, release, signal: () => signal };
+}
+
+describe('cloud request during a mode change (regression)', () => {
+  afterEach(() => resetCloudGateForTests());
+  const READY_PRACTICE = { dataset: 'practice' as const, phase: 'ready' as const, cfg: CFG };
+
+  it('pending cloud request, then System down: the request is aborted and its answer is never returned', async () => {
+    publishCloudContext({ dataset: 'practice', phase: 'ready' });
+    const h = holdCloudFetch(true);
+    const p = proposeVitalsInCloud(READY_PRACTICE, 'compare', { prompt: 'BP 128/82' });
+    await h.sent;
+    expect(inflightCloudRequests()).toBe(1);
+    publishCloudContext({ dataset: 'practice', phase: 'down' });
+    expect(h.signal()?.aborted).toBe(true);
+    await expect(p).rejects.toBeInstanceOf(CloudRevokedError);
+    await expect(p).rejects.toThrow(/System down/);
+    h.release();
+    expect(inflightCloudRequests()).toBe(0);
+  });
+
+  it('the server answers anyway after System down (request already transmitted): the answer is still discarded', async () => {
+    publishCloudContext({ dataset: 'practice', phase: 'ready' });
+    const h = holdCloudFetch(false);
+    const p = proposeVitalsInCloud(READY_PRACTICE, 'compare', { prompt: 'BP 128/82' });
+    await h.sent;
+    publishCloudContext({ dataset: 'practice', phase: 'down' });
+    h.release();
+    await expect(p).rejects.toBeInstanceOf(CloudRevokedError);
+  });
+
+  it('System down recorded in the database but not yet published to the screen: refused right before sending', async () => {
+    let live: CloudContext = { dataset: 'practice', phase: 'ready' };
+    const readLive = vi.fn(async () => live);
+    // The first check passes; the phase flips while the model is being prepared; the pre-send check catches it.
+    readLive.mockImplementationOnce(async () => { const out = live; live = { dataset: 'practice', phase: 'down' }; return out; });
+    await expect(proposeVitalsInCloud({ ...READY_PRACTICE, readLive }, 'compare', { prompt: 'x' })).rejects.toBeInstanceOf(CloudBlockedError);
+    expect(readLive).toHaveBeenCalledTimes(2);
+    expect(networkCalls()).toEqual([]);
+  });
+
+  it('phase flips to System down in the database while the answer is in flight: discarded on arrival', async () => {
+    let live: CloudContext = { dataset: 'practice', phase: 'ready' };
+    const h = holdCloudFetch(false);
+    const p = proposeVitalsInCloud({ ...READY_PRACTICE, readLive: async () => live }, 'compare', { prompt: 'x' });
+    await h.sent;
+    live = { dataset: 'practice', phase: 'down' };
+    h.release();
+    await expect(p).rejects.toBeInstanceOf(CloudRevokedError);
+  });
+
+  it('a stale screen snapshot cannot start a cloud request after System down was published', async () => {
+    publishCloudContext({ dataset: 'practice', phase: 'down' });
+    await expect(proposeVitalsInCloud(READY_PRACTICE, 'compare', { prompt: 'x' })).rejects.toBeInstanceOf(CloudBlockedError);
+    expect(networkCalls()).toEqual([]);
+  });
+
+  it('second look in Back online: aborted when the phase leaves Back online; compare aborted when the dataset switches to Real', async () => {
+    publishCloudContext({ dataset: 'practice', phase: 'online' });
+    const h1 = holdCloudFetch(true);
+    const p1 = proposeVitalsInCloud({ dataset: 'practice', phase: 'online', cfg: CFG }, 'second_look', { prompt: 'x' });
+    await h1.sent;
+    publishCloudContext({ dataset: 'practice', phase: 'down' });
+    await expect(p1).rejects.toBeInstanceOf(CloudRevokedError);
+
+    publishCloudContext({ dataset: 'practice', phase: 'ready' });
+    const h2 = holdCloudFetch(true);
+    const p2 = proposeVitalsInCloud(READY_PRACTICE, 'compare', { prompt: 'x' });
+    await h2.sent;
+    publishCloudContext({ dataset: 'live', phase: 'ready' });
+    await expect(p2).rejects.toBeInstanceOf(CloudRevokedError);
+    h1.release(); h2.release();
+  });
+
+  it('if the current phase cannot be read, cloud stays off', async () => {
+    await expect(proposeVitalsInCloud({ ...READY_PRACTICE, readLive: async () => { throw new Error('locked'); } }, 'compare', { prompt: 'x' })).rejects.toBeInstanceOf(CloudBlockedError);
+    expect(networkCalls()).toEqual([]);
+  });
+});
+
+describe('inferenceSource contract (firebase@13.4.0)', () => {
+  it('installed SDK: InferenceSource constant names are ON_DEVICE / IN_CLOUD, runtime values are lowercase', async () => {
+    const pkg = JSON.parse(readFileSync('node_modules/firebase/package.json', 'utf8')) as { version: string };
+    expect(pkg.version).toBe('13.4.0');
+    const { InferenceSource } = await import('firebase/ai');
+    expect(InferenceSource).toEqual({ ON_DEVICE: 'on_device', IN_CLOUD: 'in_cloud' });
+  });
+
+  it('raw SDK at runtime: ONLY_ON_DEVICE with a Prompt API reports response.inferenceSource === InferenceSource.ON_DEVICE', async () => {
+    const { lm } = fakeLanguageModel('available', 'ok');
+    vi.stubGlobal('LanguageModel', lm);
+    const { initializeApp } = await import('firebase/app');
+    const { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode, InferenceSource } = await import('firebase/ai');
+    const app = initializeApp(CFG.firebase!, `src-${Math.random()}`);
+    const model = getGenerativeModel(getAI(app, { backend: new GoogleAIBackend() }), { mode: InferenceMode.ONLY_ON_DEVICE });
+    const r = await model.generateContent('hello');
+    expect(r.response.inferenceSource).toBe(InferenceSource.ON_DEVICE);
+    expect(r.response.inferenceSource).toBe('on_device');
+    vi.unstubAllGlobals();
+  });
+
+  it('classifySource: exact SDK values only; other spellings, unknown and missing values are rejected', async () => {
+    const { InferenceSource } = await import('firebase/ai');
+    expect(classifySource('on_device', InferenceSource)).toBe('on_device');
+    expect(classifySource('in_cloud', InferenceSource)).toBe('in_cloud');
+    for (const bad of ['ON_DEVICE', 'IN_CLOUD', 'On_Device', 'device', 'hybrid', '', undefined, null, 1, {}]) {
+      expect(classifySource(bad, InferenceSource)).toBeNull();
+    }
+  });
+
+  it('on-device path never accepts a cloud-labelled answer (no weakening of ONLY_ON_DEVICE)', async () => {
+    const { InferenceSource } = await import('firebase/ai');
+    expect(classifySource(InferenceSource.IN_CLOUD, InferenceSource)).not.toBe('on_device');
   });
 });
 

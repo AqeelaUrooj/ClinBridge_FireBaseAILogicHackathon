@@ -32,6 +32,8 @@
   - Proposals can be wrong; they are always saved as drafts for a nurse to confirm.
   - Firebase console monitoring doesn't show on-device calls.
   - The on-device guard depends on Firebase SDK 13.4.0 internals (the adapter mode check). It must be re-checked when the SDK is upgraded.
+  - A cloud request that was already transmitted when System down starts cannot be recalled. ClinBridge aborts it and throws away any answer, but the request body (Practice data or post-clearance data only) has already left the laptop and the server may still process it.
+  - Local cloud testing on localhost needs the App Check debug token (development server only); see docs/FIREBASE_SETUP.md.
 - **Photos** are encrypted with the records' key and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.
 - **The safety copy before a DB upgrade** is a local copy on the same laptop. It is not disaster recovery or a backup system.

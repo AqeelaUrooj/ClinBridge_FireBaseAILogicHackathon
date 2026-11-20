@@ -99,3 +99,42 @@ test('AI check page reports the real state; compare shows the mock as on-device 
   await expect(list.getByText(/Initialised for project e2e-fake-project/)).toBeVisible();
   await expect(list.getByText(/ONLY_ON_DEVICE \(no cloud fallback\)/)).toBeVisible();
 });
+
+test('pending cloud compare, then System down declared in another tab: request cancelled, late answer never shown', async ({ page, context }) => {
+  // Everything "cloud" here is a local stand-in: fake reCAPTCHA script, fake App Check exchange, a held fake Gemini
+  // response. Nothing reaches Google. This proves the cancellation wiring, not a real cloud call.
+  await context.route('https://www.google.com/recaptcha/**', (r) => r.fulfill({ contentType: 'text/javascript', body: 'window.grecaptcha={enterprise:{ready:function(cb){cb()},render:function(){return "w1"},execute:function(){return Promise.resolve("fake-recaptcha")}}};' }));
+  await context.route('https://content-firebaseappcheck.googleapis.com/**', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ token: 'fake-app-check-token', ttl: '3600s' }) }));
+  let held: import('@playwright/test').Route | null = null;
+  let aborted = false;
+  await context.route(/generateContent/, (r) => { held = r; });
+  page.on('requestfailed', (req) => { if (/generateContent/.test(req.url())) aborted = true; });
+
+  await signIn(page, /Daniel Okafor/);
+  await page.getByRole('link', { name: 'More' }).click();
+  await page.getByRole('link', { name: 'Device vs Cloud' }).click();
+  await page.getByLabel('Fictional source record').selectOption({ index: 1 });
+  const cloudCard = page.getByRole('region', { name: 'Cloud model' });
+  await cloudCard.getByRole('button', { name: 'Run cloud model' }).click();
+  await expect.poll(() => held !== null, { timeout: 15_000 }).toBe(true);
+  await expect(cloudCard.getByRole('button', { name: 'Running…' })).toBeVisible();
+
+  // Another tab on the same laptop declares a practice outage.
+  const admin = await context.newPage();
+  await signIn(admin, /Kim Ellis/);
+  await admin.getByRole('link', { name: 'Downtime' }).click();
+  await admin.getByRole('button', { name: 'Start a practice outage' }).click();
+  await expect(admin.getByText('SYSTEM DOWN').first()).toBeVisible();
+
+  // The first tab cancels the request and says the answer is discarded.
+  await expect(cloudCard.getByRole('alert')).toContainText('Cloud answer discarded', { timeout: 15_000 });
+  await expect(cloudCard.getByText(/Cloud blocked: System down/)).toBeVisible();
+  await expect.poll(() => aborted).toBe(true);
+
+  // A late answer from the "server" is never shown.
+  await held!.fulfill({ contentType: 'application/json', body: JSON.stringify({ candidates: [{ content: { role: 'model', parts: [{ text: MOCK_ANSWER }] }, finishReason: 'STOP', index: 0 }] }) }).catch(() => undefined);
+  await page.waitForTimeout(500);
+  await expect(cloudCard.getByText(/Cloud · ONLY_IN_CLOUD/)).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Differences' })).toHaveCount(0);
+  await admin.close();
+});

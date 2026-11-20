@@ -27,6 +27,11 @@ Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on br
   - No usable on-device AI → clear message, nothing sent, manual save works.
   - The AI check page shows "Not downloaded yet" even though Chrome is installed, Firebase initialised, and the System-down mode as ONLY_ON_DEVICE.
 - `e2e/capture.spec.ts`: seed proposals are shown as "simulated, not a model answer".
+- Pre-merge checks for PR #7 (owner's final checks A and B):
+  - `service.test.ts` +11 (now 25): **cloud request during a mode change** (7): pending request + System down → aborted, answer discarded; server answers anyway → discarded; System down in the database before send → refused, 0 requests; phase flips in the database while in flight → discarded; stale screen snapshot → refused; second look aborted when Back online ends, compare aborted on dataset switch; unreadable phase → refused. **inferenceSource contract** (4): SDK version and constant values pinned; runtime value from the real SDK is `InferenceSource.ON_DEVICE` (`'on_device'`); other spellings / unknown / missing rejected; the on-device path never accepts a cloud-labelled answer.
+  - Mutation check: with the gate's abort and on-arrival check disabled, 4 of the 7 mode-change tests fail.
+  - `e2e/ai.spec.ts` +1 (now 4): pending cloud compare, then a second tab declares a practice outage → request cancelled, "Cloud answer discarded", late answer never shown. reCAPTCHA, App Check and Gemini are local stand-ins (no Google traffic).
+- **No real model has been run.** Live results: `docs/LIVE_AI_TEST_CHECKLIST.md` (owner).
 
 ## Round 8 additions
 

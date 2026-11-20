@@ -1,9 +1,10 @@
 import type { Dataset } from '../../db/db';
 import type { Phase } from '../phase';
-import { assertCloudAllowed, type CloudPurpose } from '../cloud';
+import type { CloudPurpose } from '../cloud';
+import { runGuardedCloud, type CloudContext } from '../cloudGate';
 import { VITAL_RULES, CONSCIOUSNESS_OPTIONS, type VitalKey, type VitalsForm } from '../vitals';
 import { readAiConfig, type AiConfig } from './config';
-import { cloudModel, deviceModel } from './firebase';
+import { cloudModel, deviceModel, sdkInferenceSource } from './firebase';
 import type { Part } from 'firebase/ai';
 
 /**
@@ -15,9 +16,12 @@ import type { Part } from 'firebase/ai';
  *                   on-device adapter and generateContent() goes to the CLOUD even in ONLY_ON_DEVICE mode
  *                   (callCloudOrDevice: `if (!chromeAdapter) return inCloudCall()`). We refuse before calling.
  *                 * fetch is blocked for the duration of the call; any network attempt fails the call.
- *                 * the response must report inferenceSource === 'on_device'.
- *  runInCloud   - ONLY_IN_CLOUD, only after the cloud guard (lib/cloud.ts): never in System down; Practice compare
+ *                 * the response must report the SDK's InferenceSource.ON_DEVICE (runtime value 'on_device' in
+ *                   SDK 13.4.0; see classifySource). Anything else, including a missing value, is discarded.
+ *  runInCloud   - ONLY_IN_CLOUD, under the cloud gate (lib/cloudGate.ts): never in System down; Practice compare
  *                 on Practice data only; second look only after an admin cleared the network (Back online).
+ *                 Authorisation is re-checked right before sending and again when the answer arrives; a phase
+ *                 change aborts the request and a late answer is thrown away.
  * Output is always a PROPOSAL for a nurse to review. Nothing here writes a record.
  */
 
@@ -35,6 +39,19 @@ export interface AiCtx {
   dataset: Dataset;
   phase: Phase;
   cfg?: AiConfig;
+  /** Fresh read of the phase from the database, used by the cloud gate right before sending and after the answer. */
+  readLive?: () => Promise<CloudContext>;
+}
+
+/**
+ * Maps the SDK's response.inferenceSource to ours. Exact match against the SDK's own InferenceSource constant only:
+ * unknown values, other spellings (e.g. 'ON_DEVICE') and a missing value all return null and the result is discarded.
+ */
+export function classifySource(value: unknown, sdk: { readonly ON_DEVICE: string; readonly IN_CLOUD: string }): AiSource | null {
+  if (typeof value !== 'string') return null;
+  if (value === sdk.ON_DEVICE) return 'on_device';
+  if (value === sdk.IN_CLOUD) return 'in_cloud';
+  return null;
 }
 
 export interface AiInput {
@@ -141,7 +158,7 @@ export async function runOnDevice(ctx: AiCtx, input: AiInput, responseConstraint
   try {
     const result = await withNetworkBlocked(async () => model.generateContent(await parts({ ...input, image })));
     const source = result.response.inferenceSource;
-    if (source !== 'on_device') throw new AiUnavailableError('network_blocked', `Unexpected inference source "${String(source)}". The result was discarded.`);
+    if (classifySource(source, await sdkInferenceSource()) !== 'on_device') throw new AiUnavailableError('network_blocked', `Unexpected inference source "${String(source)}". The result was discarded.`);
     return { text: result.response.text(), source: 'on_device', ms: Math.round(performance.now() - started) };
   } catch (e) {
     if (e instanceof AiUnavailableError) throw e;
@@ -152,20 +169,25 @@ export async function runOnDevice(ctx: AiCtx, input: AiInput, responseConstraint
 /* ---------------- cloud ---------------- */
 
 export async function runInCloud(ctx: AiCtx, purpose: CloudPurpose, input: AiInput, responseSchema?: object): Promise<AiRaw> {
-  assertCloudAllowed({ dataset: ctx.dataset, phase: ctx.phase, purpose }); // throws CloudBlockedError before anything else
   const cfg = ctx.cfg ?? readAiConfig();
-  if (!cfg.firebase) throw new AiUnavailableError('not_configured', 'Cloud AI is not set up on this build (Firebase config missing).');
-  const model = await cloudModel(cfg, responseSchema);
-  const started = performance.now();
-  try {
-    const result = await model.generateContent(await parts(input));
+  // The gate checks authorisation first (CloudBlockedError before anything else), then again right before sending.
+  return runGuardedCloud({ dataset: ctx.dataset, phase: ctx.phase, purpose, readLive: ctx.readLive }, async (signal, recheck) => {
+    if (!cfg.firebase) throw new AiUnavailableError('not_configured', 'Cloud AI is not set up on this build (Firebase config missing).');
+    const model = await cloudModel(cfg, responseSchema);
+    const request = await parts(input);
+    await recheck(); // immediately before the request is transmitted
+    const started = performance.now();
+    let result: Awaited<ReturnType<typeof model.generateContent>>;
+    try {
+      result = await model.generateContent(request, { signal });
+    } catch (e) {
+      if (signal.aborted) throw e; // the gate turns this into CloudRevokedError
+      throw new AiUnavailableError('failed', `The cloud model did not answer: ${e instanceof Error ? e.message : String(e)}`);
+    }
     const source = result.response.inferenceSource;
-    if (source !== 'in_cloud') throw new AiUnavailableError('failed', `Unexpected inference source "${String(source)}".`);
+    if (classifySource(source, await sdkInferenceSource()) !== 'in_cloud') throw new AiUnavailableError('failed', `Unexpected inference source "${String(source)}". The result was discarded.`);
     return { text: result.response.text(), source: 'in_cloud', ms: Math.round(performance.now() - started) };
-  } catch (e) {
-    if (e instanceof AiUnavailableError) throw e;
-    throw new AiUnavailableError('failed', `The cloud model did not answer: ${e instanceof Error ? e.message : String(e)}`);
-  }
+  });
 }
 
 /* ---------------- vitals extraction (proposal only) ---------------- */

@@ -60,6 +60,8 @@
 | D-59 | AI proposals fill the editable form and are always saved as drafts; ai_proposal._ai records engine, mode and real source; seed proposals shown as simulated | Nurse review before saving; never present simulations as model output |
 | D-60 | AI only for vitals (photo or note); not for medicines | Keeps the high-alert and dose controls untouched |
 | D-61 | Practice outage drill (admin, Practice only, audited) | System-down demo without signing off the whole seed worklist |
+| D-62 | Cloud gate: cloud authorisation re-checked before setup, right before sending (fresh database read) and on arrival; a phase/dataset change aborts the request; a late answer is discarded; fails closed when the phase can't be read | A cloud request running when System down starts must never be reused or shown (owner's check A). Already-transmitted requests can't be recalled (documented) |
+| D-63 | `inferenceSource` compared against the SDK's own `InferenceSource` constant, exact match only | Verified for firebase 13.4.0: names `ON_DEVICE`/`IN_CLOUD`, runtime values `'on_device'`/`'in_cloud'`; unknown or other spellings rejected (owner's check B) |
 
 ## Open — need an answer
 

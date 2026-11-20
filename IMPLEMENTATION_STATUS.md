@@ -9,9 +9,9 @@ Last updated: 20 Nov 2026 (round 9)
 | 2 | Vertical slice: vitals | **Done** |
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
 | 4 | Fluids (intake/output), notes, labs | **Done** |
-| 5 | Photo of paper form (on-device AI) | Manual capture done; on-device AI proposals built (PR #7), tested with mocks only |
+| 5 | Photo of paper form (on-device AI) | Manual capture done; on-device AI proposals built (PR #7), tested with mocks only. Live laptop test pending (docs/LIVE_AI_TEST_CHECKLIST.md) |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
-| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done; Device vs Cloud compare and cloud second look built (PR #7), mocks only |
+| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done; Device vs Cloud compare and cloud second look built (PR #7), mocks only. Cloud gate cancels running cloud requests on System down (D-62) |
 | 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest merged (PR #4). F1 second-laptop enrollment (PR #5). Cleanup workflow on synthetic data (PR #6). Real-records migration and Real-records cleanup not approved. Not deployed |
 
 ## Phase 2 slice — working end to end
