@@ -25,3 +25,42 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report
+
+  fhir-validate:
+    # Official HL7 FHIR validator (R4 4.0.1) on the synthetic export. Report only for now:
+    # results are documented in docs/FHIR_VALIDATION.md; failures do not block CI yet.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Build synthetic export
+        run: FHIR_OUT=$PWD/fhir-bundle.json npx vitest run src/lib/fhir.export.test.ts
+      - name: Download HL7 validator
+        run: curl -sSL -o validator_cli.jar https://github.com/hapifhir/org.hl7.fhir.core/releases/latest/download/validator_cli.jar
+      - name: Validate (R4 4.0.1)
+        run: |
+          java -jar validator_cli.jar -version | head -3 || true
+          java -jar validator_cli.jar fhir-bundle.json -version 4.0.1 -output fhir-validation.json -html-output fhir-validation.html | tee fhir-validation.txt
+      - name: Summary
+        if: always()
+        run: |
+          node -e "const r=require('./fhir-validation.json');const it=(r.issue||[]).concat(...(r.entry||[]).map(e=>e.resource&&e.resource.issue||[]));const c={};for(const i of it)c[i.severity]=(c[i.severity]||0)+1;console.log('ISSUE COUNTS',JSON.stringify(c));" || true
+          grep -E "Success|Error|errors" fhir-validation.txt | tail -5 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fhir-validation
+          path: |
+            fhir-bundle.json
+            fhir-validation.json
+            fhir-validation.html
+            fhir-validation.txt

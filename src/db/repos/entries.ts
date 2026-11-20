@@ -4,6 +4,7 @@ import type { AuditLog, ChildByType, Entry, EntryType, InferenceSource, MedAdmin
 import { needsSecondNurse } from '../../lib/meds';
 import { ACTIVE_CLINICAL_POLICY } from '../../config/clinicalPolicy';
 import { buildAuditRow } from '../audit';
+import { guardStorage } from '../errors';
 import type { Clock } from '../../lib/time';
 
 /**
@@ -75,7 +76,7 @@ async function checkHighAlert(db: DowntimeDB, actor: Actor, m: Omit<MedAdmin, 'i
 export async function createEntry<T extends EntryType>(
   db: DowntimeDB, clock: Clock, actor: Actor, input: NewEntryInput<T>,
 ): Promise<Entry> {
-  return serial(async () => {
+  return guardStorage(() => serial(async () => {
     for (let attempt = 0; attempt < 3; attempt++) {
       const encounter = await db.encounter.where('patient_id').equals(input.patientId).first();
       if (!encounter) throw new EntryWriteError('This patient has no encounter in the patient list.');
@@ -158,13 +159,13 @@ export async function createEntry<T extends EntryType>(
       }
     }
     throw new EntryWriteError('Could not save after several tries. Please try again.');
-  });
+  }), (m) => new EntryWriteError(m));
 }
 
 /** Mark an entry as entered in error. Values stay; the record is shown crossed out. */
 export async function markEnteredInError(db: DowntimeDB, clock: Clock, actor: Actor, entryId: string, reason: string): Promise<void> {
   if (!reason.trim()) throw new EntryWriteError('A reason is required.');
-  return serial(async () => {
+  return guardStorage(() => serial(async () => {
     const entry = await db.entry.get(entryId);
     if (!entry) throw new EntryWriteError('Record not found.');
     if (entry.status !== 'confirmed') throw new EntryWriteError('Only a confirmed record can be marked as a mistake.');
@@ -179,7 +180,7 @@ export async function markEnteredInError(db: DowntimeDB, clock: Clock, actor: Ac
       await db.entry.update(entryId, { status: 'entered-in-error', change_reason: reason.trim() });
       await db.audit_log.add(row);
     });
-  });
+  }), (m) => new EntryWriteError(m));
 }
 
 export interface EntryWithChild<T extends EntryType = EntryType> {
@@ -230,7 +231,7 @@ export async function confirmDraft<T extends EntryType>(
   db: DowntimeDB, clock: Clock, actor: Actor, entryId: string, type: T, values: Omit<ChildByType[T], 'id' | 'entry_id'>, careTime?: string,
 ): Promise<Entry> {
   if (type === 'med_admin') await checkHighAlert(db, actor, values as Omit<MedAdmin, 'id' | 'entry_id'>);
-  return serial(async () => {
+  return guardStorage(() => serial(async () => {
     const entry = await db.entry.get(entryId);
     if (!entry) throw new EntryWriteError('Record not found.');
     if (entry.status !== 'draft') throw new EntryWriteError('Only a draft can be confirmed here.');
@@ -252,5 +253,5 @@ export async function confirmDraft<T extends EntryType>(
       await db.audit_log.add(row);
     });
     return updated;
-  });
+  }), (m) => new EntryWriteError(m));
 }

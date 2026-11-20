@@ -87,3 +87,18 @@ export async function openWithMigration(db: DowntimeDB, clock: Clock, deviceId: 
   }
   return { backupId, migrated: true };
 }
+
+/**
+ * Restore a safety copy into an EMPTY database (never over existing records). Used to prove backups are
+ * usable; not exposed in the app until the backup/encryption decision (P-04) is made.
+ */
+export async function restoreSafetyCopy(copy: SchemaBackup, target: DowntimeDB): Promise<void> {
+  const counts = await Promise.all(target.tables.map((t) => t.count()));
+  if (counts.some((c) => c > 0)) throw new Error('Target database is not empty. Restore only into an empty database.');
+  await target.transaction('rw', target.tables, async () => {
+    for (const [name, rows] of Object.entries(copy.tables)) {
+      if (!target.tables.some((t) => t.name === name)) continue;
+      await target.table(name).bulkAdd(rows as object[]);
+    }
+  });
+}
