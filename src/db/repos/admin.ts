@@ -1,6 +1,7 @@
 import type { DowntimeDB } from '../db';
 import type { Practitioner, Role } from '../schema';
 import { buildAuditRow } from '../audit';
+import { guardStorage } from '../errors';
 import { hashPin, isValidPinFormat, verifyPin } from '../../lib/crypto';
 import type { Clock } from '../../lib/time';
 import { TABLE_NAMES } from '../schema';
@@ -24,12 +25,12 @@ async function audit(db: DowntimeDB, clock: Clock, actor: Actor, action: string,
 
 /** Write rows + one audit row atomically, refusing if another write moved the audit head meanwhile. */
 async function commit(db: DowntimeDB, row: Awaited<ReturnType<typeof audit>>, work: () => Promise<unknown>) {
-  await db.transaction('rw', db.tables, async () => {
+  await guardStorage(() => db.transaction('rw', db.tables, async () => {
     const head = await db.audit_log.orderBy('seq').last();
     if ((head?.seq ?? 0) !== row.seq - 1) throw new EntryWriteError('Another change was saved at the same moment. Try again.');
     await work();
     await db.audit_log.add(row);
-  });
+  }), (m) => new EntryWriteError(m));
 }
 
 /* ------------------------------ Staff ------------------------------ */

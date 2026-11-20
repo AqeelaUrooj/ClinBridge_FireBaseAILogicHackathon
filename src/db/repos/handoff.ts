@@ -1,6 +1,7 @@
 import type { DowntimeDB } from '../db';
 import type { Handoff } from '../schema';
 import { buildAuditRow } from '../audit';
+import { guardStorage } from '../errors';
 import type { Clock } from '../../lib/time';
 import { EntryWriteError, type Actor } from './entries';
 
@@ -54,12 +55,12 @@ export async function createHandoff(db: DowntimeDB, clock: Clock, actor: Actor, 
   const now = clock.nowIso();
   const last = await db.audit_log.orderBy('seq').last();
   const audit = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'handoff_saved', entity: `handoff/${row.id}`, after: row });
-  await db.transaction('rw', [db.handoff, db.audit_log], async () => {
+  await guardStorage(() => db.transaction('rw', [db.handoff, db.audit_log], async () => {
     const head = await db.audit_log.orderBy('seq').last();
     if ((head?.seq ?? 0) !== (last?.seq ?? 0)) throw new EntryWriteError('Another change was saved at the same moment. Try again.');
     await db.handoff.add(row);
     await db.audit_log.add(audit);
-  });
+  }), (m) => new EntryWriteError(m));
   return row;
 }
 

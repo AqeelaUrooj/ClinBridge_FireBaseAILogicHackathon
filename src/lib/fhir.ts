@@ -17,17 +17,19 @@ const TAG = { system: 'https://clinbridge.example/fhir/tags', code: 'downtime-do
 const LOINC = 'http://loinc.org';
 const UCUM = 'http://unitsofmeasure.org';
 
-const meta = () => ({ tag: [TAG] });
+const meta = (profile?: string) => ({ ...(profile ? { profile: [`${VS}${profile}`] } : {}), tag: [TAG] });
 const ref = (type: string, id: string) => ({ reference: `${type}/${id}` });
 const qty = (value: number, unit: string, code: string) => ({ value, unit, system: UCUM, code });
 const loinc = (code: string, display: string) => ({ coding: [{ system: LOINC, code, display }], text: display });
 const textCode = (text: string) => ({ text });
 
-const VITAL_CODES: { key: keyof VitalSign; code: string; display: string; unit: string; ucum: string }[] = [
-  { key: 'heart_rate', code: '8867-4', display: 'Heart rate', unit: '/min', ucum: '/min' },
-  { key: 'resp_rate', code: '9279-1', display: 'Respiratory rate', unit: '/min', ucum: '/min' },
-  { key: 'temp_c', code: '8310-5', display: 'Body temperature', unit: 'Cel', ucum: 'Cel' },
-  { key: 'spo2', code: '2708-6', display: 'Oxygen saturation in Arterial blood', unit: '%', ucum: '%' },
+/** FHIR R4 core vital-signs profiles (http://hl7.org/fhir/R4/observation-vitalsigns.html). */
+const VS = 'http://hl7.org/fhir/StructureDefinition/';
+const VITAL_CODES: { key: keyof VitalSign; code: string; display: string; unit: string; ucum: string; profile?: string }[] = [
+  { key: 'heart_rate', code: '8867-4', display: 'Heart rate', unit: '/min', ucum: '/min', profile: 'heartrate' },
+  { key: 'resp_rate', code: '9279-1', display: 'Respiratory rate', unit: '/min', ucum: '/min', profile: 'resprate' },
+  { key: 'temp_c', code: '8310-5', display: 'Body temperature', unit: 'Cel', ucum: 'Cel', profile: 'bodytemp' },
+  { key: 'spo2', code: '2708-6', display: 'Oxygen saturation in Arterial blood', unit: '%', ucum: '%', profile: 'oxygensat' },
   { key: 'pain_0_10', code: '72514-3', display: 'Pain severity - 0-10 verbal numeric rating [Score] - Reported', unit: '{score}', ucum: '{score}' },
   { key: 'glucose_mgdl', code: '2339-0', display: 'Glucose [Mass/volume] in Blood', unit: 'mg/dL', ucum: 'mg/dL' },
   { key: 'o2_flow_lpm', code: '3151-8', display: 'Inhaled oxygen flow rate', unit: 'L/min', ucum: 'L/min' },
@@ -48,11 +50,11 @@ const obsStatus = (e: Entry) => (e.status === 'confirmed' ? 'final' : 'entered-i
 
 export function buildBundle(input: ExportInput): R {
   const res: R[] = [];
-  const add = (r: R) => res.push({ ...r, meta: meta() });
+  const add = (r: R) => { const { _profile, ...rest } = r as R & { _profile?: string }; res.push({ ...rest, meta: meta(_profile) }); };
   const encOf = new Map(input.encounters.map((e) => [e.patient_id, e]));
 
   for (const p of input.patients) {
-    add({ resourceType: 'Patient', id: p.id, identifier: [{ type: { text: 'MRN' }, value: p.mrn }], name: [{ family: p.family_name, given: [p.given_name] }], gender: p.sex, birthDate: p.birth_date });
+    add({ resourceType: 'Patient', id: p.id, identifier: [{ type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR', display: 'Medical record number' }], text: 'MRN' }, value: p.mrn }], name: [{ family: p.family_name, given: [p.given_name] }], gender: p.sex, birthDate: p.birth_date });
   }
   for (const e of input.encounters) {
     add({ resourceType: 'Encounter', id: e.id, status: 'in-progress', class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'IMP', display: 'inpatient encounter' }, subject: ref('Patient', e.patient_id), period: { start: e.admit_time }, ...(e.bed ? { location: [{ location: { display: `${e.unit}, bed ${e.bed}` } }] } : {}) });
@@ -60,7 +62,7 @@ export function buildBundle(input: ExportInput): R {
   for (const pr of input.practitioners) add({ resourceType: 'Practitioner', id: pr.id, name: [{ text: pr.name }], active: pr.active });
   for (const a of input.allergies) {
     if (/^no known/i.test(a.substance)) continue;
-    add({ resourceType: 'AllergyIntolerance', id: a.id, patient: ref('Patient', a.patient_id), code: textCode(a.substance), ...(a.reaction ? { reaction: [{ manifestation: [textCode(a.reaction)] }] } : {}) });
+    add({ resourceType: 'AllergyIntolerance', id: a.id, clinicalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical', code: a.status }] }, patient: ref('Patient', a.patient_id), code: textCode(a.substance), ...(a.reaction ? { reaction: [{ manifestation: [textCode(a.reaction)], ...(a.severity ? { severity: a.severity } : {}) }] } : {}) });
   }
   for (const o of input.orders) {
     if (o.type !== 'med' && o.type !== 'iv') continue;
@@ -79,12 +81,12 @@ export function buildBundle(input: ExportInput): R {
       const v = child as VitalSign;
       const parts: R[] = [];
       if (v.bp_systolic != null && v.bp_diastolic != null) {
-        parts.push({ resourceType: 'Observation', id: `${e.id}-bp`, status: obsStatus(e), category: [vitalCat()], code: loinc('85354-9', 'Blood pressure panel with all children optional'), ...common,
+        parts.push({ resourceType: 'Observation', id: `${e.id}-bp`, _profile: 'bp', status: obsStatus(e), category: [vitalCat()], code: loinc('85354-9', 'Blood pressure panel with all children optional'), ...common,
           component: [{ code: loinc('8480-6', 'Systolic blood pressure'), valueQuantity: qty(v.bp_systolic, 'mm[Hg]', 'mm[Hg]') }, { code: loinc('8462-4', 'Diastolic blood pressure'), valueQuantity: qty(v.bp_diastolic, 'mm[Hg]', 'mm[Hg]') }] });
       }
       for (const c of VITAL_CODES) {
         const val = v[c.key];
-        if (typeof val === 'number') parts.push({ resourceType: 'Observation', id: `${e.id}-${c.key.replace(/_/g, '')}`, status: obsStatus(e), category: [vitalCat()], code: loinc(c.code, c.display), ...common, valueQuantity: qty(val, c.unit, c.ucum) });
+        if (typeof val === 'number') parts.push({ resourceType: 'Observation', id: `${e.id}-${c.key.replace(/_/g, '')}`, ...(c.profile ? { _profile: c.profile } : {}), status: obsStatus(e), category: [vitalCat()], code: loinc(c.code, c.display), ...common, valueQuantity: qty(val, c.unit, c.ucum) });
       }
       if (v.consciousness) parts.push({ resourceType: 'Observation', id: `${e.id}-consc`, status: obsStatus(e), category: [vitalCat()], code: textCode('Level of consciousness (AVPU)'), ...common, valueString: v.consciousness });
       if (v.o2_device) parts.push({ resourceType: 'Observation', id: `${e.id}-o2dev`, status: obsStatus(e), category: [vitalCat()], code: textCode('Oxygen delivery method'), ...common, valueString: v.o2_device });
@@ -100,9 +102,7 @@ export function buildBundle(input: ExportInput): R {
         medicationCodeableConcept: textCode(m.drug_name), subject: common.subject, ...(enc ? { context: ref('Encounter', enc.id) } : {}),
         effectiveDateTime: e.care_time, performer: [{ actor: ref('Practitioner', e.performer_id) }], ...(m.order_id && input.orders.some((o) => o.id === m.order_id) ? { request: ref('MedicationRequest', m.order_id) } : {}),
         ...(m.double_checked_by ? { note: [{ text: `Second nurse check: ${m.double_checked_by}` }] } : {}),
-        dosage: { ...(m.route ? { route: textCode(m.route) } : {}), ...(m.site ? { site: textCode(m.site) } : {}),
-          ...(m.dose_given != null && m.dose_given_unit ? { dose: { value: m.dose_given, unit: m.dose_given_unit } } : {}),
-          ...(m.infusion_rate != null && m.infusion_rate_unit ? { rateQuantity: { value: m.infusion_rate, unit: m.infusion_rate_unit } } : {}) } });
+        ...dosageOf(m) });
       target = { type: 'MedicationAdministration', id: e.id };
     } else if (e.type === 'intake_output') {
       const io = child as IntakeOutput;
@@ -213,4 +213,15 @@ export function validateBundle(b: R): string[] {
     });
   }
   return errs;
+}
+
+/**
+ * FHIR mad-1: a dosage block needs a dose or a rate. A dose that was held or refused has
+ * neither, so its dosage block (route/site only) is left out rather than sent invalid.
+ */
+function dosageOf(m: MedAdmin): { dosage?: Record<string, unknown> } {
+  const dose = m.dose_given != null && m.dose_given_unit ? { dose: { value: m.dose_given, unit: m.dose_given_unit } } : {};
+  const rate = m.infusion_rate != null && m.infusion_rate_unit ? { rateQuantity: { value: m.infusion_rate, unit: m.infusion_rate_unit } } : {};
+  if (!('dose' in dose) && !('rateQuantity' in rate)) return {};
+  return { dosage: { ...(m.route ? { route: textCode(m.route) } : {}), ...(m.site ? { site: textCode(m.site) } : {}), ...dose, ...rate } };
 }
