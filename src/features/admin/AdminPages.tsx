@@ -17,6 +17,8 @@ import { PassphraseHelp, RecoveryCodeConfirm } from '../auth/UnlockVault';
 import { auditVaultEvent, createVault, isUnlocked } from '../../db/vault';
 import { checkPassphrase, newRecoveryCode } from '../../lib/vaultCrypto';
 import { createEncryptedBackup, openBackupFile, restoreEncryptedBackup } from '../../db/encryptedBackup';
+import { ActivateStaffForm, EnrollLaptopCard, JoinUnitForm } from './EnrollmentUi';
+import { isPendingActivation } from '../../db/enrollment';
 
 const Err = ({ e }: { e: string | null }) => (e ? <p role="alert" className="text-error font-body-md">{e}</p> : null);
 const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
@@ -218,6 +220,7 @@ export function StaffPage() {
   const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
   const [form, setForm] = useState({ name: '', initials: '', role: 'RN' as Role, pin: '' });
   const [pinFor, setPinFor] = useState<{ id: string; pin: string } | null>(null);
+  const [activating, setActivating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const actor = { userId: user!.id, deviceId };
   const run = async (f: () => Promise<unknown>, after?: () => void) => { setError(null); try { await f(); after?.(); } catch (e) { setError(msg(e)); } };
@@ -230,11 +233,14 @@ export function StaffPage() {
             <span className="w-10 h-10 rounded-full bg-secondary-fixed grid place-items-center font-bold">{p.initials}</span>
             <span className="flex-1 font-semibold">{p.name}</span>
             <Badge tone={p.role === 'admin' ? 'navy' : 'blue'}>{p.role === 'admin' ? 'Admin' : p.role}</Badge>
-            {p.active ? <Badge tone="green">Active</Badge> : <Badge>Switched off</Badge>}
-            <Button variant="secondary" onClick={() => setPinFor({ id: p.id, pin: '' })}>New PIN</Button>
+            {!p.active ? <Badge>Switched off</Badge> : isPendingActivation(p) ? <Badge tone="amber">Needs activation</Badge> : <Badge tone="green">Active</Badge>}
+            {isPendingActivation(p)
+              ? <Button variant="secondary" disabled={!p.active} onClick={() => setActivating(p.id)}>Activate</Button>
+              : <Button variant="secondary" onClick={() => setPinFor({ id: p.id, pin: '' })}>New PIN</Button>}
             <Button variant={p.active ? 'danger' : 'secondary'} onClick={() => run(() => setStaffActive(db, clock, actor, p.id, !p.active))}>{p.active ? 'Switch off' : 'Switch on'}</Button>
           </li>
         ))}</ul>
+        {activating && staff?.find((x) => x.id === activating) && <ActivateStaffForm person={staff.find((x) => x.id === activating)!} onDone={() => setActivating(null)} />}
         {pinFor && (
           <div className="flex items-end gap-space-sm mt-space-md">
             <label className="flex flex-col gap-1"><span className={labelCls}>New 4-digit PIN for {staff?.find((s) => s.id === pinFor.id)?.name}</span>
@@ -268,6 +274,7 @@ export function DevicesPage() {
   const devices = useLiveQuery(() => db.device.toArray(), [db]);
   const counts = useLiveQuery(async () => { const m = new Map<string, number>(); (await db.entry.toArray()).forEach((e) => m.set(e.device_id, (m.get(e.device_id) ?? 0) + 1)); return m; }, [db]);
   return (
+    <div className="flex flex-col gap-space-lg">
     <Card>
       <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Laptops</h2>
       <ul>{(devices ?? []).map((d) => (
@@ -281,6 +288,8 @@ export function DevicesPage() {
       ))}</ul>
       <p className="font-body-sm text-secondary mt-space-sm">Each record keeps its laptop and a counter, so clock problems can be found in Recovery.</p>
     </Card>
+    <EnrollLaptopCard />
+    </div>
   );
 }
 
@@ -362,6 +371,7 @@ export function SetupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [restore, setRestore] = useState<{ file: File | null; pass: string } | null>(null);
+  const [join, setJoin] = useState(false);
   if (dataset !== 'live') return <EmptyState icon="info" text="Setup is only for Real records. Practice is ready to use." />;
   if (staffCount === undefined) return <p role="status">Loading…</p>;
   if (staffCount > 0) return <EmptyState icon="task_alt" text="Setup is done. An admin can add staff in Admin → Staff." />;
@@ -420,11 +430,12 @@ export function SetupPage() {
       <h2 className="font-headline-sm text-headline-sm text-primary">First-time setup</h2>
       {!code ? (
         <>
-          <div className="flex gap-space-sm" role="radiogroup" aria-label="How to set up">
-            <Button variant={restore ? 'secondary' : 'primary'} role="radio" aria-checked={!restore} onClick={() => setRestore(null)}>New setup</Button>
-            <Button variant={restore ? 'primary' : 'secondary'} role="radio" aria-checked={!!restore} onClick={() => setRestore({ file: null, pass: '' })}>Restore from encrypted backup</Button>
+          <div className="flex flex-wrap gap-space-sm" role="radiogroup" aria-label="How to set up">
+            <Button variant={restore || join ? 'secondary' : 'primary'} role="radio" aria-checked={!restore && !join} onClick={() => { setRestore(null); setJoin(false); }}>New setup</Button>
+            <Button variant={join ? 'primary' : 'secondary'} role="radio" aria-checked={join} onClick={() => { setRestore(null); setJoin(true); }}>Join this unit (enrollment file)</Button>
+            <Button variant={restore ? 'primary' : 'secondary'} role="radio" aria-checked={!!restore} onClick={() => { setJoin(false); setRestore({ file: null, pass: '' }); }}>Restore from encrypted backup</Button>
           </div>
-          {restore ? (
+          {join ? <JoinUnitForm /> : restore ? (
             <>
               <p className="text-on-surface-variant">Brings back every record, staff account and photo from a backup file made on a ClinBridge laptop. This laptop gets its <strong>own</strong> new unit passphrase and recovery key.</p>
               <label className="flex flex-col gap-1"><span className={labelCls}>Backup file</span>
@@ -441,13 +452,17 @@ export function SetupPage() {
               </div>
             </>
           )}
-          <h3 className="font-headline-sm text-primary">Unit passphrase</h3>
-          <p className="text-on-surface-variant font-body-sm">Typed once after each restart or lock to open the records. PINs still say who is acting. ClinBridge never stores the passphrase.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-            {field('pass1', 'Unit passphrase', 'password')}{field('pass2', 'Unit passphrase again', 'password')}
-          </div>
-          <PassphraseHelp />
-          <Button className="self-start" onClick={() => { const e = check(); setError(e); if (!e) setCode(newRecoveryCode()); }}>Next: recovery key</Button>
+          {!join && (
+            <>
+              <h3 className="font-headline-sm text-primary">Unit passphrase</h3>
+              <p className="text-on-surface-variant font-body-sm">Typed once after each restart or lock to open the records. PINs still say who is acting. ClinBridge never stores the passphrase.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                {field('pass1', 'Unit passphrase', 'password')}{field('pass2', 'Unit passphrase again', 'password')}
+              </div>
+              <PassphraseHelp />
+              <Button className="self-start" onClick={() => { const e = check(); setError(e); if (!e) setCode(newRecoveryCode()); }}>Next: recovery key</Button>
+            </>
+          )}
         </>
       ) : (
         <>

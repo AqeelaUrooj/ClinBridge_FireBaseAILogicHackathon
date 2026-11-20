@@ -6,7 +6,7 @@ import type { DowntimeDB } from './db';
 import type { KeyStore } from './schema';
 import type { Clock } from '../lib/time';
 import {
-  checkPassphrase, createVaultKeys, isVaultString, rewrapAfterRecovery, unlockWithPassphrase, unlockWithRecovery,
+  checkPassphrase, createVaultKeys, isVaultString, rewrapAfterRecovery, unlockWithPassphrase, unlockWithRecovery, WrongSecretError,
 } from '../lib/vaultCrypto';
 import { PUBLIC_PRACTICE_PASSPHRASE, PUBLIC_PRACTICE_RECOVERY_CODE, SECURITY_POLICY } from '../config/securityPolicy';
 
@@ -258,4 +258,17 @@ export function lockVault(db: DowntimeDB): void {
 
 export function isUnlocked(db: DowntimeDB): boolean {
   return getVaultMode(db.name)?.mode === 'unlocked';
+}
+
+/** A backup or enrollment passphrase must not be the unit passphrase (one leaked secret must not open both). */
+export async function assertNotUnitPassphrase(db: DowntimeDB, passphrase: string): Promise<void> {
+  const row = await readVaultRow(db);
+  if (!row) return;
+  try {
+    await unlockWithPassphrase(row, passphrase);
+  } catch (e) {
+    if (e instanceof WrongSecretError) return;
+    throw e;
+  }
+  throw new Error('Use a different passphrase from the unit passphrase, so one leaked secret does not open both.');
 }

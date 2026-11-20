@@ -3,8 +3,8 @@ import { PLAIN_TABLES } from './encryption';
 import type { DowntimeDB, Dataset } from './db';
 import { photoDb, getPhoto, sealPhoto, type StoredPhoto } from './photos';
 import { requireKey } from './encryption';
-import { readVaultRow } from './vault';
-import { checkPassphrase, fromB64u, keyFromPassphrase, randomBytes, sha256, toB64u, unlockWithPassphrase, WrongSecretError } from '../lib/vaultCrypto';
+import { assertNotUnitPassphrase } from './vault';
+import { checkPassphrase, fromB64u, keyFromPassphrase, randomBytes, sha256, toB64u } from '../lib/vaultCrypto';
 import { SECURITY_POLICY } from '../config/securityPolicy';
 import type { Clock } from '../lib/time';
 
@@ -63,19 +63,6 @@ const photosHash = (ps: BackupPhoto[]) => sha256([...ps].sort((a, b) => a.ref.lo
 
 async function photoToB64(p: StoredPhoto): Promise<string> {
   return toB64u(new Uint8Array(await new Response(p.blob).arrayBuffer()));
-}
-
-/** The unit passphrase must not double as the backup passphrase. */
-async function assertNotUnitPassphrase(db: DowntimeDB, passphrase: string) {
-  const row = await readVaultRow(db);
-  if (!row) return;
-  try {
-    await unlockWithPassphrase(row, passphrase);
-  } catch (e) {
-    if (e instanceof WrongSecretError) return;
-    throw e;
-  }
-  throw new Error('Use a different passphrase from the unit passphrase, so one leaked secret does not open both.');
 }
 
 export async function createEncryptedBackup(db: DowntimeDB, passphrase: string, opts: { clock: Clock; actor: { userId: string; deviceId: string }; iterations?: number }): Promise<{ fileText: string; header: BackupHeader; counts: Record<string, number> }> {

@@ -8,6 +8,8 @@ export const SECURITY_POLICY = {
   vaultIdleLockMinutes: 60,
   /** PBKDF2 iterations for the unit passphrase and backup passphrase (OWASP 2023 guidance for PBKDF2-HMAC-SHA256). */
   pbkdf2Iterations: 600_000,
+  /** A second-laptop enrollment file stops being accepted this long after it was made (by laptop 2's clock). */
+  enrollmentValidHours: 24,
 } as const;
 
 /**
