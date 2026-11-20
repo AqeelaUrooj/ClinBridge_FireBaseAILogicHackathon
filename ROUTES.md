@@ -11,7 +11,7 @@ Built = works. Placeholder = honest "being built" page.
 | `/add` | Pick a patient first | Built |
 | `/alerts` | Drafts to check (list) | Built (checking drafts in later phase) |
 | `/more` | Switch user, change-log check, reset practice | Built |
-| `/handover` | Ward handover | Placeholder (Phase 6) |
+| `/handover` | Ward handover: latest handover per bed | Built |
 | `/labs` | Ward labs, critical first (from More) | Built |
 | `/export` | Export | Placeholder (Phase 7) |
 | `/drill/compare` | Practice compare | Placeholder (Phase 7) |
@@ -32,12 +32,14 @@ Built = works. Placeholder = honest "being built" page.
 | `/patients/:id/notes/new` | New note (type, text, risk score as written) → review → save | Built |
 | `/patients/:id/labs` | Patient labs | Built (new route) |
 | `/patients/:id/labs/record` | Record lab event / critical result | Built (new route) |
-| `/patients/:id/capture` | Photo of paper | Placeholder (Phase 5) |
-| `/patients/:id/body` | Body map, 21 UI/UX regions (first model), medicine site markers | Built |
-| `/patients/:id/handoff` | Patient handover | Placeholder (Phase 6) |
+| `/patients/:id/capture` | Photo of paper: form type → photo (saved first) → quality hints → type values → save or draft | Built |
+| `/patients/:id/body` | Body map: new Theme 2 vector figures, 21 regions, Front/Back/Both, list picker, markers | Built |
+| `/patients/:id/handoff` | Patient handover history | Built |
+| `/patients/:id/handoff/new` | New handover (S, B, A, open items, linked confirmed records) → review → save | Built |
+| `/patients/:id/handoff/:hid` | View + browser print | Built |
 | `/entries/:entry` | Record details, Fix, Mistake | Built |
 | `/entries/:entry/history` | All versions | Built |
 | `/entries/:entry/correct` | Fix any record type, reason required | Built (all 5 types) |
-| `/capture/:entry/confirm` | Check photo result | Placeholder (Phase 5) |
+| `/capture/:entry/confirm` | Check and confirm a draft beside its source photo | Built |
 
 Every patient page and every `/entries/*` page asks for the patient check (name, born, MRN) first.

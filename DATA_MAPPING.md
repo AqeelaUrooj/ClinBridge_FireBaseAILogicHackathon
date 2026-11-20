@@ -81,6 +81,27 @@ Medicine slot status is worked out, not stored: the live entry (confirmed or dra
 | Result + unit | `value_num` (numbers) or `value_text` (words), `unit`; `result_time` = entry time when a result is recorded |
 | Who was told / Read back | `called_to` / `read_back` |
 
+## Handover → `handoff`
+
+| Screen | Field |
+|---|---|
+| Which handover | `shift` |
+| Situation / Background / Assessment | `situation` / `background` / `assessment` |
+| Open items | `open_items` (blank lines dropped) |
+| Ticked / "Add line" records (confirmed, same patient only) | `source_entry_ids` |
+| (signed-in nurse) | `created_by` |
+| (save time) | audit row `handoff_saved`, `entity = handoff/<id>` |
+
+## Photo of paper → photo store + `entry`
+
+| Step | Where |
+|---|---|
+| Photo file | local photo store `downtimekit-<dataset>-photos` (blob, type, size, SHA-256, saved time, patient) + audit row `photo_saved` |
+| Reference | `entry.raw_input_kind = 'photo'`, `entry.raw_input_ref = vault/raw/<id>.<ext>` |
+| Quality hints + nurse override | `entry.photo_check` (`form_type`, `readable`, `problem`, `overridden`) |
+| Typed values | child table as for typed entries |
+| Draft / Confirm | `entry.status` draft → confirmed; `confirmed`, `confirmed_by`, `confirmed_at`; `ai_proposal` kept; audit `entry_confirmed` with before/after |
+
 ## Body map (no new fields)
 
 Medicine markers come from `med_admin.site` via a fixed table (`src/features/body/regions.ts`). Region ids are drafts and are not stored. `note.body_site` is prepared but not applied (P-03).

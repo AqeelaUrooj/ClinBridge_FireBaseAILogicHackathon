@@ -39,7 +39,9 @@ src/db/          19-table schema, Dexie database, seed import, audit hash chain,
 src/lib/         clock, phase, cloud guard, vitals rules, PIN hashing, dose format
 src/state/       app + session context (dataset, phase, signed-in nurse, lock)
 src/components/  shell (header, sidebar) and shared UI
-src/features/    auth, ward, patient, vitals, entries, misc pages
+src/features/    auth, ward, patient, vitals, meds, charting, body, handoff, capture, entries, misc
+src/assets/medical/  local Theme 2 illustrations (WebP)
+scripts/         seed generator, icon extraction
 e2e/             Playwright tests
 docs/            planning documents and the project docs below
 ```
@@ -53,3 +55,5 @@ docs/            planning documents and the project docs below
 - [TEST_REPORT.md](TEST_REPORT.md) — latest test run
 - [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) — honest gaps
 - [DEPLOYMENT.md](DEPLOYMENT.md) — how to ship it
+- [docs/ASSETS.md](docs/ASSETS.md) — body map artwork and medical illustrations
+- [docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md) — on-device AI requirements and status

@@ -25,6 +25,11 @@
 | D-25 | No Overdue status without an approved timing window; mechanism exists, list empty | Owner decision |
 | D-26 | Critical lab: missing "who was told" / read-back warns, never blocks | Do not add clinical rules without approval |
 | D-27 | Fluid totals are calendar-day sums from 00:00, not shift totals | Shift times are hospital policy; not approved |
+| D-29 | Paper photos stored in a separate local IndexedDB photo store per dataset; `entry.raw_input_ref` holds the reference | The 19-table schema has no image table; plan says raw input is a "photo ref" |
+| D-30 | Handover save time and author come from the audit row; draft only on screen; each save a new row | `handoff` has no time/status fields; no schema change |
+| D-31 | Body map artwork: original Theme 2 vector drawing; reference figures not extracted (baked highlights, callout lines, low resolution); same 21 region ids | See docs/ASSETS.md and P-01 |
+| D-32 | Icons cut from the reference sheet; sheet's "Tablet" (a tablet computer) not used; "Inhaler" (a tube) used only for creams | Do not mislead |
+| D-33 | Photo quality hints are technical (light, sharpness, size) and never block; the nurse's override is stored in `photo_check` | Not a clinical rule |
 
 ## Open — need an answer
 
@@ -32,7 +37,7 @@
 |---|---|---|
 | P-01 | Final body map region model | First model built (21 UI/UX regions); limitations table in P-01 |
 | P-03 | Optional `note.body_site` — migration in `docs/proposals/P-03-note-body-site.md` | Not applied |
-| D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon` (public, empty) chosen by owner | `origin` set locally; push blocked on the session's GitHub permission step |
+| D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon` (public, empty). **Before pushing:** the first 9 commits use author email `talal@users.noreply.github.com`, which GitHub maps to an existing unrelated account `talal`. Rewrite authors (history change) or push as is? | Push held; new commits use `ClinBridge Developer <clinbridge-dev@example.invalid>` until decided |
 | D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |
 | D-18 | Approved medicine timing policy (windows may differ by drug) | Shows Due only (D-25) |

@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 3)
+Last updated: 20 Nov 2026 (round 4)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -9,8 +9,8 @@ Last updated: 20 Nov 2026 (round 3)
 | 2 | Vertical slice: vitals | **Done** |
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
 | 4 | Fluids (intake/output), notes, labs | **Done** |
-| 5 | Photo of paper form (on-device AI) | Not started |
-| 6 | Handover, body map | Body map done (first model); handover not started |
+| 5 | Photo of paper form (on-device AI) | **Manual capture done**; AI not integrated (see docs/AI_INTEGRATION.md) |
+| 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Not started |
 | 8 | Offline/security hardening, encryption at rest, deploy | Partly (offline shell works) |
 
@@ -35,6 +35,13 @@ Also working:
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
 
+## Round 4
+
+- **Body map redrawn:** original Theme 2 vector figures (front, back), the same 21 region ids, tap areas clipped to the drawing, Front/Back/Both, list picker, keyboard, labels, injection/IV markers from records only.
+- **Medical illustrations:** 21 icons cut from the Theme 2 reference sheet (local WebP, precached) on medicines, patient summary, vitals, ward board, alerts, handover and capture (`docs/ASSETS.md`).
+- **Handover:** patient and ward pages, written from confirmed records only, review before save, history, browser print.
+- **Paper capture:** photo saved first (local photo store, hash, audit row), quality hints, typed values, drafts, confirm beside the photo. No AI needed.
+
 ## Round 3
 
 - **DB v2 applied:** `entry.change_reason` (P-02). Safety copy of the old database first, legacy reasons copied, nothing else changed, audit chain valid.
@@ -51,4 +58,4 @@ Also working:
 
 ## Next
 
-Phase 6 handover (per patient and ward), then Phase 5 photo capture with on-device AI once Firebase config arrives, then Phase 7 admin / network gate / recovery / FHIR export.
+Phase 7: admin (readiness, snapshot, staff, devices, downtime lifecycle, audit log, settings, network clearance), recovery worklist, FHIR R4 export. Not started yet.
