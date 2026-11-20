@@ -54,6 +54,13 @@
 | D-54 | Cleanup needs a fresh backup + restore test in a temporary database + typed confirmation; Real records refused in code | Owner conditions (section 3) |
 | D-55 | Photo stores are per clinical database (app names unchanged) | Needed for the temporary restore-test database |
 
+| D-56 | Firebase JS SDK 13.4.0, GoogleAIBackend; System down uses ONLY_ON_DEVICE only; PREFER_* never used | Owner AI brief; PREFER_ON_DEVICE can fall back to cloud |
+| D-57 | Refuse on-device AI when the Prompt API is missing, block fetch during on-device calls, require inferenceSource on_device | SDK 13.4.0 sends ONLY_ON_DEVICE requests to the cloud when no LanguageModel exists (shown by a test) |
+| D-58 | App Check (reCAPTCHA Enterprise) started only for cloud calls; debug token only in development builds | No reCAPTCHA traffic for on-device use; owner rule on debug tokens |
+| D-59 | AI proposals fill the editable form and are always saved as drafts; ai_proposal._ai records engine, mode and real source; seed proposals shown as simulated | Nurse review before saving; never present simulations as model output |
+| D-60 | AI only for vitals (photo or note); not for medicines | Keeps the high-alert and dose controls untouched |
+| D-61 | Practice outage drill (admin, Practice only, audited) | System-down demo without signing off the whole seed worklist |
+
 ## Open — need an answer
 
 | ID | Question | What the app does now |
@@ -65,7 +72,7 @@
 | P-04-RM | Encrypting an existing Real-records database (P-06: algorithm, rollback, evidence, risks, review plan) | Refused in code; app shows "not encrypted" |
 | P-04-IT | Hospital IT/security review of the encryption design, idle-lock time and iteration count | Prototype values, marked not approved |
 | D-04 | Repo `AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon`. Old commits had an author email that GitHub maps to an unrelated account; owner chose to rewrite authorship before publishing | **Resolved 20 Nov 2026:** all 13 commits re-authored as `Aqeela Urooj <38668564+AqeelaUrooj@users.noreply.github.com>` (owner confirmed); file content and messages unchanged; pushed |
-| D-16 | Firebase project config for AI | AI not wired; `.env.example` has empty placeholders |
+| D-16 | Firebase project config + App Check site key for AI (owner, in .env.local) | AI built; screens say 'not set up' until configured |
 | D-17b | Clinical review of the warning ranges in `src/config/clinicalWarnings.ts` | Marked not approved; warn only |
 | D-18 | Approved medicine timing policy (windows may differ by drug) | Shows Due only (D-25) |
 | D-19 | Second-checker eligibility per local policy, credentials and regulations | RN only, temporary prototype setting in `clinicalPolicy.ts`; seed no longer shows an LPN checker |

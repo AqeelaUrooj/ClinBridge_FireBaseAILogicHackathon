@@ -25,7 +25,13 @@
 - **Clinical policy is a prototype.** High-alert list partial, second-checker roles not approved, no timing policy (More → Clinical settings shows this).
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).
 - **Labs are typed in by nurses** as phoned/printed by the lab; no lab interface.
-- **AI not integrated** (no Firebase config yet, D-16). No on-device or cloud AI runs in this build. When built, on-device AI needs **desktop Chrome 148 or later** with the Gemini Nano model downloaded (details in docs/AI_INTEGRATION.md). Manual capture and rules-only recovery never depend on it.
+- **AI is built but not yet proven with a real model.**
+  - All AI tests use a mock Prompt API or canned cloud responses (docs/AI_TEST_MATRIX.md). The sandbox's Chrome 153 reports the on-device model as unavailable.
+  - Live use needs desktop Chrome 148+, a downloaded Gemini Nano (with the multimodal flag for photos), and the owner's Firebase config + App Check.
+  - AI proposes vitals from a photo or synthetic note only. No AI for medicines, notes or handover.
+  - Proposals can be wrong; they are always saved as drafts for a nurse to confirm.
+  - Firebase console monitoring doesn't show on-device calls.
+  - The on-device guard depends on Firebase SDK 13.4.0 internals (the adapter mode check). It must be re-checked when the SDK is upgraded.
 - **Photos** are encrypted with the records' key and stay on the laptop until Recovery sign-off is built. Practice reset clears practice photos.
 - **Handover print:** browser print only. No "page x of y" (not reliably supported by browsers); identifiers repeat on each page.
 - **The safety copy before a DB upgrade** is a local copy on the same laptop. It is not disaster recovery or a backup system.

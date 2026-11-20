@@ -4,9 +4,37 @@ Reviewed 20 Nov 2026. Deadline 30 Nov 2026. **Synthetic data only.**
 
 ## The honest headline
 
-The hackathon is about **hybrid AI with Firebase AI Logic** (on-device + cloud). **ClinBridge has no AI integrated yet.** Everything else (offline charting, encryption, recovery, FHIR export) works without it, by design. To show the hackathon's core idea, the AI part has to be built in the 10 days left, and that is blocked on two things only the owner can provide (see "Blockers").
+Hybrid AI with Firebase AI Logic is **built** (branch `feat/ai-hybrid`), but it has only been tested with **mocks**. No real Gemini Nano or Gemini cloud answer has been produced yet; see `docs/AI_TEST_MATRIX.md`. The demo needs a prepared laptop and the owner's Firebase config. Everything else (offline charting, encryption, recovery, FHIR export) works without AI, by design.
 
-## What can be demoed today (Practice dataset, fake patients)
+## Demo instructions (synthetic data only)
+
+**Before the demo (network on):**
+1. Build with `.env.local` filled (see `.env.example`): Firebase web config and an App Check reCAPTCHA Enterprise site key registered for the demo domain. Deploy, or `npm run build && npm run preview`.
+2. Laptop: desktop Chrome 148+, with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled and Chrome restarted.
+3. Open ClinBridge once (caches the app). Unlock with **Use practice passphrase**, sign in as Kim Ellis (PIN 2468) → More → **AI check**. Press **Prepare on-device model** and wait for "ready". Every row should be OK. If "Not downloaded" or "can't run" shows, fix that first.
+4. Print or open a synthetic paper vitals form. Or use Device vs Cloud with the synthetic paper form option, which draws one on screen.
+
+**Scenario 1: hospital outage (on-device only)**
+1. Kim Ellis → Admin → Downtime → **Start a practice outage**. The banner shows SYSTEM DOWN.
+2. Turn the network off (Wi-Fi off, or DevTools → Offline).
+3. Switch user → Daniel Okafor → patient → **Photo of paper** → Vitals sheet → take or choose the synthetic form photo.
+4. **Propose values from the photo**. The card shows "On this laptop · ONLY_ON_DEVICE · N ms" and the proposed values.
+5. **Put these values in the form** → correct anything against the paper → Review → **Save as draft** → **Check and confirm** beside the photo.
+6. Reload while offline → unlock → sign in → the record is still there (encrypted on disk).
+
+**Scenario 2: hybrid comparison (Practice)**
+1. Network on. Still in Practice: Admin → Downtime → tick the checklist → PIN → **Clear network: Back online**. Compare's cloud side is blocked in System down.
+2. More → **Device vs Cloud** → pick a fictional record → Synthetic note or Synthetic paper form.
+3. **Run on-device model**, then **Run cloud model** (an explicit press). Each card shows its real source and time. The Differences table lists field by field, without saying which is right.
+4. **Review this one as a draft** → confirm screen (nurse review).
+
+**Scenario 3: EHR recovery**
+1. Back online (from scenario 2). Recovery / To check → **Add new downtime records** → open an item with a photo (from scenario 1) → **Run cloud second look**. It lists differences from the confirmed record and changes nothing → sign off.
+2. Export → tick "sensitive, not encrypted" → **Download file**. The FHIR R4 Bundle passes the HL7 validator with 0 errors (not EHR interoperability).
+
+If any AI step says "not set up / can't run / not downloaded", say so on camera and continue with manual entry. The app keeps working, which is part of the point. Never present a mock or the seed's simulated proposals as model output.
+
+## What can be demoed today without AI (Practice dataset, fake patients)
 
 | # | Flow | Works offline | Notes |
 |---|---|---|---|
@@ -22,17 +50,11 @@ The hackathon is about **hybrid AI with Firebase AI Logic** (on-device + cloud).
 
 Suggested 3-minute story: 1 → 2 (go offline in DevTools first) → 5 → 6 → 7, with 8 as a short security aside.
 
-## Blockers for the AI part (owner)
+## Blockers for the live AI demo (owner)
 
-1. **Firebase project web config.** Put it in `.env.local` on the build machine. Never paste keys into chat or commit them.
-2. **A test laptop with desktop Chrome 148+** that meets the Gemini Nano hardware requirements, with the model downloaded (see `docs/AI_INTEGRATION.md`). The development sandbox can't run Gemini Nano, so nothing on-device has been tested.
-
-## Smallest AI scope that fits the time (proposal, not started)
-
-Keeping AI optional and never in the critical path:
-- **On-device (System down):** photo of a vitals form → schema-constrained JSON → a **draft** with a "Device" badge. The nurse confirms beside the photo (the existing confirm flow). If AI isn't available, the screen says so and manual entry works as today.
-- **Cloud (Back online only, through the existing cloud guard):** recovery second look. Re-read the stored photo and flag differences as "Recheck". The rules worklist stays the default.
-- **Practice compare (Practice only):** on-device vs cloud side by side.
+1. **Firebase project + App Check:** web config and reCAPTCHA Enterprise site key in `.env.local`. Never paste keys into chat or commit them.
+2. **A laptop with desktop Chrome 148+** that can run Gemini Nano, with the model prepared. The sandbox's Chrome reports the model "unavailable".
+3. **One real run of the three scenarios**, recorded in TEST_REPORT before the submission claims live results.
 
 ## Other risks for the demo
 

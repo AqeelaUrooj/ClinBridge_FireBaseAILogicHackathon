@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 8)
+Last updated: 20 Nov 2026 (round 9)
 
 | Phase | Scope | State |
 |---|---|---|
@@ -9,9 +9,9 @@ Last updated: 20 Nov 2026 (round 8)
 | 2 | Vertical slice: vitals | **Done** |
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
 | 4 | Fluids (intake/output), notes, labs | **Done** |
-| 5 | Photo of paper form (on-device AI) | **Manual capture done**; AI not integrated (see docs/AI_INTEGRATION.md) |
+| 5 | Photo of paper form (on-device AI) | Manual capture done; on-device AI proposals built (PR #7), tested with mocks only |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
-| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | **Done** except practice compare (needs AI) |
+| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done; Device vs Cloud compare and cloud second look built (PR #7), mocks only |
 | 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest merged (PR #4). F1 second-laptop enrollment (PR #5). Cleanup workflow on synthetic data (PR #6). Real-records migration and Real-records cleanup not approved. Not deployed |
 
 ## Phase 2 slice — working end to end
@@ -34,6 +34,17 @@ Also working:
 - High-alert drugs (insulin, heparin, HYDROmorphone, potassium chloride): red bar, and Save stays locked until a **different** eligible nurse picks their name and enters their own PIN. The database layer refuses the save too, so the rule cannot be skipped from the screen.
 - Fixing a medicine record works like vitals: new version, reason required, old version kept.
 - Orders page (read only).
+
+## Round 9
+
+- **PR #5 merged** (`f6b0485`) and **PR #6 merged** (`6b67fef`, rebased onto main, CI green).
+- **Firebase AI Logic** (PR #7, `feat/ai-hybrid`):
+  - On-device paper-photo proposals (ONLY_ON_DEVICE with strict guards).
+  - Practice Device vs Cloud with real source labels.
+  - Back-online cloud second look.
+  - AI check page with model preparation.
+  - Practice outage drill.
+  - Tested with mocks; no real model run yet (docs/AI_TEST_MATRIX.md).
 
 ## Round 8
 
@@ -104,6 +115,6 @@ Also working:
 
 ## Next
 
-- AI integration (blocked on Firebase config and a Chrome 148+ test laptop; see DEMO_READINESS).
+- Real-model run of the three demo scenarios (needs Firebase config + a Chrome 148+ laptop with the model).
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
 - On-device AI once Firebase config and a desktop Chrome 148+ test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.
