@@ -20,6 +20,7 @@ Last updated: 22 Nov 2026 (round 13). Full review: docs/TECHNICAL_REVIEW_2026-11
 - **Round 11** (PR #10, #11): live re-check and demo rehearsal on 22 Nov (docs/LIVE_TEST_RESULTS_2026-11-22.md); the Practice clock continues after a reload.
 - **Round 12** (PR #12): Stitch-design sidebar groups, read-only ward clinical tools (`/tools/*`), rebuilt patient history with integrity facts. docs/ZIP_REQUIREMENTS_TRACEABILITY.md
 - **Round 13** (PR #13): Apache-2.0 licence and NOTICE, accurate README, product name ClinBridge in the app, Devpost and video preparation docs.
+- **Round 14** (PR #14, branch `feat/v3-zip-completion`): paper forms DT-MAR-01 / DT-VIT-02 / DT-SBAR-03 (`/print/:kind/:id`), paper form packets (`/spooler`), SpO₂ trend on history and vitals, print links on the patient pages, phone-width menu. No schema change. Report: docs/V3_ZIP_COMPLETION_REPORT.md
 
 ## Phase 2 slice — working end to end
 
@@ -124,4 +125,4 @@ Also working:
 
 - Live Gemini Nano run on compatible hardware (cloud runs are done).
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
-- Printable downtime sheets (Stitch design) once approved.
+- Owner decisions listed in docs/V3_ZIP_COMPLETION_REPORT.md section 12 (body map 21 + 3, note templates, print audit).

@@ -14,9 +14,13 @@ Built = works. No route is a placeholder any more; an unknown address shows an h
 | `/tools/vitals` | Ward vitals flowsheet (latest confirmed vitals per patient, draft "unusual" ranges) | Built |
 | `/tools/io` | Ward fluid balance (today's in / out / balance, confirmed only) | Built |
 | `/tools/body` | Body map: pick a patient (recorded site counts) | Built |
-| `/more` | Switch user, links to Ward labs / AI check / Device vs Cloud (Practice), change-log check, clinical settings status, lock records, safety copies, reset practice | Built |
+| `/more` | Switch user, links to Ward labs / Paper form packets / AI check / Device vs Cloud (Practice), change-log check, clinical settings status, lock records, safety copies, reset practice | Built |
 | `/handover` | Ward handover: latest handover per bed | Built |
 | `/labs` | Ward labs, critical first (sidebar Lab Results when no patient is open; also from More) | Built |
+| `/spooler` | Paper form packets: choose patients (select all / none, counts) and forms, check the list (name, born, MRN, bed), preview with each patient's sheets on new pages, confirm, then the browser's print dialog. No direct printer link | Built |
+| `/print/mar/:id` | Paper MAR sheet DT-MAR-01: identifiers repeat on every page, active medicine orders with today's times (recorded times marked "in ClinBridge"), blank boxes; patient check first | Built |
+| `/print/vit/:id` | Paper vitals, neuro and I/O sheet DT-VIT-02: blank time grids, last 3 confirmed readings and today's I/O totals for reference; no score | Built |
+| `/print/sbar/:id` | Paper SBAR sheet DT-SBAR-03: newest saved handover (or blank), blank verbal-order and signature boxes (paper only) | Built |
 | `/export` | FHIR R4 export: prepare, structure check, download, fingerprint in change log (file only, no EHR link) | Built |
 | `/ai` | AI check: browser, Prompt API, on-device model readiness (text / image), Firebase AI Logic init, App Check mode, current cloud permission, inference modes; "Prepare on-device model" | Built |
 | `/drill/compare` | Device vs Cloud (`PracticeComparePage`): fictional input through `ONLY_ON_DEVICE` and, on request, `ONLY_IN_CLOUD`; real source label per answer; cloud blocked in System down; nurse can review an answer as a draft. Practice data only (refused on Real records) | Built (cloud side live-verified 20 and 22 Nov 2026; on-device side hardware-blocked on the test PC) |

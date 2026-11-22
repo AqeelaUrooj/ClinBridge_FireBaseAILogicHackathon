@@ -1,5 +1,7 @@
 # ZIP requirements, traceability and database mapping
 
+> Updated by PR #14. The full 33-screen matrix, deferred features and body-map assessment are in `docs/V3_ZIP_COMPLETION_REPORT.md`.
+
 Source: `stitch_downtimekit_nursing_documentation_system_v3.zip` (owner's Downloads, 22 Nov 2026).
 Extracted read-only outside the repo; nothing from it was copied into the app, and none of its scripts were run.
 All patient names in the ZIP are fictional; the app keeps its own synthetic seed.
@@ -56,8 +58,8 @@ Requirements are marked **explicit** (written in a ZIP spec or shown on a ZIP sc
 | network_clearance_gate | `/recovery/gate` | Clearance checklist + admin PIN in `/admin/downtime` | 2 (DNS / mTLS / NTP probes: 7) |
 | recovery_worklist_second_look_reconciliation | `/recovery` | `/recovery`, `/recovery/:item` (cloud second look) | 1 (Pyxis concordance: 7) |
 | fhir_v4.0.1_data_sync_backup_recovery | `/recovery/fhir` | `/export` (FHIR R4 file; no push to an EHR) | 2 (push to EHR over mTLS: 7) |
-| batch_census_downtime_documentation_spooler | `/spooler` | — | 6/7: printing to port 9100 is not possible from a browser. Printable blank sheets could be built (not done). |
-| printable_bedside_downtime_documentation_sheets / vitals_neuro_io_flowsheet / verbal_orders_sbar_handover | `/print/*` | Handover print layout only (`/patients/:id/handoff/:hid`) | 6 (see limitations) |
+| batch_census_downtime_documentation_spooler | `/spooler` | `/spooler` (PR #14) | **2**: browser packet builder; port 9100 / LPR printing stays 7 |
+| printable_bedside_downtime_documentation_sheets / vitals_neuro_io_flowsheet / verbal_orders_sbar_handover | `/print/*` | `/print/mar/:id`, `/print/vit/:id`, `/print/sbar/:id` (PR #14) | **1** for the paper forms; barcode / QR / OCR fiducials, NEWS2 and GCS maths, verbal-order authorisation stay 7 |
 | downtimekit_enterprise…landing_page | `/landing` | — | 6, out of scope (marketing page with unverifiable compliance claims) |
 
 ---
@@ -107,7 +109,7 @@ Requirements are marked **explicit** (written in a ZIP spec or shown on a ZIP sc
 | Timeline actions: add past-dated note, print | "Add a note (any past time)" (nurses), browser print | visual | 1 (PDF export: 6) |
 | Shift chronology types: vitals, meds, notes (incl. "talked to doctor"), labs, I/O | All five entry types in one chronology | e2e | 1 |
 | Chronology: oxygen titration, SBAR call, verbal order, handover events | No new record types were added (not in the 19-table model as separate types). Titration and SBAR calls are recorded as notes or vitals. Handovers keep their own page, because `handoff` rows have no time field to place them in a chronology. | — | 3 / 7 (verbal orders) |
-| SpO₂ recovery trend chart | Not built in history; the vitals page has the pulse trend | — | 6 |
+| SpO₂ recovery trend chart | `components/TrendChart.tsx` + `lib/vitalTrend.ts` on history and vitals (PR #14): confirmed line, hollow drafts, pre-outage marker, values table | `vitalTrend.test.ts` (7), `e2e/trends.spec.ts` | **1** |
 
 ## 4. Modules A–K (from the brief) against the ZIP
 
@@ -170,5 +172,5 @@ Encryption at rest, index-field authentication, the audit chain and FHIR export 
 The ZIP's design tokens (`DESIGN.md`) are the ones the app already uses: navy `#1C2536` rail, `#F8F9FB` canvas, white 1px-bordered cards, 220px sidebar, Inter, tabular figures. Differences that remain:
 - Sidebar items are 36px high with 14px labels (DESIGN.md); the ZIP's unit header and mesh status footer are not shown, because there is no mesh.
 - The history page uses an 8/4 column grid like the ZIP. The ZIP's large per-card vital tiles appear only when a card is expanded.
-- No SpO₂ trend sparkline on the history page.
+- SpO₂ trend added in PR #14 (no target line, unlike the ZIP's dashed baseline).
 - The ZIP top bar's "P2P mesh", "pending sync" and shift timer are not shown; the app's header shows mode, patient-list age, clock, laptop and user.
