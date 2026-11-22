@@ -22,7 +22,11 @@ Open the app once while online. The service worker then caches everything (app, 
 
 ## Environment
 
-Copy `.env.example` to `.env.local` and fill in Firebase values when AI is added. Never commit `.env.local`, real patient data, PINs, keys or backups.
+AI is optional. To use it, copy `.env.example` to `.env.local` and fill in the Firebase web config and App Check site key (docs/FIREBASE_SETUP.md). For a hosted build, register that domain for the reCAPTCHA Enterprise key; debug tokens work only on the development server. Never commit `.env.local`, real patient data, PINs, keys or backups.
+
+## Licences when you ship a build
+
+`dist/` bundles third-party code and fonts. The JavaScript keeps its `@license` comments. The Inter font files are under the SIL Open Font License 1.1: ship its text with the build (copy `node_modules/@fontsource/inter/LICENSE`), together with ClinBridge's `LICENSE` and `NOTICE`.
 
 ## GitHub
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DowntimeDB } from '../db';
 import { importPracticeSeed, PRACTICE_PIN } from '../seed';
-import { verifyChain } from '../audit';
+import { canonicalJson, sha256Hex, verifyChain } from '../audit';
 import { verifyPin } from '../../lib/crypto';
 import { derivePhase } from '../../lib/phase';
 import { practiceClock } from '../../lib/time';
@@ -23,12 +23,48 @@ describe('admin: staff', () => {
     expect(p.initials).toBe('LW');
     expect(await verifyPin('1234', p.pin_hash)).toBe(true);
     await resetStaffPin(db, clock, admin, p.id, '9876');
-    expect(await verifyPin('9876', (await db.practitioner.get(p.id))!.pin_hash)).toBe(true);
+    const afterReset = (await db.practitioner.get(p.id))!;
+    expect(await verifyPin('9876', afterReset.pin_hash)).toBe(true);
     await setStaffActive(db, clock, admin, p.id, false);
     expect((await db.practitioner.get(p.id))!.active).toBe(false);
     const rows = await db.audit_log.orderBy('seq').toArray();
-    expect(rows.slice(-3).map((r) => r.action)).toEqual(['staff_added', 'staff_pin_reset', 'staff_deactivated']);
-    expect(JSON.stringify(rows)).not.toContain('9876');
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    const added = rows.at(-3)!, reset = rows.at(-2)!, deactivated = rows.at(-1)!;
+    expect([added, reset, deactivated].map((r) => r.action)).toEqual(['staff_added', 'staff_pin_reset', 'staff_deactivated']);
+
+    // The PIN is stored only as a salted PBKDF2 hash on the staff record, and the reset really changed it.
+    const PBKDF2 = /^pbkdf2\$\d+\$[0-9a-f]+\$[0-9a-f]{64}$/;
+    expect(afterReset.pin_hash).toMatch(PBKDF2);
+    expect(afterReset.pin_hash).not.toBe(p.pin_hash);
+    expect(await verifyPin('1234', afterReset.pin_hash)).toBe(false);
+
+    // Audit rows have a fixed shape: no field can hold a PIN or a PIN hash.
+    const AUDIT_FIELDS = ['action', 'after_hash', 'before_hash', 'device_id', 'entity', 'id', 'prev_row_hash', 'seq', 'time', 'user_id'];
+    for (const r of rows) expect(Object.keys(r).sort()).toEqual(AUDIT_FIELDS);
+
+    // No stored PIN hash (old or new, whole string or its hash part) appears in any audit row.
+    const logged = JSON.stringify(rows);
+    expect(logged).not.toMatch(/pbkdf2\$/);
+    for (const stored of [p.pin_hash, afterReset.pin_hash]) {
+      expect(logged).not.toContain(stored);
+      expect(logged).not.toContain(stored.split('$')[3]);
+    }
+
+    // Each staff action records who, what and which account, and its hashed content is exactly the non-secret
+    // facts below. Recomputing the hashes proves no PIN or PIN hash went into them. (A plain "no 9876 anywhere"
+    // check was flaky: the digits can turn up by chance inside a random SHA-256 value.)
+    const h = (o: Record<string, unknown>) => sha256Hex(canonicalJson(o));
+    for (const r of [added, reset, deactivated]) {
+      expect(r.user_id).toBe(admin.userId);
+      expect(r.entity).toBe(`practitioner/${p.id}`);
+    }
+    expect(added.before_hash).toBeNull();
+    expect(added.after_hash).toBe(await h({ name: 'Lee Ward', initials: 'LW', role: 'RN', active: true }));
+    expect(reset.before_hash).toBeNull();
+    expect(reset.after_hash).toBe(await h({ pin_reset: true }));
+    expect(deactivated.before_hash).toBe(await h({ active: true }));
+    expect(deactivated.after_hash).toBe(await h({ active: false }));
+
     expect((await verifyChain(rows)).ok).toBe(true);
   });
   it('cannot switch off yourself or the last admin', async () => {

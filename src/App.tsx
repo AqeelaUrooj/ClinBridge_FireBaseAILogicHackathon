@@ -46,7 +46,7 @@ export function App() {
       </main>
     );
   }
-  if (!ready) return <p role="status" className="p-space-xl text-secondary">Opening DowntimeKit…</p>;
+  if (!ready) return <p role="status" className="p-space-xl text-secondary">Opening ClinBridge…</p>;
   // Encrypted and locked (refresh, restart, "Lock records", idle lock): nothing else renders until unlocked.
   if (vault === 'locked') return <UnlockVault />;
   return (

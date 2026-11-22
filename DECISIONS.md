@@ -68,6 +68,7 @@
 | D-66 | History: counts and default list cover current records (confirmed + drafts); old versions and mistakes stay available crossed out behind a toggle; order by care time, then typed time | Counts must stay right after fixes; append-only history unchanged |
 | D-67 | Charting-integrity panel shows facts only (statuses, photo/AI origin, change-log chain check); no "bedside verified", "countersigned" or "all signed" claims | DowntimeKit has no such workflow; no invented e-signature policy |
 | D-68 | ZIP items needing hardware, network infrastructure, unapproved clinical scores (NEWS2, oliguria) or new signature policies are not built; listed with reasons | `docs/ZIP_REQUIREMENTS_TRACEABILITY.md` §5 |
+| D-69 | Licence: Apache-2.0 (the standard text, unmodified, in `LICENSE`), copyright notice and third-party credits in `NOTICE`; product name shown in the app is ClinBridge | The hackathon prefers Apache and needs a licence GitHub can detect. Dependencies are all permissive (Inter font stays OFL-1.1). Owner-supplied design and AI-generated illustrations are credited in `NOTICE` |
 
 ## Open — need an answer
 

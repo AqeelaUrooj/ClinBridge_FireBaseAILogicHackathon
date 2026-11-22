@@ -29,4 +29,4 @@ Rules in the app:
 - A vital-sign picture never stands for a measurement; the number and label do.
 - All files are bundled and precached by the service worker; a browser test checks they load with the network off.
 
-Licence note: the reference sheet was supplied by the project owner as an AI-generated image for this project.
+Licence note: the reference sheet was supplied by the project owner as an AI-generated image for this project. On 22 Nov 2026 the owner confirmed that she generated it herself with an AI tool whose terms allow use and redistribution of the output, with no copyrighted images as input, and that the Stitch design export (colour tokens, `art/*.svg`) is her own work made in her own Google account. Both are distributed under the project's Apache-2.0 licence (`NOTICE`).
