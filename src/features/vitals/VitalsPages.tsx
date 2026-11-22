@@ -10,6 +10,8 @@ import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
 import { VitalsEditor } from './VitalsEditor';
+import { TrendChart } from '../../components/TrendChart';
+import { vitalSeries } from '../../lib/vitalTrend';
 import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
 
 const CARDS: VitalKey[] = ['bp_systolic', 'heart_rate', 'spo2', 'temp_c', 'resp_rate'];
@@ -67,9 +69,12 @@ export function VitalsPage() {
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Vitals' }]} />
       {savedId && <p role="status" className="rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant px-space-md py-space-sm flex items-center gap-2 font-body-md"><Icon name="check_circle" filled />Saved on this laptop.</p>}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-space-sm">
         <h1 className="font-headline-lg text-headline-lg text-primary">Vitals</h1>
-        <ButtonLink to={`${base}/vitals/record`}><Icon name="add" />Record vitals</ButtonLink>
+        <div className="flex flex-wrap gap-space-sm">
+          <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}><Icon name="print" />Paper vitals &amp; I/O sheet</ButtonLink>
+          <ButtonLink to={`${base}/vitals/record`}><Icon name="add" />Record vitals</ButtonLink>
+        </div>
       </div>
       {items === undefined ? <p role="status">Loading…</p> : !latest ? <EmptyState text="No vitals yet" /> : (
         <>
@@ -97,10 +102,16 @@ export function VitalsPage() {
             </div>
           </div>
           <p className="font-body-sm text-secondary -mt-space-sm">“Unusual” uses draft ranges that are not clinically approved yet.</p>
-          <Card>
-            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Pulse over time</h2>
-            <Trend items={items} k="heart_rate" />
-          </Card>
+          <div className="grid lg:grid-cols-2 gap-space-md">
+            <Card>
+              <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Pulse over time</h2>
+              <Trend items={items} k="heart_rate" />
+            </Card>
+            <Card aria-label="Oxygen level (SpO₂) over time">
+              <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Oxygen level (SpO₂) over time</h2>
+              <TrendChart series={vitalSeries(items, patient.id, 'spo2')} label="SpO₂" unit="%" testId="vitals-spo2-trend" />
+            </Card>
+          </div>
           <Card>
             <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">All vitals</h2>
             {items.map((x) => <EntryRow key={x.entry.id} item={x} />)}

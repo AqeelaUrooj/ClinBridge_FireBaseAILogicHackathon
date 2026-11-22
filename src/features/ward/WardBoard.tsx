@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { DowntimeDB } from '../../db/db';
 import { useApp, useSession } from '../../state/app';
 import { ageOn, hm } from '../../lib/time';
-import { Badge, Icon, PageTitle } from '../../components/ui';
+import { Badge, ButtonLink, Icon, PageTitle } from '../../components/ui';
 import { MedIllustration } from '../../components/MedIllustration';
 import { VerifyPatientDialog } from '../patient/PatientLayout';
 import { fullName, isNoKnownAllergy, loadPatient, type PatientBundle } from '../patient/patientData';
@@ -56,7 +56,7 @@ export function WardBoard() {
 
   return (
     <>
-      <PageTitle>My patients</PageTitle>
+      <PageTitle actions={<ButtonLink variant="secondary" to="/spooler"><Icon name="print" />Paper form packets</ButtonLink>}>My patients</PageTitle>
       <div className="flex flex-wrap items-center gap-space-sm">
         <label className="relative min-w-[260px] flex-1 max-w-md">
           <span className="sr-only">Search by name, MRN or bed</span>

@@ -149,6 +149,7 @@ export function MorePage() {
         <div className="flex flex-wrap gap-space-sm">
           <Button variant="secondary" onClick={() => { signOut(); navigate('/sign-in'); }}><Icon name="switch_account" />Switch user</Button>
           <ButtonLink variant="secondary" to="/labs"><Icon name="science" />Ward labs</ButtonLink>
+          <ButtonLink variant="secondary" to="/spooler"><Icon name="print" />Paper form packets</ButtonLink>
           <ButtonLink variant="secondary" to="/ai"><Icon name="memory" />AI check</ButtonLink>
           {dataset === 'practice' && <ButtonLink variant="secondary" to="/drill/compare"><Icon name="compare" />Device vs Cloud</ButtonLink>}
         </div>

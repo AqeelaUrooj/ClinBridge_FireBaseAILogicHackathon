@@ -14,6 +14,8 @@ import { EntryValues } from '../entries/EntryPages';
 import { SourceBadge, StatusBadge, TYPE_ICON, TYPE_LABEL, entrySummary } from '../entries/entryView';
 import { useCurrentPatient } from './PatientLayout';
 import { fullName } from './patientData';
+import { TrendChart } from '../../components/TrendChart';
+import { SPO2_LOINC, vitalSeries, withBaseline } from '../../lib/vitalTrend';
 
 /**
  * Patient history (Stitch "Patient History & Clinical Timeline", minimal with expandable cards).
@@ -28,6 +30,7 @@ export function Timeline() {
   const names = useLiveQuery(async () => new Map((await db.practitioner.toArray()).map((p) => [p.id, p.name])), [db]) ?? new Map<string, string>();
   const baseline = useLiveQuery(async () => (await db.snapshot_result.where('patient_id').equals(patient.id).toArray()).sort((a, b) => b.time.localeCompare(a.time)), [db, patient.id]);
   const chain = useLiveQuery(async () => verifyChain(await db.audit_log.orderBy('seq').toArray()), [db]);
+  const spo2 = useMemo(() => withBaseline(vitalSeries(entries ?? [], patient.id, 'spo2'), baseline ?? [], patient.id, SPO2_LOINC), [entries, baseline, patient.id]);
 
   const [filter, setFilter] = useState<HistoryFilter>('all');
   const [order, setOrder] = useState<HistoryOrder>('newest');
@@ -118,15 +121,16 @@ export function Timeline() {
                   <li key={entry.id} className={`bg-surface-container-lowest rounded-xl border ${entry.status === 'draft' ? 'border-downtime-amber-border' : 'border-card-border'}`} data-testid={`history-${entry.id}`}>
                     <button type="button" aria-expanded={isOpen} aria-controls={`body-${entry.id}`} onClick={() => toggle(entry.id)}
                       className="w-full flex items-center gap-space-md min-h-[60px] px-space-md py-space-sm text-left hover:bg-surface-container-low rounded-xl">
-                      <span className="w-12 font-code-tabular text-[13px] font-bold text-primary">{hm(entry.care_time)}</span>
+                      <span className="w-12 shrink-0 font-code-tabular text-[13px] font-bold text-primary">{hm(entry.care_time)}</span>
                       <span className="w-9 h-9 rounded-lg bg-surface-container-low grid place-items-center text-secondary shrink-0"><Icon name={TYPE_ICON[entry.type]} className="text-[20px]" /></span>
                       <span className="flex-1 min-w-0">
                         <span className={`block truncate font-body-lg text-body-lg ${retired ? 'line-through text-outline' : 'text-on-surface'}`}>{entrySummary(x)}</span>
                         <span className="block font-body-sm text-body-sm text-secondary">{TYPE_LABEL[entry.type]} · {names.get(entry.performer_id) ?? entry.performer_id}{entry.raw_input_kind === 'photo' ? ' · from paper photo' : ''}</span>
+                        {/* Narrow screens: the badges sit under the summary so the row never runs off the screen. */}
+                        <span className="flex sm:hidden flex-wrap gap-1 mt-1"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></span>
                       </span>
-                      <SourceBadge entry={entry} />
-                      <StatusBadge entry={entry} />
-                      <Icon name={isOpen ? 'expand_less' : 'expand_more'} className="text-outline" />
+                      <span className="hidden sm:flex items-center gap-space-md shrink-0"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></span>
+                      <Icon name={isOpen ? 'expand_less' : 'expand_more'} className="text-outline shrink-0" />
                     </button>
                     {isOpen && (
                       <div id={`body-${entry.id}`} className="px-space-md pb-space-md flex flex-col gap-space-sm">
@@ -168,7 +172,27 @@ export function Timeline() {
           )}
         </div>
 
-        <aside className="xl:col-span-4 flex flex-col gap-space-md" aria-label="Charting integrity">
+        <div className="xl:col-span-4 flex flex-col gap-space-md">
+          <Card className="flex flex-col gap-space-sm" aria-label="Oxygen level (SpO₂) trend">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="font-headline-sm text-headline-sm text-primary">Oxygen level (SpO₂)</h2>
+              <ButtonLink variant="secondary" className="print:hidden" to={`/patients/${patient.id}/vitals`}>Vitals</ButtonLink>
+            </div>
+            {entries === undefined ? <p role="status" className="text-secondary">Loading…</p> : (
+              <>
+                {spo2.latest && (
+                  <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 font-body-md" data-testid="spo2-summary">
+                    <dt>Latest confirmed</dt><dd className="font-code-tabular font-semibold">{spo2.latest.value}% <span className="font-normal text-secondary">at {hm(spo2.latest.time)}</span></dd>
+                    {spo2.lowest && spo2.confirmed.length > 1 && <><dt>Lowest confirmed</dt><dd className="font-code-tabular font-semibold">{spo2.lowest.value}% <span className="font-normal text-secondary">at {hm(spo2.lowest.time)}</span></dd></>}
+                    {spo2.lowest && spo2.confirmed.length > 1 && spo2.latest.value !== spo2.lowest.value && <><dt>Latest vs lowest</dt><dd className="font-code-tabular font-semibold">{spo2.latest.value > spo2.lowest.value ? '+' : ''}{spo2.latest.value - spo2.lowest.value} points</dd></>}
+                  </dl>
+                )}
+                <TrendChart series={spo2} label="SpO₂" unit="%" testId="spo2-trend" />
+                <p className="font-body-sm text-secondary">Line: confirmed vital-sign records on this laptop (old versions and mistakes left out). Square: the hospital patient list before the outage. No target line or score is shown.</p>
+              </>
+            )}
+          </Card>
+        <aside className="flex flex-col gap-space-md" aria-label="Charting integrity">
           <Card className="flex flex-col gap-space-sm">
             <h2 className="font-headline-sm text-headline-sm text-primary">Charting integrity</h2>
             <dl className="grid grid-cols-[1fr_auto] gap-y-1 font-body-md">
@@ -213,6 +237,7 @@ export function Timeline() {
             <Link to={`${base}/capture`} className="font-body-md text-secondary underline">Photo of paper</Link>
           </Card>
         </aside>
+        </div>
       </div>
     </>
   );

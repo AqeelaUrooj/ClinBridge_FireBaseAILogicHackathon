@@ -19,7 +19,9 @@
 - **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.
 - **Body map is a first model** (21 regions, draft ids). Neck, groin/perineum and hips are drawn but cannot be selected. Pain and skin markers need `note.body_site` (P-03, pending). Sites that are not in the fixed table are listed, not drawn.
 - **Records saved before DB v2** keep their old reason inside `entry.confirmed` as well as the new `change_reason` (migration was additive on purpose).
-- **Some screens from the Stitch design are not built** (printable sheets, verbal orders, NEWS2, mesh networking and others; reasons in docs/ZIP_REQUIREMENTS_TRACEABILITY.md). Every route that exists works; see ROUTES.md.
+- **Some screens and controls from the Stitch design are not built** (verbal-order authorisation, NEWS2, mesh networking, port-9100 printing and others; reasons in docs/V3_ZIP_COMPLETION_REPORT.md). Every route that exists works; see ROUTES.md.
+- **Paper forms and packets** (`/print/*`, `/spooler`) use the browser's print dialog. ClinBridge cannot send to a printer or tell whether pages printed, and printing is not written to the change log. No barcode or QR code (nothing verified to encode or scan). Writing on a printed sheet does not put anything into ClinBridge.
+- **Phone-width screens** work (menu behind a header button; tested at 390 px) but the app is designed for ward laptops. Paper sheets scroll sideways inside their own box on a phone; print from a laptop.
 - **Date picker format** follows the browser's language setting (may show month/day order). Saved times are ISO with the ward's offset.
 - **Icon font is large** (~4 MB, cached once for offline). Can be subset later.
 - **One browser tab at a time.** Writes are ordered inside one tab; two tabs writing at the same moment retry, but this is not fully tested.

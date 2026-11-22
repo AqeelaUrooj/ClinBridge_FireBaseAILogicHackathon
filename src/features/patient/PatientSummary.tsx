@@ -55,6 +55,12 @@ export function PatientSummary() {
         <ActionCard to={`${base}/notes`} icon="description" art="workflows/checklist" kicker="Nursing" title="Note" disabledReason={nurseOnly} />
         <ActionCard to={`${base}/capture`} icon="photo_camera" art="workflows/paper-photo" kicker="Paper form" title="Photo of paper" disabledReason={nurseOnly} />
       </div>
+      <Card className="flex flex-wrap items-center gap-space-sm" aria-label="Paper downtime forms">
+        <h2 className="font-headline-sm text-headline-sm text-primary mr-auto flex items-center gap-2"><Icon name="print" />Paper forms for this patient</h2>
+        <ButtonLink variant="secondary" to={`/print/mar/${patient.id}`}>Medication record (DT-MAR-01)</ButtonLink>
+        <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}>Vitals, neuro and I/O (DT-VIT-02)</ButtonLink>
+        <ButtonLink variant="secondary" to={`/print/sbar/${patient.id}`}>SBAR handover (DT-SBAR-03)</ButtonLink>
+      </Card>
       <Card>
         <div className="flex items-center justify-between mb-space-sm">
           <h2 className="font-headline-md text-headline-md text-primary">Latest</h2>

@@ -19,6 +19,7 @@ import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, Devi
 import { RecoveryListPage, RecoveryItemPage, ExportPage } from './features/recovery/RecoveryPages';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 import { AiCheckPage, PracticeComparePage } from './features/ai/AiPages';
+import { PrintFormPage, SpoolerPage } from './features/print/PrintPages';
 
 function RequireAuth() {
   const { user, locked } = useSession();
@@ -69,6 +70,9 @@ export function App() {
           <Route path="/tools/io" element={<WardFluidsPage />} />
           <Route path="/tools/body" element={<WardBodyMapPage />} />
           <Route path="/export" element={<ExportPage />} />
+          {/* Paper downtime forms (DT-MAR-01, DT-VIT-02, DT-SBAR-03) and the packet builder. The app frame is hidden when printing. */}
+          <Route path="/print/:kind/:id" element={<PrintFormPage />} />
+          <Route path="/spooler" element={<SpoolerPage />} />
           <Route path="/drill/compare" element={<PracticeComparePage />} />
           <Route path="/ai" element={<AiCheckPage />} />
           <Route path="/admin" element={<AdminLayout />}>
