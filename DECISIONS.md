@@ -75,6 +75,7 @@
 | D-73 | SpO₂ trend: confirmed records draw the line, drafts are hollow and never joined, old versions and mistakes are left out, the pre-outage hospital-list value (LOINC 59408-5 / 2708-6) is a separate marker; no target line, band or score | Real data only, nothing implied clinically |
 | D-74 | Below 768 px the sidebar sits behind a header Menu button (overlay, closes on navigation / Escape); unchanged at 768 px and wider | Phone-width screens were unusable with a fixed 220 px rail |
 | D-75 | Body map stays at 21 regions; the Stitch 24-region model is not a superset (quadrants vs halves, whole limbs vs forearm/hand/foot/heel). An additive 21 + 3 option is proposed, not built | Region model is the owner's decision (P-01) |
+| D-76 | Body map: owner chose 21 + 3 additive regions (NECK, BACK_OF_NECK, PERINEUM) = 24 (23 Nov 2026). Existing 21 ids unchanged, no stored data touched. Built in a follow-up PR, not PR #14 | Keeps PR #14 as reviewed; additive change needs its own tests |
 
 ## Open — need an answer
 

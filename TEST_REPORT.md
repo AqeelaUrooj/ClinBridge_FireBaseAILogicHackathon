@@ -11,6 +11,21 @@ Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on br
 | `npm run test:e2e` (Playwright) | **30 / 30 pass** (second server: AI build with fake Firebase values) |
 | Real AI model | **Not run.** Sandbox Chrome 153: Prompt API present, model "unavailable" |
 
+## Round 15: PR #14 pre-merge quality check (23 Nov 2026)
+
+Owner's checklist on `feat/v3-zip-completion`. Details: `docs/V3_ZIP_COMPLETION_REPORT.md` section 5a.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` / `npm run lint` | Pass / Pass |
+| `npx vitest run` | **225 passed, 1 skipped** |
+| `npm run build` | Pass |
+| `npx playwright test` | **46 / 46** (+4: `print-multipage.spec.ts` 3, `phone-layout.spec.ts` 1) |
+| Multi-page PDFs read back page by page | MAR 5 (A4) / 6 (Letter) pages, SBAR 3 / 3, 2-patient packet 16 pages: right patient on every page, none mixed, nothing cut off |
+| Real print dialog | Opened from a fictional patient's sheet in the built-in browser; not operable from this session; closed without printing |
+
+Defects found and fixed: near-empty first page on long forms (keep-together sections); order list sorted 1, 10, 11 (now natural order); new screens, history cards and record rows overflowing at 390 px. Test-side: the PDF reader trimmed a stream byte (now uses the declared length); multi-page tests block the service worker so the layout rows reach the page.
+
 ## Round 14: V3 ZIP completion — paper forms, packets, SpO₂ trend, phone menu (23 Nov 2026)
 
 Branch `feat/v3-zip-completion` (from `main` `79deaeb`) on DESKTOP-6NQ637E (Windows 10, Node 24.21.0). No schema change. Report: `docs/V3_ZIP_COMPLETION_REPORT.md`.

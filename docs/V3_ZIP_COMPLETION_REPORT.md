@@ -8,6 +8,8 @@ Source: `stitch_downtimekit_nursing_documentation_system_v3.zip` (owner's Downlo
 
 ---
 
+Owner walkthrough for reviewing the new screens: `docs/PR14_REVIEW_WALKTHROUGH.md`.
+
 ## 1. ZIP inventory (verified from the archive)
 
 62 files (105 entries including 43 folders). No executables, no unsafe paths.
@@ -114,6 +116,19 @@ Shared print rules met: no external fonts or CDNs (bundled Inter and icons, prec
 - **Header / sidebar:** unchanged from PR #12 (no mesh / pending-sync / shift timer); below 768 px the sidebar becomes a menu.
 - Pixel-level comparison was not attempted: the ZIP images use different sample data and branding, so a pixel diff would measure content, not layout. Comparison was done side by side against `screen.png` files and recorded above.
 
+## 5a. Pre-merge quality check (owner request, 23 Nov 2026)
+
+| Check | How | Result |
+|---|---|---|
+| Multi-page MAR and SBAR, A4 and Letter | `e2e/print-multipage.spec.ts`: the test browser gets the fictional seed plus extra fictional rows labelled "LAYOUT TEST" (28 orders for Sam Rivera, 26 for Lena Ortiz, a long handover each; committed seed unchanged). Each PDF is read back page by page (`e2e/pdfText.ts`, Node zlib only) | MAR **5 pages (A4) / 6 pages (Letter)**, SBAR **3 / 3**. Every page has the right name, MRN and Practice label and no other patient's name or MRN. First and last order rows, signature tables and footer all present. Pages also checked by eye in the PDF viewer: nothing clipped, rows not split |
+| Two-patient packet | Same, 2 patients × MAR + SBAR, A4 | **16 pages**: every page belongs to exactly one patient; all of one patient's pages, then the other's |
+| **Defect found and fixed** | The long-orders PDF had a near-empty page 1: the whole order section was marked "keep together", so the browser pushed the table to page 2 | Sections may now continue onto the next page (single rows still never split; headings stay with what follows). Test asserts the order table starts on page 1 |
+| Order of long lists | "medicine 1, 10, 11 … 2" | Natural order now (1, 2 … 10) |
+| Forms vs pages wording | Packet builder said "N sheets" for patients × forms | Now "N forms", with "the number of printed pages depends on how long each form is and the paper size" and "the print dialog shows the real page count" |
+| Real print dialog | Built-in browser (Chromium) on the dev server, fictional patient: pressed **Print this sheet** | The browser opened its print dialog (the page became modal and unresponsive, as during printing). The dialog could not be screenshotted or operated from this session (it belongs to the app's own window); the tab was closed, which discards the dialog. **Nothing was printed.** The packet's **Open the print dialog** calls the same function (browser tests confirm one call after confirm, none on load or cancel). **The owner should check both dialogs by eye** (walkthrough steps 4 and 6) |
+| Phone width (390 px), all new screens | `e2e/phone-layout.spec.ts`: no sideways page scroll, main buttons fully on screen | **Fixed:** sheets now scroll sideways inside their own box (readable 680 px minimum) instead of widening the page; packet tables show born date, MRN and allergies under the name below 640 px; history cards and the shared record row put badges under the summary below 640 px (their arrow ran off the screen); headers with the new paper-sheet buttons wrap |
+| Fictional data only | All tests use the Practice seed (fictional) plus labelled fictional layout rows; every printed page carries "PRACTICE · FICTIONAL PATIENT · NOT A MEDICAL RECORD" (asserted on every PDF page) | Confirmed |
+
 ## 6. Screenshots (review evidence)
 
 Taken by the browser tests on fictional Practice data and uploaded by CI as the `e2e-screens` artifact of the PR run:
@@ -125,6 +140,8 @@ Taken by the browser tests on fictional Practice data and uploaded by CI as the 
 | `spooler-packet-print.png` | 2-patient packet in print media |
 | `history-spo2-desktop.png`, `-small-desktop.png`, `-phone.png` | SpO₂ card at 1440, 1024 and 390 px |
 | `phone-menu-open.png`, `phone-ward.png` | Phone-width menu and ward board |
+| `phone-print-{mar,vit,sbar}.png`, `phone-packets-{choose,check,preview}.png`, `phone-vitals.png` | New screens at 390 px |
+| `print-multipage-*/{mar,sbar}-{A4,Letter}.pdf`, `packet-A4.pdf` | Multi-page PDFs (fictional layout-test rows) |
 
 ## 7. Database compatibility
 
@@ -160,7 +177,7 @@ Taken by the browser tests on fictional Practice data and uploaded by CI as the 
 | `npm run typecheck`, `npm run lint` | Pass |
 | `npx vitest run` | **225 passed, 1 skipped** (+15: `vitalTrend.test.ts` 7, `printData.test.ts` 8). The skipped file writes the FHIR bundle and runs only in CI |
 | `npm run build` | Pass (26 precache entries) |
-| `npx playwright test` | **42 / 42** (+8: `print.spec.ts` 4, `trends.spec.ts` 2, `navigation.spec.ts` +2) |
+| `npx playwright test` | **46 / 46** (+12: `print.spec.ts` 4, `print-multipage.spec.ts` 3, `phone-layout.spec.ts` 1, `trends.spec.ts` 2, `navigation.spec.ts` +2) |
 
 New browser tests cover: sign-in and patient check before a sheet; real orders and identifiers; no automatic print (print counter stays 0 until a click); print-media layout without the app frame; Letter and A4 PDF rendering; vitals sheet without scores; SBAR with saved handover and paper-only boxes; packet select all / none, no-forms guard, check-the-list, page breaks per patient and per form, per-sheet identifiers, confirm and cancel; offline after reload; SpO₂ values, order, pre-outage marker, no target line; a fixed reading replacing the old one in the trend; phone menu open / close / Escape; wide screen unchanged.
 
@@ -176,7 +193,7 @@ Not touched: `src/db/**`, `src/lib/ai/**`, `src/lib/cloud*.ts`, `src/lib/fhir.ts
 
 ## 12. Decisions for the owner
 
-1. **Body map:** add the 3 additive regions (neck, back of neck, perineum) → 24 regions, or keep 21?
+1. **Body map:** owner chose (23 Nov 2026) to add the 3 additive regions (neck, back of neck, perineum) → 24. **Not in PR #14**; to be built in a separate follow-up PR.
 2. **Note templates:** approve neutral nurse-selected templates (for example DAR headings Data / Action / Response) and their wording?
 3. **Print audit:** write a change-log row when someone opens the print dialog for a sheet or packet (records the attempt, not that a page printed)?
 4. **Barcodes:** confirm whether the hospital wants a Code-128 of the MRN on paper forms, and the exact format, before any barcode is added.
