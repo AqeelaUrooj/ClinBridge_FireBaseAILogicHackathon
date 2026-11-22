@@ -17,8 +17,8 @@ export default defineConfig({
         navigateFallback: 'index.html',
       },
       manifest: {
-        name: 'DowntimeKit',
-        short_name: 'DowntimeKit',
+        name: 'ClinBridge',
+        short_name: 'ClinBridge',
         description: 'Offline nursing documentation during hospital EHR downtime',
         theme_color: '#1c2536',
         background_color: '#f8f9fb',

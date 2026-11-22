@@ -113,7 +113,7 @@ export function Sidebar() {
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded bg-primary-container flex items-center justify-center text-on-primary"><Icon name="emergency_home" className="text-[18px]" /></div>
           <div>
-            <span className="block font-headline-sm text-headline-sm font-bold text-primary tracking-tight">DowntimeKit</span>
+            <span className="block font-headline-sm text-headline-sm font-bold text-primary tracking-tight">ClinBridge</span>
             <span className="block font-code-tabular text-[10px] text-secondary font-semibold uppercase">{snapshot?.unit ?? 'No patient list'}</span>
           </div>
         </div>

@@ -67,7 +67,7 @@ export function SignIn() {
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded bg-primary-container text-on-primary grid place-items-center"><Icon name="emergency_home" /></div>
               <div>
-                <span className="block font-headline-md text-headline-md text-primary">DowntimeKit</span>
+                <span className="block font-headline-md text-headline-md text-primary">ClinBridge</span>
                 <span className="block font-body-sm text-body-sm text-secondary">Charting when the hospital system is down</span>
               </div>
             </div>
