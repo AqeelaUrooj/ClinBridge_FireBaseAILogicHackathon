@@ -123,4 +123,9 @@ test('patient history: filter tabs with counts, search, order, expand/collapse, 
   await expect(panel).toContainText(/Change log intact: \d+ of \d+ rows verified/);
   await expect(panel).toContainText('no bedside-verification or doctor-countersignature step');
   await expect(panel).not.toContainText(/Bedside verified|Countersigned|All records signed/i);
+  // Attribution only: no claim that every record was personally saved with a nurse's PIN.
+  const note = panel.getByTestId('integrity-note');
+  await expect(note).toContainText('attributed to');
+  await expect(note).toContainText('does not show who was at the bedside');
+  await expect(panel).not.toContainText(/with (their|a) PIN|signed-in nurse/i);
 });

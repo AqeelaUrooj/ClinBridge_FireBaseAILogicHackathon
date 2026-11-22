@@ -1,6 +1,6 @@
 # Routes
 
-Built = works. Placeholder = honest "being built" page.
+Built = works. No route is a placeholder any more; an unknown address shows an honest "Page not found" page.
 
 | Route | Page | State |
 |---|---|---|
@@ -14,11 +14,12 @@ Built = works. Placeholder = honest "being built" page.
 | `/tools/vitals` | Ward vitals flowsheet (latest confirmed vitals per patient, draft "unusual" ranges) | Built |
 | `/tools/io` | Ward fluid balance (today's in / out / balance, confirmed only) | Built |
 | `/tools/body` | Body map: pick a patient (recorded site counts) | Built |
-| `/more` | Switch user, change-log check, reset practice | Built |
+| `/more` | Switch user, links to Ward labs / AI check / Device vs Cloud (Practice), change-log check, clinical settings status, lock records, safety copies, reset practice | Built |
 | `/handover` | Ward handover: latest handover per bed | Built |
-| `/labs` | Ward labs, critical first (from More) | Built |
+| `/labs` | Ward labs, critical first (sidebar Lab Results when no patient is open; also from More) | Built |
 | `/export` | FHIR R4 export: prepare, structure check, download, fingerprint in change log (file only, no EHR link) | Built |
-| `/drill/compare` | Practice compare (needs AI) | Placeholder |
+| `/ai` | AI check: browser, Prompt API, on-device model readiness (text / image), Firebase AI Logic init, App Check mode, current cloud permission, inference modes; "Prepare on-device model" | Built |
+| `/drill/compare` | Device vs Cloud (`PracticeComparePage`): fictional input through `ONLY_ON_DEVICE` and, on request, `ONLY_IN_CLOUD`; real source label per answer; cloud blocked in System down; nurse can review an answer as a draft. Practice data only (refused on Real records) | Built (cloud side live-verified 20 and 22 Nov 2026; on-device side hardware-blocked on the test PC) |
 | `/setup` | First-time setup for Real records (first admin + this laptop); reachable before sign-in, works only while no staff exist | Built |
 | `/admin` | Readiness (offline storage, network, storage space, laptop, AI availability, patient list age, change log, drafts, worklist) | Built |
 | `/admin/downtime` | Declare System down → checklist + admin PIN → Back online → end (only when worklist done) | Built |

@@ -183,7 +183,7 @@ export function Timeline() {
               <Icon name={chain ? (chain.ok ? 'verified' : 'gpp_bad') : 'hourglass_empty'} />
               {chain ? (chain.ok ? `Change log intact: ${chain.verified} of ${chain.total} rows verified` : `Change log broken at row ${chain.brokenAtSeq}`) : 'Checking change log…'}
             </p>
-            <p className="font-body-sm text-secondary">Every record here was saved by a signed-in nurse with their PIN. DowntimeKit has no bedside-verification or doctor-countersignature step, so neither is shown.</p>
+            <p className="font-body-sm text-secondary" data-testid="integrity-note">Each record shows the staff member it is attributed to and when it was typed in, as stored with the record. The change-log check shows only that the log's hash chain is unbroken; it does not show who was at the bedside. DowntimeKit has no bedside-verification or doctor-countersignature step, so neither is shown.</p>
             {sequence.length > 0 && (
               <div>
                 <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Recorded sequence</span>
