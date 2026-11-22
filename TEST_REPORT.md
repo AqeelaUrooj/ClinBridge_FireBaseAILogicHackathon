@@ -290,3 +290,9 @@ Browser (`admin-recovery.spec.ts`):
 | **capture (3)** | Photo saved first ("Unchanged since saved") → typed pulse → draft → check and confirm beside the photo → confirmed with source photo; dark photo hint does not block; practice proposal labelled as simulated, missing photo file stated |
 
 Not tested yet: screen reader pass, tablet sizes, Firefox/Safari, real Gemini Nano (not available in this environment).
+
+## Public landing-page branch
+
+The public route uses locally bundled crops of the fictional Practice shortcuts, oxygen trend and paper-form selector. The section order follows the v3 reference: header, centered hero, product preview, workflow timeline, feature gallery, dark safeguards section, FAQ, final Practice CTA and footer. Product facts and a walkthrough replace performance statistics, endorsements, unsupported hardware and certification claims. The public navigation collapses at tablet widths.
+
+`e2e/landing.spec.ts` covers 360, 390, 768, 1024 and 1440 CSS pixels, menu focus, keyboard FAQ controls, protected routes, the Practice sign-in entry point, public storage isolation, offline reload and full-page screenshots.

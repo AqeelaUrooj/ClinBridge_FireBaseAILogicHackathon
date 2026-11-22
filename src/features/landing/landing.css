@@ -1,0 +1,88 @@
+.landing { color:#1c2536; background:white; line-height:1.55; }
+.landing :focus-visible { outline:3px solid #24718a; outline-offset:3px; }
+.lp-wrap { width:min(1160px, 90%); margin-inline:auto; }
+.lp-header,.lp-header nav,.lp-brand,.lp-actions,.lp-footer nav { display:flex; align-items:center; }
+.lp-header { padding:12px 5%; gap:24px; justify-content:space-between; border-bottom:1px solid #dee3e9; position:relative; z-index:2; }
+.lp-header nav,.lp-footer nav { gap:20px; font-size:.86rem; font-weight:600; }
+.lp-header nav a,.lp-footer nav a { padding-block:12px; }
+.lp-brand { gap:9px; font-size:1.25rem; font-weight:750; letter-spacing:-.04em; }
+.lp-brand img { width:34px; height:34px; }
+.lp-button,.lp-secondary,.lp-menu { display:inline-flex; align-items:center; justify-content:center; gap:12px; padding:12px 20px; border-radius:6px; min-height:44px; font-weight:650; }
+.lp-button { background:#1c2536; color:white; }
+.lp-button:hover { background:#33465e; }
+.lp-secondary,.lp-menu { background:white; border:1px solid #b6c3d0; }
+.lp-menu { display:none; }
+.lp-skip:not(:focus) { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.lp-skip:focus { display:block; padding:12px; }
+.lp-hero { background:radial-gradient(ellipse at 50% 20%,#fbfdff 10%,#e1ebf5 85%); text-align:center; padding:60px 0 52px; border-bottom:1px solid #ccd8e3; }
+.lp-kicker,.lp-label { font-size:.75rem; font-weight:750; text-transform:uppercase; letter-spacing:.12em; color:#465f78; }
+.lp-kicker { display:inline-flex; align-items:center; gap:9px; border:1px solid #bbcddd; background:#f9fbfe; border-radius:20px; padding:5px 13px; }
+.lp-kicker span { width:8px; height:8px; border-radius:50%; background:#30706c; }
+.lp-hero h1 { font-size:clamp(2.3rem,4.5vw,4.65rem); letter-spacing:-.058em; line-height:1.05; font-weight:750; margin:22px auto 16px; max-width:1000px; }
+.lp-hero em { color:#4a6078; font-style:normal; }
+.lp-intro { max-width:630px; margin:auto; color:#46576c; font-size:1.12rem; }
+.lp-actions { justify-content:center; gap:12px; flex-wrap:wrap; margin:24px 0 34px; }
+.lp-preview { text-align:left; background:white; border:1px solid #adbfce; box-shadow:0 14px 34px #263c531a; border-radius:10px; overflow:hidden; }
+.lp-preview figcaption { display:flex; align-items:center; justify-content:space-between; gap:12px; background:#1c2536; color:white; font-weight:700; padding:12px 22px; font-size:.9rem; }
+.lp-preview figcaption b { color:#bbd0e2; font-weight:500; }
+.lp-preview-body { padding:22px; background:linear-gradient(115deg,#edf4f8,#fff); }
+.lp-preview-body>div { display:grid; grid-template-columns:auto 1fr; align-items:end; column-gap:16px; padding:0 0 18px; }
+.lp-preview-body>div img { grid-row:span 2; width:66px; }
+.lp-preview-body>div p { align-self:start; }
+.lp-preview-body>img { width:100%; height:auto; }
+.lp-section { padding-block:64px; }
+.landing h2 { font-weight:730; font-size:clamp(1.65rem,3vw,2.7rem); line-height:1.15; letter-spacing:-.045em; }
+.lp-preview h2 { font-size:1.55rem; }
+.lp-label { margin-bottom:10px; }
+.lp-steps,.lp-cards,.lp-safeguards { display:grid; gap:16px; margin:26px 0 0; }
+.lp-steps,.lp-safeguards { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.lp-cards { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.lp-steps li,.lp-cards article { border:1px solid #dee3e9; border-radius:8px; background:white; padding:22px; }
+.lp-steps li { border-top:3px solid #55768b; }
+.lp-steps li span { font-size:.78rem; font-weight:750; color:#46716e; }
+.landing h3 { font-size:1.15rem; font-weight:700; margin:10px 0 6px; }
+.lp-section p:not(.lp-label),.lp-footer p,.lp-preview-body p { color:#46596d; }
+.lp-tint { background:#f4f7fa; }
+.lp-gallery { margin-top:24px; background:white; border:1px solid #dee3e9; border-radius:8px; overflow:hidden; }
+.lp-gallery-controls { display:flex; flex-wrap:wrap; border-bottom:1px solid #dee3e9; }
+.lp-gallery-controls button { padding:12px 16px; min-height:44px; font-weight:600; }
+.lp-gallery-controls button[aria-pressed=true] { color:#21495b; box-shadow:inset 0 -3px #30706c; }
+.lp-gallery figure { padding:20px; background:#f8f9fb; }
+.lp-gallery figure img { object-fit:contain; max-height:270px; margin:auto; }
+.lp-gallery figcaption { color:#4a6078; margin-top:12px; text-align:center; font-size:.85rem; }
+.lp-ai { display:flex; gap:30px; align-items:center; }
+.lp-ai p:last-child { max-width:880px; margin-top:14px; }
+.lp-dark,.lp-cta { background:#071020; color:white; }
+.lp-dark .lp-label,.lp-dark .lp-section article p,.lp-cta p { color:#d1dfec; }
+.lp-safeguards article { border-top:1px solid #647689; padding:12px 4px 0; }
+.lp-faq { max-width:850px; }
+.lp-faq h2 { margin-bottom:24px; }
+.lp-faq details { border-bottom:1px solid #dee3e9; }
+.lp-faq summary { cursor:pointer; padding:16px 2px; font-weight:620; }
+.lp-faq details p { margin:0 20px 16px; }
+.lp-cta { padding:52px 5%; text-align:center; background:linear-gradient(110deg,#172337,#102d30); }
+.lp-cta p { margin:12px auto 20px; }
+.lp-cta .lp-button { color:#142135; background:white; }
+.lp-footer { display:flex; justify-content:space-between; align-items:center; gap:24px; padding-block:36px; }
+.lp-footer nav { flex-wrap:wrap; }
+@media(max-width:1050px) {
+  .lp-menu { display:inline-flex; }
+  .lp-header nav { display:none; position:absolute; inset:100% 0 auto; background:white; padding:10px 5% 20px; box-shadow:0 12px 18px #1c253620; }
+  .lp-header nav[data-open=true] { display:grid; gap:0; }
+  .lp-steps,.lp-safeguards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:640px) {
+  .lp-wrap { width:92%; }
+  .lp-section { padding-block:40px; }
+  .lp-hero { padding:35px 0 24px; }
+  .lp-preview-body { padding:12px; }
+  .lp-preview figcaption { padding:10px; font-size:.75rem; }
+  .lp-preview-body>div img { width:45px; }
+  .lp-preview-body p { font-size:.85rem; }
+  .lp-cards,.lp-steps,.lp-safeguards { grid-template-columns:1fr; }
+  .lp-ai,.lp-footer { align-items:flex-start; flex-direction:column; }
+  .lp-ai>img { width:70px; }
+}
+@media(max-width:640px) {
+  .lp-preview-body>img { height:104px; object-fit:cover; object-position:left center; }
+}
