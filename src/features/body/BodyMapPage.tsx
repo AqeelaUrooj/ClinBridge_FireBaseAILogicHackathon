@@ -68,7 +68,7 @@ export function BodyMapPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-space-lg items-start">
         <Card className="bg-[#FBF8F2]">
-          <div className={`grid gap-space-md ${view === 'both' ? 'grid-cols-2' : 'grid-cols-1'} max-w-[720px] mx-auto`}>
+          <div className={`grid gap-space-md ${view === 'both' ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))]' : 'grid-cols-1'} max-w-[720px] mx-auto`}>
             {(view === 'both' ? (['front', 'back'] as const) : [view]).map((v) => (
               <figure key={v} className="flex flex-col items-center gap-1 w-full max-w-[340px] mx-auto">
                 <figcaption id={`bm-${v}`} className="font-label-uppercase text-label-uppercase text-secondary uppercase">{v === 'front' ? 'Front' : 'Back'}</figcaption>

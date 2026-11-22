@@ -182,6 +182,37 @@ test.describe('body map', () => {
 test.describe('body map on a touch viewport', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
+  test('Both keeps the single-view target size on narrow panels and compares side by side on desktop', async ({ page }, info) => {
+    await openBodyMap(page, 'pt-02');
+    const picker = page.getByLabel('Choose body area from a list');
+    for (const width of [360, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.getByRole('button', { name: 'Front', exact: true }).click();
+      const front = page.locator('svg[data-view="front"]');
+      const singleWidth = (await front.boundingBox())!.width;
+      await page.getByRole('button', { name: 'Both', exact: true }).click();
+      const first = (await front.boundingBox())!;
+      const second = (await page.locator('svg[data-view="back"]').boundingBox())!;
+      if (width < 1440) {
+        expect(first.width).toBeCloseTo(singleWidth, 0);
+        expect(second.y).toBeGreaterThanOrEqual(first.y + first.height);
+      } else {
+        expect(second.x).toBeGreaterThanOrEqual(first.x + first.width);
+      }
+      for (const { id } of ADDITIONS) {
+        await picker.selectOption('HEAD');
+        const target = page.locator(`[data-region="${id}"]`);
+        await target.tap();
+        await expect(picker).toHaveValue(id);
+        await expect(target).toHaveAttribute('aria-pressed', 'true');
+      }
+      await expect(front.locator('[data-marker="injection"]')).toHaveCount(2);
+      if (width === 390) {
+        await page.screenshot({ path: info.outputPath('screens', 'both-phone.png'), fullPage: true });
+      }
+    }
+  });
+
   test('new regions support list navigation, keyboard and touch', async ({ page }, testInfo) => {
     await openBodyMap(page, 'pt-02');
     const picker = page.getByLabel('Choose body area from a list');
