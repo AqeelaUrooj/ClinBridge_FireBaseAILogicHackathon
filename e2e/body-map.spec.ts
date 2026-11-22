@@ -10,7 +10,7 @@ async function openBodyMap(page: Page, patientId: string) {
   await page.getByTestId(`patient-${patientId}`).click();
   await page.getByRole('button', { name: 'Yes, open' }).click();
   await page.getByRole('link', { name: 'View details' }).click();
-  await page.getByRole('link', { name: 'Body map' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Body map' }).click();
   await expect(page.getByRole('heading', { name: 'Body map' })).toBeVisible();
 }
 

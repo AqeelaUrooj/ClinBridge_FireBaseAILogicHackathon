@@ -61,7 +61,8 @@ test('record vitals, survive reload, then fix them', async ({ page }) => {
   await signIn(page);
   await openSam(page);
   await page.getByRole('link', { name: 'View details' }).click();
-  await page.getByRole('link', { name: /BP 128\/82 · Pulse 77/ }).click();
+  await page.getByRole('button', { name: /BP 128\/82 · Pulse 77/ }).click(); // history cards expand
+  await page.getByRole('link', { name: 'Open details' }).click();
 
   await page.getByRole('link', { name: 'Fix' }).click();
   await page.getByLabel('Pulse').fill('74');
@@ -123,7 +124,7 @@ test('app works offline after first load: sign in, illustrations, body map, save
   await openSam(page);
   await page.getByRole('link', { name: 'View details' }).click();
   await expect(page.getByText('Pulse 81')).toBeVisible();
-  await page.getByRole('link', { name: 'Body map' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Body map' }).click();
   await expect(page.locator('svg[data-view] [data-region="HEAD"]').first()).toBeVisible();
   await context.setOffline(false);
 });

@@ -27,7 +27,7 @@ test('admin: readiness, staff, change log, settings marked not approved; nurses 
   await page.getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByText('Not approved').first()).toBeVisible();
   await expect(page.getByText('Approved', { exact: true })).toHaveCount(0);
-  await page.getByRole('link', { name: 'Downtime' }).click();
+  await page.getByRole('link', { name: 'Downtime', exact: true }).click();
   await page.getByRole('button', { name: 'End downtime' }).click();
   await expect(page.getByRole('alert')).toContainText('not signed off');
 
@@ -40,7 +40,7 @@ test('admin: readiness, staff, change log, settings marked not approved; nurses 
 
 test('recovery: worklist, possible duplicate explained, sign off; FHIR export validated and downloaded', async ({ page }) => {
   await signIn(page, /Kim Ellis/);
-  await page.getByRole('complementary').getByRole('link', { name: 'To check' }).click();
+  await page.getByRole('complementary').getByRole('link', { name: 'Recovery Gate & Worklist' }).click();
   await expect(page.getByText(/^\d+ of 45 signed off$/)).toBeVisible();
   const before = Number((await page.getByText(/ of 45 signed off/).textContent())!.split(' ')[0]);
   await page.getByRole('button', { name: 'Possible duplicate' }).click();
@@ -165,7 +165,7 @@ test('recovery and FHIR export work with the network off (rules only, no cloud)'
   await page.getByRole('button', { name: /Kim Ellis/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
   await expect(page.getByText('Network: offline')).toBeVisible();
-  await page.getByRole('complementary').getByRole('link', { name: 'To check' }).click();
+  await page.getByRole('complementary').getByRole('link', { name: 'Recovery Gate & Worklist' }).click();
   await page.getByRole('button', { name: 'Add new downtime records' }).click();
   await expect(page.getByText(/new items added|No new records to add/)).toBeVisible();
   await page.getByRole('link', { name: 'Export' }).click();
