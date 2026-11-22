@@ -10,6 +10,7 @@ import {
 import { PUBLIC_PRACTICE_PASSPHRASE, SECURITY_POLICY } from '../config/securityPolicy';
 import { importPracticeSeed } from '../db/seed';
 import { openWithMigration } from '../db/backup';
+import { latestRecordedTime } from '../db/practiceTime';
 import type { DowntimeEvent, Practitioner, Snapshot } from '../db/schema';
 import { derivePhase, currentEvent, type Phase } from '../lib/phase';
 import { liveClock, practiceClock, type Clock } from '../lib/time';
@@ -83,6 +84,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (left.plain > 0 && db.dataset === 'practice') await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: bootDevice });
       // Already-encrypted rows/photos from the first format (v1) are re-sealed as v2 (index fields authenticated).
       await resealLegacyRows(db, { clock, deviceId: bootDevice });
+      // Practice clock restarts at the scenario anchor on each load: move it past anything already saved.
+      if (db.dataset === 'practice') clock.advanceTo?.(await latestRecordedTime(db));
       return 'unlocked';
     }
     return (await detectVault(db)) as VaultView;
@@ -114,6 +117,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           } else if (view === 'plain-data') {
             await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: bootDevice });
           }
+          clock.advanceTo?.(await latestRecordedTime(db));
           view = 'unlocked';
         }
         void requestPersistentStorage();
