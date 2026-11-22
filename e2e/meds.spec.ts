@@ -36,7 +36,7 @@ test('high-alert insulin needs a second nurse PIN before saving', async ({ page 
   await expect(page.getByTestId('order-ord-04').getByText('Due')).toHaveCount(0);
 });
 
-test('dose different from the order warns, then can be fixed with a reason', async ({ page }) => {
+test('dose correction preserves distinguishable collapsed history summaries', async ({ page }, testInfo) => {
   await signInAndOpen(page, 'pt-01'); // Sam Rivera, synthetic
   await page.getByTestId('order-ord-02').click();
   await page.getByRole('link', { name: 'Record dose' }).click(); // metoprolol 21:00
@@ -59,6 +59,30 @@ test('dose different from the order warns, then can be fixed with a reason', asy
   await page.getByRole('link', { name: 'All versions' }).click();
   await expect(page.getByText('metoprolol tartrate 250 mg · Given')).toBeVisible();
   await expect(page.getByText('metoprolol tartrate 25 mg · Given')).toBeVisible();
+  await page.getByRole('link', { name: 'History', exact: true }).click();
+  await page.getByRole('checkbox').check(); // Include the superseded administration.
+  await page.getByRole('searchbox').fill('metoprolol tartrate');
+  const records = page.getByRole('list', { name: 'Records' });
+  const original = records.getByRole('button', { name: /250 mg · Given.*Old version/ });
+  const corrected = records.getByRole('button', { name: /25 mg · Given.*Confirmed/ }).first();
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [row, dose] of [[original, 250], [corrected, 25]] as const) {
+      await expect(row).toHaveAttribute('aria-expanded', 'false');
+      const summary = row.getByText(`metoprolol tartrate ${dose} mg · Given`, { exact: true });
+      const dimensions = await summary.evaluate(el => [el.scrollWidth, el.clientWidth]);
+      expect(dimensions[0], `complete ${dose} mg summary at ${width}px`).toBeLessThanOrEqual(dimensions[1]! + 1);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    await original.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: testInfo.outputPath('screens', `history-doses-${width}.png`) });
+    await corrected.focus();
+    await page.keyboard.press('Enter');
+    await expect(corrected).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Space');
+    await expect(corrected).toHaveAttribute('aria-expanded', 'false');
+  }
+
 });
 
 test('held dose needs a reason', async ({ page }) => {
