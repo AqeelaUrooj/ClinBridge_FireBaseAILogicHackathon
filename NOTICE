@@ -1,0 +1,31 @@
+ClinBridge
+Copyright 2026 Aqeela Urooj
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party software and assets
+-------------------------------
+ClinBridge uses, but does not include in this repository, open-source packages
+installed from npm (see package.json). Each keeps its own licence. The built
+app (dist/) bundles code from these packages, among others:
+
+- React, React DOM, React Router (MIT)
+- Firebase JS SDK, including Firebase AI Logic and App Check (Apache-2.0)
+- Dexie and dexie-react-hooks (Apache-2.0)
+- Material Symbols icon font (Apache-2.0, Google)
+- Inter typeface via @fontsource/inter (SIL Open Font License 1.1,
+  Copyright 2016 The Inter Project Authors, https://github.com/rsms/inter).
+  The font files remain under the OFL 1.1, not the Apache License.
+
+Design and artwork
+------------------
+- The colour and type tokens (tailwind.stitch.json, docs/STITCH_DESIGN.md) and
+  the unused reference figures in src/features/body/art/ came from a Google
+  Stitch design export supplied by the project owner for this project.
+- The illustrations in src/assets/medical/ were cut from an AI-generated
+  reference image supplied by the project owner for this project
+  (see docs/ASSETS.md).
+- The body-map anatomy in src/features/body/anatomy.ts is original vector
+  artwork drawn for ClinBridge.
+
+All patients, staff and records in the Practice data are fictional.

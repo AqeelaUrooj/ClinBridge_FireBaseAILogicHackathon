@@ -1,6 +1,6 @@
 # AI in ClinBridge (Firebase AI Logic hybrid inference)
 
-**Status (20 Nov 2026): implemented and tested with mocks only** (see `docs/AI_TEST_MATRIX.md`). **Not yet validated against a real Gemini Nano or cloud Gemini model**, so it is not a proven hybrid-AI demo yet. The owner's laptop test is in `docs/LIVE_AI_TEST_CHECKLIST.md`; console setup in `docs/FIREBASE_SETUP.md`. ClinBridge is restricted to synthetic data. AI is optional: every record can be typed by hand, and no AI proposal is saved without a nurse checking it.
+**Status (22 Nov 2026):** genuine Firebase cloud inference (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`, App Check enforced) is **live-tested** on the owner's PC with text notes and paper-form photos (`docs/LIVE_TEST_RESULTS_2026-11-20.md`, `docs/LIVE_TEST_RESULTS_2026-11-22.md`). Gemini Nano on-device inference is **implemented and mock-tested only** (`docs/AI_TEST_MATRIX.md`): that PC's hardware can't run it, so it has not been verified live. Console setup in `docs/FIREBASE_SETUP.md`. ClinBridge is restricted to synthetic data. AI is optional: every record can be typed by hand, and no AI proposal is saved without a nurse checking it.
 
 | # | Capability | Where it runs | When allowed | Inference mode | Where in the app |
 |---|---|---|---|---|---|

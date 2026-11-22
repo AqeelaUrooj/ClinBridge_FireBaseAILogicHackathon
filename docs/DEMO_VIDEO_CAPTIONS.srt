@@ -1,0 +1,127 @@
+1
+00:00:00,000 --> 00:00:06,436
+When ransomware takes a hospital's records offline, nurses go back to paper for days, sometimes weeks.
+
+2
+00:00:06,486 --> 00:00:11,707
+Afterwards, every vital sign and every dose has to be typed back in.
+
+3
+00:00:11,757 --> 00:00:14,950
+ClinBridge keeps that documentation digital, safe and offline.
+
+4
+00:00:15,000 --> 00:00:18,728
+It runs in Chrome on a ward laptop.
+
+5
+00:00:18,778 --> 00:00:21,089
+This is fictional practice data.
+
+6
+00:00:21,139 --> 00:00:28,644
+A nurse signs in with a PIN, and before charting, ClinBridge makes them confirm the patient:
+
+7
+00:00:28,694 --> 00:00:31,950
+name, date of birth and record number.
+
+8
+00:00:32,000 --> 00:00:35,164
+An admin declares the outage.
+
+9
+00:00:35,214 --> 00:00:44,807
+From now on the app blocks every cloud call, even one that was already running.
+
+10
+00:00:44,857 --> 00:00:49,950
+AI may only run on the device itself.
+
+11
+00:00:50,000 --> 00:00:53,796
+Nurses keep charting as usual:
+
+12
+00:00:53,846 --> 00:01:05,335
+vitals, medicines with a second-nurse check for high-alert drugs, notes, fluids, lab results and handovers.
+
+13
+00:01:05,385 --> 00:01:09,950
+Everything is saved on this laptop.
+
+14
+00:01:10,000 --> 00:01:12,501
+Paper forms can be photographed.
+
+15
+00:01:12,551 --> 00:01:18,113
+ClinBridge tries Gemini Nano on the device through Firebase AI Logic.
+
+16
+00:01:18,163 --> 00:01:25,256
+On this laptop the hardware can't run Gemini Nano, and the app says so.
+
+17
+00:01:25,306 --> 00:01:30,358
+It never falls back to the cloud during an outage.
+
+18
+00:01:30,408 --> 00:01:34,950
+The nurse types the values beside the photo instead.
+
+19
+00:01:35,000 --> 00:01:49,950
+Records are encrypted at rest with AES-256, survive a restart, and every change goes into a tamper-evident audit chain.
+
+20
+00:01:50,000 --> 00:01:59,950
+When the systems return, an admin checks the network and clears it.
+
+21
+00:02:00,000 --> 00:02:04,950
+Only now is cloud AI allowed.
+
+22
+00:02:05,000 --> 00:02:16,929
+In the recovery worklist, Firebase AI Logic gives each photo record a second look with Gemini in the cloud, protected by App Check.
+
+23
+00:02:16,979 --> 00:02:19,533
+This is a live response.
+
+24
+00:02:19,583 --> 00:02:28,387
+It lists where its reading differs from what the nurse typed, but it never changes the record.
+
+25
+00:02:28,437 --> 00:02:29,950
+The nurse decides.
+
+26
+00:02:30,000 --> 00:02:36,236
+Checked records are exported as FHIR R4 for the EHR team.
+
+27
+00:02:36,286 --> 00:02:41,950
+The export passes the official HL7 validator with zero errors.
+
+28
+00:02:42,000 --> 00:02:43,450
+To be clear:
+
+29
+00:02:43,500 --> 00:02:45,950
+cloud inference is tested live.
+
+30
+00:02:46,000 --> 00:02:54,950
+The on-device Gemini Nano path is built and tested with mocks, but not verified on real hardware yet.
+
+31
+00:02:55,000 --> 00:02:55,506
+ClinBridge.
+
+32
+00:02:55,556 --> 00:02:59,950
+Charting that keeps going when the EHR doesn't.

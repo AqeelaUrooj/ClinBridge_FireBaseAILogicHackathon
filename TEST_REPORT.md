@@ -11,6 +11,17 @@ Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on br
 | `npm run test:e2e` (Playwright) | **30 / 30 pass** (second server: AI build with fake Firebase values) |
 | Real AI model | **Not run.** Sandbox Chrome 153: Prompt API present, model "unavailable" |
 
+## Round 13: licence, README and Devpost docs (22 Nov 2026)
+
+Branch `docs/devpost-licence-readme` on DESKTOP-6NQ637E (Windows 10, Node 24.21.0). Changes: `LICENSE` (Apache-2.0), `NOTICE`, README rewrite, Devpost and video docs, `package.json` name/licence, and the product name shown in the app (DowntimeKit → ClinBridge in 7 visible strings). No logic, schema or clinical change.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` / `npm run lint` | Pass / Pass |
+| `npx vitest run` | **210 passed, 1 skipped** |
+| `npm run build` | Pass; `dist/index.html` and the manifest say ClinBridge |
+| `npx playwright test` | **34 / 34 pass** |
+
 ## Round 12: ZIP navigation, clinical tools and patient history (22 Nov 2026)
 
 Branch `feat/zip-navigation-history` on DESKTOP-6NQ637E (Windows 10, Node 24.21.0). Scope and traceability: `docs/ZIP_REQUIREMENTS_TRACEABILITY.md`. No schema change, no migration.
