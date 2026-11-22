@@ -147,8 +147,18 @@ test('narrow screen (phone width): the menu sits behind a header button, opens o
   await expect(m).toBeHidden();
   await page.getByRole('button', { name: 'Open menu' }).click();
   await expect(m).toBeVisible();
+  await m.getByRole('link', { name: 'Handover' }).focus();
   await page.keyboard.press('Escape');
+  await expect(btn).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Lock screen' })).toBeFocused();
   await expect(m).toBeHidden();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const desktopLink = m.getByRole('link', { name: 'Handover' });
+  await desktopLink.focus();
+  await page.keyboard.press('Escape');
+  await expect(desktopLink).toBeFocused();
+  await page.setViewportSize({ width: 390, height: 844 });
   // Content uses the full width (no 220 px gap for a hidden menu).
   const left = await page.locator('#main').evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
   expect(left).toBe(0);
