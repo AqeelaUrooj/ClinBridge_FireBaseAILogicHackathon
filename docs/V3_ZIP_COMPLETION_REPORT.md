@@ -209,6 +209,10 @@ PR: https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/pull/14 (
 | `8f4a804` | feat(print): paper downtime forms and packet builder |
 | `5b8ad4f` | feat(shell): menu behind a header button on narrow screens |
 | `cb3d88c` | docs: V3 ZIP completion report, routes, decisions D-70 to D-75 |
-| (this commit) | docs: PR link and commit list in this report |
+| `4510fcf` | docs: PR link and commit list in this report |
+| `3d1b5a5` | fix(print, layout): long forms, forms-vs-pages wording, phone width |
+| `6acae7a` | test(print): multi-page PDFs read page by page; phone-width checks |
+| `f9fb0e3` | docs: pre-merge quality check results and owner walkthrough |
+| (this commit) | docs: commit list updated |
 
 CI results for the final head are on the PR page (`check`, `fhir-validate`).
