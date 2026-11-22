@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { NavLink, Outlet, useMatch, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isAdmin, useApp, useSession } from '../state/app';
 import { Icon } from './ui';
@@ -7,7 +7,7 @@ import { hm } from '../lib/time';
 import { PHASE_LABEL } from '../lib/phase';
 
 /** Header: always visible, shows mode, snapshot age, laptop and the signed-in person (Stitch status rail). */
-export function ModeBanner() {
+export function ModeBanner({ onMenu, menuOpen }: { onMenu?: () => void; menuOpen?: boolean } = {}) {
   const { phase, event, snapshot, clock, dataset, db, vault } = useApp();
   const { user, lock } = useSession();
   const navigate = useNavigate();
@@ -21,7 +21,13 @@ export function ModeBanner() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 text-on-primary select-none">
       <div className="h-11 bg-primary-container px-space-md flex items-center justify-between gap-space-md">
-        <div className="flex items-center gap-space-sm min-w-0" role="status" aria-live="polite">
+        {onMenu && (
+          <button onClick={onMenu} className="md:hidden min-h-9 px-2 rounded bg-white/10 hover:bg-white/20 flex items-center gap-1 font-body-sm font-semibold shrink-0"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={!!menuOpen} aria-controls="main-menu">
+            <Icon name={menuOpen ? 'close' : 'menu'} className="text-[18px]" />Menu
+          </button>
+        )}
+        <div className="flex items-center gap-space-sm min-w-0 flex-1" role="status" aria-live="polite">
           <span className={`w-2 h-2 rounded-full ${dot} ${phase === 'down' ? 'animate-pulse' : ''}`} aria-hidden />
           <span className="font-label-uppercase text-label-uppercase tracking-wide whitespace-nowrap">{PHASE_LABEL[phase].toUpperCase()}</span>
           <span className="text-outline-variant" aria-hidden>•</span>
@@ -100,7 +106,7 @@ function NavGroup({ title, children }: { title: string; children: ReactNode }) {
  * stays guarded in AdminLayout). CLINICAL TOOLS open the current patient's page when one is open,
  * otherwise a ward overview (the patient check still runs before any patient page).
  */
-export function Sidebar() {
+export function Sidebar({ open = false }: { open?: boolean } = {}) {
   const { db, snapshot } = useApp();
   const { user } = useSession();
   const drafts = useLiveQuery(() => db.entry.where('status').equals('draft').count(), [db], 0);
@@ -108,7 +114,7 @@ export function Sidebar() {
   const inPatient = useMatch('/patients/:id/*')?.params.id;
   const tool = (sub: string, ward: string) => (inPatient ? `/patients/${inPatient}/${sub}` : ward);
   return (
-    <aside className="fixed left-0 bottom-0 w-[220px] bg-surface-container-lowest border-r border-card-border z-40 flex flex-col justify-between overflow-y-auto" style={{ top: 'var(--header-h)' }} aria-label="Main menu">
+    <aside id="main-menu" className={`fixed left-0 bottom-0 w-[220px] bg-surface-container-lowest border-r border-card-border z-40 flex-col justify-between overflow-y-auto ${open ? 'flex shadow-xl' : 'hidden'} md:flex md:shadow-none`} style={{ top: 'var(--header-h)' }} aria-label="Main menu">
       <div className="p-space-md flex flex-col gap-space-md">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded bg-primary-container flex items-center justify-center text-on-primary"><Icon name="emergency_home" className="text-[18px]" /></div>
@@ -167,11 +173,25 @@ export function Sidebar() {
 export function AppShell() {
   const { dataset } = useApp();
   const headerH = dataset === 'practice' ? '68px' : '44px';
+  // Narrow screens (< 768 px): the menu hides behind a header button and opens over the page.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
   return (
     <div style={{ ['--header-h' as string]: headerH }}>
-      <div className="print:hidden"><ModeBanner /><Sidebar /></div>
-      <main id="main" className="min-h-screen bg-background pl-[220px] print:pl-0 print:!pt-0 print:bg-white" style={{ paddingTop: headerH }}>
-        <div className="max-w-[1180px] mx-auto px-space-xl py-space-lg flex flex-col gap-space-lg">
+      <div className="print:hidden">
+        <ModeBanner onMenu={() => setMenuOpen((o) => !o)} menuOpen={menuOpen} />
+        {menuOpen && <div className="md:hidden fixed inset-0 z-30 bg-black/30" style={{ top: 'var(--header-h)' }} onClick={() => setMenuOpen(false)} aria-hidden />}
+        <Sidebar open={menuOpen} />
+      </div>
+      <main id="main" className="min-h-screen bg-background md:pl-[220px] print:pl-0 print:!pt-0 print:bg-white" style={{ paddingTop: headerH }}>
+        <div className="max-w-[1180px] mx-auto px-space-md md:px-space-xl py-space-lg flex flex-col gap-space-lg">
           <Outlet />
         </div>
       </main>

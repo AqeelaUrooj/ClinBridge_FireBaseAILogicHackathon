@@ -129,3 +129,34 @@ test('patient history: filter tabs with counts, search, order, expand/collapse, 
   await expect(note).toContainText('does not show who was at the bedside');
   await expect(panel).not.toContainText(/with (their|a) PIN|signed-in nurse/i);
 });
+
+test('narrow screen (phone width): the menu sits behind a header button, opens over the page and closes after navigating or Escape', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, /Daniel Okafor/);
+  await expect(page.getByRole('heading', { name: 'My patients' })).toBeVisible();
+  const m = menu(page);
+  await expect(m).toBeHidden();
+  const btn = page.getByRole('button', { name: 'Open menu' });
+  await expect(btn).toHaveAttribute('aria-expanded', 'false');
+  await btn.click();
+  await expect(m).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Close menu' })).toHaveAttribute('aria-expanded', 'true');
+  await page.screenshot({ path: info.outputPath('screens/phone-menu-open.png') });
+  await m.getByRole('link', { name: 'Handover' }).click();
+  await expect(page.getByRole('heading', { name: /Handover/ }).first()).toBeVisible();
+  await expect(m).toBeHidden();
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await expect(m).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(m).toBeHidden();
+  // Content uses the full width (no 220 px gap for a hidden menu).
+  const left = await page.locator('#main').evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+  expect(left).toBe(0);
+  await page.screenshot({ path: info.outputPath('screens/phone-ward.png') });
+});
+
+test('wide screen: the menu is always shown and there is no menu button', async ({ page }) => {
+  await signIn(page, /Daniel Okafor/);
+  await expect(menu(page)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Open menu|Close menu/ })).toBeHidden();
+});
