@@ -92,6 +92,15 @@ function OtherValues({ type, child }: { type: string; child: unknown }) {
   );
 }
 
+/** The recorded values of one entry (same display as the details page). Used by the expandable history cards. */
+export function EntryValues({ item, names }: { item: EntryWithChild; names: Map<string, string> }) {
+  const { entry, child } = item;
+  if (!child) return null;
+  if (entry.type === 'vital_sign') return <VitalsValues v={child as VitalSign} />;
+  if (entry.type === 'med_admin') return <MedValues m={child as MedAdmin} names={names} />;
+  return <OtherValues type={entry.type} child={child} />;
+}
+
 export function EntryDetail() {
   const item = useCurrentEntry();
   const { entry, child } = item;

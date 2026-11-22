@@ -11,6 +11,20 @@ Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on br
 | `npm run test:e2e` (Playwright) | **30 / 30 pass** (second server: AI build with fake Firebase values) |
 | Real AI model | **Not run.** Sandbox Chrome 153: Prompt API present, model "unavailable" |
 
+## Round 12: ZIP navigation, clinical tools and patient history (22 Nov 2026)
+
+Branch `feat/zip-navigation-history` on DESKTOP-6NQ637E (Windows 10, Node 24.21.0). Scope and traceability: `docs/ZIP_REQUIREMENTS_TRACEABILITY.md`. No schema change, no migration.
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` / `npm run lint` | Pass / Pass |
+| `npx vitest run` | **210 passed, 1 skipped** (+8: `src/lib/history.test.ts`) |
+| `npm run build` | Pass |
+| `npx playwright test` | **34 / 34 pass** (+3: `e2e/navigation.spec.ts`). Existing specs updated only where the UI changed: the admin link "To check" is now "Recovery Gate & Worklist"; "Downtime" / "Body map" / "Note" selectors scoped or made exact because the sidebar now has similar labels; history rows now expand, then "Open details". |
+| Chrome (dev server, Practice data) | Checked by hand. Nurse menu: 3 groups, counts 10 / 4, clinical tools follow the open patient. Admin menu: System admin. Ward schedule, vitals and fluids pages show real records. History: tabs 11 / 6 / 1 / 2 / 2 / 0, expand all → 11, collapse → 0, oldest first starts 04:10, search finds the note. |
+
+New tests cover: tab counts that ignore old versions and mistakes; type filter; newest / oldest order with a typed-time tie-break; search; integrity facts; care team; nurse vs admin menu; nurse has no System admin group; every admin link opens a page; each clinical tool page shows seed values; the patient check still runs from tools and Add; history counts add up and the integrity panel makes no "bedside verified / countersigned / all signed" claim.
+
 ## Round 11: local checks + live rehearsal on the owner's PC (22 Nov 2026)
 
 Full write-up: `docs/LIVE_TEST_RESULTS_2026-11-22.md`. DESKTOP-6NQ637E, Windows 10, Node 24.21.0, Chrome 157, `main` = `6636639`, project folder `D:\ClinBridge_FireBaseAILogicHackathon`. No code changed.

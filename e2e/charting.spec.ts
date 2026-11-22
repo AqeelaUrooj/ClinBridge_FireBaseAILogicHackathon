@@ -31,7 +31,7 @@ test('fluids: add intake, totals update', async ({ page }) => {
 
 test('notes: write a note, then fix it with a reason', async ({ page }) => {
   await open(page, 'pt-09');
-  await page.getByRole('link', { name: /Note/ }).first().click();
+  await page.getByRole('main').getByRole('link', { name: /Note/ }).first().click();
   await page.getByRole('link', { name: 'New note' }).click();
   await page.getByRole('button', { name: 'Assessment' }).click();
   await page.getByLabel('Note').fill('Breathing easier, speaking full sentences.');

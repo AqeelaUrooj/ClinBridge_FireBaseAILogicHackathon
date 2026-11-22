@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell';
 import { SignIn, LockScreen } from './features/auth/SignIn';
 import { UnlockVault } from './features/auth/UnlockVault';
 import { WardBoard } from './features/ward/WardBoard';
+import { WardBodyMapPage, WardFluidsPage, WardMedSchedulePage, WardVitalsPage } from './features/ward/WardTools';
 import { PatientLayout } from './features/patient/PatientLayout';
 import { PatientSummary } from './features/patient/PatientSummary';
 import { Timeline } from './features/patient/Timeline';
@@ -63,6 +64,10 @@ export function App() {
           <Route path="/alerts" element={<AlertsPage />} />
           <Route path="/more" element={<MorePage />} />
           <Route path="/labs" element={<WardLabsPage />} />
+          <Route path="/tools/meds" element={<WardMedSchedulePage />} />
+          <Route path="/tools/vitals" element={<WardVitalsPage />} />
+          <Route path="/tools/io" element={<WardFluidsPage />} />
+          <Route path="/tools/body" element={<WardBodyMapPage />} />
           <Route path="/export" element={<ExportPage />} />
           <Route path="/drill/compare" element={<PracticeComparePage />} />
           <Route path="/ai" element={<AiCheckPage />} />

@@ -63,6 +63,12 @@
 | D-62 | Cloud gate: cloud authorisation re-checked before setup, right before sending (fresh database read) and on arrival; a phase/dataset change aborts the request; a late answer is discarded; fails closed when the phase can't be read | A cloud request running when System down starts must never be reused or shown (owner's check A). Already-transmitted requests can't be recalled (documented) |
 | D-63 | `inferenceSource` compared against the SDK's own `InferenceSource` constant, exact match only | Verified for firebase 13.4.0: names `ON_DEVICE`/`IN_CLOUD`, runtime values `'on_device'`/`'in_cloud'`; unknown or other spellings rejected (owner's check B) |
 
+| D-64 | Sidebar uses the Stitch groups (Primary operations / Clinical tools / System admin, "Sidebar A"), replacing the earlier "four nurse buttons" (UI/UX §20). Nurses see the clinical groups; admins see System admin; nurses still never see admin pages | Owner's 22 Nov 2026 ZIP brief; authorisation kept over the ZIP's single charge-nurse view (`docs/ZIP_REQUIREMENTS_TRACEABILITY.md` §2) |
+| D-65 | Clinical tools open the current patient's page when one is open, otherwise a read-only ward overview (`/tools/*`); the patient check still runs before any patient page | A global menu needs a destination without a patient; no new data |
+| D-66 | History: counts and default list cover current records (confirmed + drafts); old versions and mistakes stay available crossed out behind a toggle; order by care time, then typed time | Counts must stay right after fixes; append-only history unchanged |
+| D-67 | Charting-integrity panel shows facts only (statuses, photo/AI origin, change-log chain check); no "bedside verified", "countersigned" or "all signed" claims | DowntimeKit has no such workflow; no invented e-signature policy |
+| D-68 | ZIP items needing hardware, network infrastructure, unapproved clinical scores (NEWS2, oliguria) or new signature policies are not built; listed with reasons | `docs/ZIP_REQUIREMENTS_TRACEABILITY.md` §5 |
+
 ## Open — need an answer
 
 | ID | Question | What the app does now |

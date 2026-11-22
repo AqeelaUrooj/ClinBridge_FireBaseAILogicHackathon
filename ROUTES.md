@@ -1,6 +1,6 @@
 # Routes
 
-Built = works. Placeholder = honest "being built" page.
+Built = works. No route is a placeholder any more; an unknown address shows an honest "Page not found" page.
 
 | Route | Page | State |
 |---|---|---|
@@ -8,13 +8,18 @@ Built = works. Placeholder = honest "being built" page.
 | `/lock` | Unlock or switch user | Built |
 | `/` | Goes to `/ward` (nurse) or `/admin` (admin) | Built |
 | `/ward` | My patients: search, filters, cards, patient check | Built |
-| `/add` | Pick a patient first | Built |
-| `/alerts` | Drafts to check (list) | Built (checking drafts in later phase) |
-| `/more` | Switch user, change-log check, reset practice | Built |
+| `/add` | Add Note / Form: every patient with form shortcuts (vitals, note, photo, medicine, fluids, lab, handover); patient check first | Built |
+| `/alerts` | Alerts & Orders: drafts to check, critical lab results (read-back status), orders per patient (read only) | Built |
+| `/tools/meds` | Ward medication schedule for today (scheduled doses, Given / Due / Held from records) | Built |
+| `/tools/vitals` | Ward vitals flowsheet (latest confirmed vitals per patient, draft "unusual" ranges) | Built |
+| `/tools/io` | Ward fluid balance (today's in / out / balance, confirmed only) | Built |
+| `/tools/body` | Body map: pick a patient (recorded site counts) | Built |
+| `/more` | Switch user, links to Ward labs / AI check / Device vs Cloud (Practice), change-log check, clinical settings status, lock records, safety copies, reset practice | Built |
 | `/handover` | Ward handover: latest handover per bed | Built |
-| `/labs` | Ward labs, critical first (from More) | Built |
+| `/labs` | Ward labs, critical first (sidebar Lab Results when no patient is open; also from More) | Built |
 | `/export` | FHIR R4 export: prepare, structure check, download, fingerprint in change log (file only, no EHR link) | Built |
-| `/drill/compare` | Practice compare (needs AI) | Placeholder |
+| `/ai` | AI check: browser, Prompt API, on-device model readiness (text / image), Firebase AI Logic init, App Check mode, current cloud permission, inference modes; "Prepare on-device model" | Built |
+| `/drill/compare` | Device vs Cloud (`PracticeComparePage`): fictional input through `ONLY_ON_DEVICE` and, on request, `ONLY_IN_CLOUD`; real source label per answer; cloud blocked in System down; nurse can review an answer as a draft. Practice data only (refused on Real records) | Built (cloud side live-verified 20 and 22 Nov 2026; on-device side hardware-blocked on the test PC) |
 | `/setup` | First-time setup for Real records (first admin + this laptop); reachable before sign-in, works only while no staff exist | Built |
 | `/admin` | Readiness (offline storage, network, storage space, laptop, AI availability, patient list age, change log, drafts, worklist) | Built |
 | `/admin/downtime` | Declare System down → checklist + admin PIN → Back online → end (only when worklist done) | Built |
@@ -27,7 +32,7 @@ Built = works. Placeholder = honest "being built" page.
 | `/recovery` | Worklist: progress, filters, add new downtime records (rules only) | Built |
 | `/recovery/:item` | Why flagged, compare with related record, versions, fix / confirm, sign off | Built |
 | `/patients/:id` | Patient summary | Built |
-| `/patients/:id/timeline` | History | Built |
+| `/patients/:id/timeline` | History: filter tabs with counts, search, newest / oldest, expand / collapse cards, pre-outage baseline, charting-integrity facts, care team | Built |
 | `/patients/:id/vitals` | Vitals: latest, trend, list | Built |
 | `/patients/:id/vitals/record` | Record vitals → review → save | Built |
 | `/patients/:id/meds` | Medicines: Scheduled, As needed, Drips; today's times with Given / Due / Held / Refused | Built |
@@ -51,3 +56,17 @@ Built = works. Placeholder = honest "being built" page.
 | `/capture/:entry/confirm` | Check and confirm a draft beside its source photo | Built |
 
 Every patient page and every `/entries/*` page asks for the patient check (name, born, MRN) first.
+
+## Sidebar (Stitch "Sidebar A", see `docs/ZIP_REQUIREMENTS_TRACEABILITY.md`)
+
+| Group | Item | Goes to | Who sees it |
+|---|---|---|---|
+| Primary operations | My Patients (count) | `/ward` | RN, LPN |
+| | Add Note / Form | `/add` | RN, LPN |
+| | Handover | `/handover` | RN, LPN |
+| | Alerts & Orders (drafts count) | `/alerts` | RN, LPN, Admin |
+| Clinical tools | Medication Schedule · Vitals Flowsheet · Fluid Balance (I/O) · Lab Results · Body Map | the open patient's `meds` / `vitals` / `io` / `labs` / `body` page, otherwise `/tools/meds` · `/tools/vitals` · `/tools/io` · `/labs` · `/tools/body` | RN, LPN |
+| System admin | Readiness & Storage · Downtime Management · Recovery Gate & Worklist · Audit Log | `/admin` · `/admin/downtime` · `/recovery` · `/admin/audit` | Admin |
+| — | More | `/more` | everyone |
+
+Nurses never see admin links, and `/admin/*` refuses non-admins ("Admins only.") even if typed in.

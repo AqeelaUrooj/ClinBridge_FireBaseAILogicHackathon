@@ -1,5 +1,5 @@
 import { useApp } from '../../state/app';
-import { ageOn, dayLabel } from '../../lib/time';
+import { ageOn, dayLabel, hm } from '../../lib/time';
 import { Icon } from '../../components/ui';
 import { fullName, isNoKnownAllergy, sexLabel, type PatientBundle } from './patientData';
 
@@ -9,7 +9,7 @@ import { fullName, isNoKnownAllergy, sexLabel, type PatientBundle } from './pati
  * Allergies are never hidden.
  */
 export function PatientBanner({ data }: { data: PatientBundle }) {
-  const { clock } = useApp();
+  const { clock, snapshot } = useApp();
   const { patient: p, encounter: e, allergies } = data;
   const real = allergies.filter((a) => !isNoKnownAllergy(a));
   return (
@@ -31,6 +31,8 @@ export function PatientBanner({ data }: { data: PatientBundle }) {
               {e?.attending && <span>Doctor: <span className="font-medium text-on-surface">{e.attending}</span></span>}
               {e?.code_status && <span className="inline-flex items-center gap-1 font-semibold text-primary"><span className="w-2 h-2 rounded-full bg-primary" aria-hidden />{e.code_status}</span>}
               {e?.diet && <span>Diet: <span className="font-medium text-on-surface">{e.diet}</span></span>}
+              {e?.unit && <span>Unit: <span className="font-medium text-on-surface">{e.unit}</span></span>}
+              {snapshot && <span className="font-code-tabular text-secondary">Patient list {hm(snapshot.taken_at)}, {dayLabel(snapshot.taken_at)}</span>}
             </div>
           </div>
         </div>

@@ -50,7 +50,7 @@ async function tinyPng(page: Page): Promise<Buffer> {
 test('System down + on-device proposal (MOCK model): draft, nurse confirms beside the photo, zero external requests', async ({ page }) => {
   await mockPromptApi(page, 'available');
   await signIn(page, /Kim Ellis/);
-  await page.getByRole('link', { name: 'Downtime' }).click();
+  await page.getByRole('link', { name: 'Downtime', exact: true }).click();
   await page.getByRole('button', { name: 'Start a practice outage' }).click();
   await expect(page.getByText('SYSTEM DOWN').first()).toBeVisible();
 
@@ -122,7 +122,7 @@ test('pending cloud compare, then System down declared in another tab: request c
   // Another tab on the same laptop declares a practice outage.
   const admin = await context.newPage();
   await signIn(admin, /Kim Ellis/);
-  await admin.getByRole('link', { name: 'Downtime' }).click();
+  await admin.getByRole('link', { name: 'Downtime', exact: true }).click();
   await admin.getByRole('button', { name: 'Start a practice outage' }).click();
   await expect(admin.getByText('SYSTEM DOWN').first()).toBeVisible();
 
