@@ -79,6 +79,16 @@ function allergyShort(b: PatientBundle): string {
   return real.length ? real.map((a) => a.substance).join(', ') : b.allergies.length ? 'No known allergies' : 'Not recorded';
 }
 
+/** Narrow screens: born date, MRN and allergies under the name, so every identifier is visible without sideways scrolling. */
+function IdLines({ b }: { b: PatientBundle }) {
+  return (
+    <span className="sm:hidden block font-body-sm font-normal text-on-surface-variant">
+      Born <span className="font-code-tabular">{dayLabel(b.patient.birth_date)}</span> · MRN <span className="font-code-tabular">{b.patient.mrn}</span>
+      <span className="block">Allergies: {allergyShort(b)}</span>
+    </span>
+  );
+}
+
 export function SpoolerPage() {
   const { db, clock, dataset } = useApp();
   const ctx = useSheetContext();
@@ -101,7 +111,9 @@ export function SpoolerPage() {
   const allOn = total > 0 && selected.size === total;
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleForm = (k: FormKind) => setForms((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const sheetCount = chosen.length * formList.length;
+  // Number of FORMS (patients × chosen forms). A long form can take more than one printed page.
+  const formCount = chosen.length * formList.length;
+  const formsLabel = (n: number) => `${n} form${n === 1 ? '' : 's'}`;
   const canReview = chosen.length > 0 && formList.length > 0;
 
   return (
@@ -140,7 +152,7 @@ export function SpoolerPage() {
               <Card className="flex flex-col gap-space-sm" aria-label="Patients">
                 <div className="flex flex-wrap items-center justify-between gap-space-sm">
                   <h2 className="font-headline-sm text-headline-sm text-primary">Patients</h2>
-                  <p className="font-body-md" data-testid="spooler-count" aria-live="polite">{selected.size} of {total} patients selected · {sheetCount} sheet{sheetCount === 1 ? '' : 's'}</p>
+                  <p className="font-body-md" data-testid="spooler-count" aria-live="polite">{selected.size} of {total} patients selected · {formsLabel(formCount)}</p>
                 </div>
                 <label className="flex items-center gap-2 font-body-md font-semibold min-h-9 border-b border-card-border pb-2">
                   <input type="checkbox" className="w-5 h-5" checked={allOn}
@@ -148,24 +160,26 @@ export function SpoolerPage() {
                     onChange={() => setSelected(allOn ? new Set() : new Set(ward.map((b) => b.patient.id)))} />
                   Select all {total} patients
                 </label>
+                <div className="overflow-x-auto -mx-space-sm px-space-sm">
                 <table className="w-full font-body-md">
                   <caption className="sr-only">Patients in the patient list</caption>
-                  <thead className="text-left text-secondary font-body-sm"><tr><th className="py-1 w-10"><span className="sr-only">Select</span></th><th className="py-1">Bed</th><th className="py-1">Patient</th><th className="py-1">Born</th><th className="py-1">MRN</th><th className="py-1">Allergies</th></tr></thead>
+                  <thead className="text-left text-secondary font-body-sm"><tr><th className="py-1 w-10"><span className="sr-only">Select</span></th><th className="py-1">Bed</th><th className="py-1">Patient</th><th className="hidden sm:table-cell py-1">Born</th><th className="hidden sm:table-cell py-1">MRN</th><th className="hidden sm:table-cell py-1">Allergies</th></tr></thead>
                   <tbody>
                     {ward.map((b) => (
                       <tr key={b.patient.id} className="border-t border-card-border">
                         <td className="py-1"><input type="checkbox" className="w-5 h-5" aria-label={`Select ${fullName(b.patient)}, bed ${b.encounter?.bed ?? 'unknown'}`} checked={selected.has(b.patient.id)} onChange={() => toggle(b.patient.id)} /></td>
                         <td className="py-1 font-code-tabular font-semibold">{b.encounter?.bed ?? '—'}</td>
-                        <td className="py-1 font-semibold">{fullName(b.patient)}</td>
-                        <td className="py-1 font-code-tabular">{dayLabel(b.patient.birth_date)}</td>
-                        <td className="py-1 font-code-tabular">{b.patient.mrn}</td>
-                        <td className="py-1">{allergyShort(b)}</td>
+                        <td className="py-1 font-semibold">{fullName(b.patient)}<IdLines b={b} /></td>
+                        <td className="hidden sm:table-cell py-1 font-code-tabular">{dayLabel(b.patient.birth_date)}</td>
+                        <td className="hidden sm:table-cell py-1 font-code-tabular">{b.patient.mrn}</td>
+                        <td className="hidden sm:table-cell py-1">{allergyShort(b)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               </Card>
-              <div className="flex gap-space-sm">
+              <div className="flex flex-wrap gap-space-sm">
                 <Button disabled={!canReview} onClick={() => setStep('review')}><Icon name="fact_check" />Check the list</Button>
                 {!canReview && <p className="font-body-sm text-secondary self-center">Choose at least one patient and one form.</p>}
               </div>
@@ -177,16 +191,18 @@ export function SpoolerPage() {
           <Card className="flex flex-col gap-space-sm" aria-label="Check the list">
             <h2 className="font-headline-sm text-headline-sm text-primary">Check the list before printing</h2>
             <p className="font-body-md">Check each name, birth date, MRN and bed against the ward census. Each patient gets: {formList.map((k) => `${FORMS[k].short} (${FORMS[k].code})`).join(', ')}.</p>
+            <div className="overflow-x-auto">
             <table className="w-full font-body-md" data-testid="spooler-review">
-              <thead className="text-left text-secondary font-body-sm"><tr><th className="py-1">Bed</th><th className="py-1">Patient</th><th className="py-1">Born</th><th className="py-1">MRN</th><th className="py-1">Allergies</th></tr></thead>
+              <thead className="text-left text-secondary font-body-sm"><tr><th className="py-1">Bed</th><th className="py-1">Patient</th><th className="hidden sm:table-cell py-1">Born</th><th className="hidden sm:table-cell py-1">MRN</th><th className="hidden sm:table-cell py-1">Allergies</th></tr></thead>
               <tbody>{chosen.map((b) => (
                 <tr key={b.patient.id} className="border-t border-card-border">
-                  <td className="py-1 font-code-tabular font-semibold">{b.encounter?.bed ?? '—'}</td><td className="py-1 font-semibold">{fullName(b.patient)}</td>
-                  <td className="py-1 font-code-tabular">{dayLabel(b.patient.birth_date)}</td><td className="py-1 font-code-tabular">{b.patient.mrn}</td><td className="py-1">{allergyShort(b)}</td>
+                  <td className="py-1 font-code-tabular font-semibold">{b.encounter?.bed ?? '—'}</td><td className="py-1 font-semibold">{fullName(b.patient)}<IdLines b={b} /></td>
+                  <td className="hidden sm:table-cell py-1 font-code-tabular">{dayLabel(b.patient.birth_date)}</td><td className="hidden sm:table-cell py-1 font-code-tabular">{b.patient.mrn}</td><td className="hidden sm:table-cell py-1">{allergyShort(b)}</td>
                 </tr>
               ))}</tbody>
             </table>
-            <p className="font-body-md font-semibold">{chosen.length} patients · {sheetCount} sheets</p>
+            </div>
+            <p className="font-body-md font-semibold">{chosen.length} patients · {formsLabel(formCount)}. The number of printed pages depends on how long each form is and the paper size.</p>
             <div className="flex flex-wrap gap-space-sm">
               <Button onClick={() => setStep('preview')}><Icon name="preview" />The list is right: show the preview</Button>
               <Button variant="secondary" onClick={() => setStep('select')}>Back</Button>
@@ -196,7 +212,7 @@ export function SpoolerPage() {
 
         {step === 'preview' && (
           <Card className="flex flex-wrap items-center justify-between gap-space-sm" aria-label="Print the packet">
-            <p className="font-body-md"><span className="font-semibold">{chosen.length} patients · {sheetCount} sheets.</span> Scroll to check the preview, then print.</p>
+            <p className="font-body-md"><span className="font-semibold">{chosen.length} patients · {formsLabel(formCount)}.</span> A long form can run onto a second page. Scroll to check the preview, then print.</p>
             <div className="flex flex-wrap gap-space-sm">
               <Button disabled={!packet} onClick={() => setConfirming(true)}><Icon name="print" />Print the packet</Button>
               <Button variant="secondary" onClick={() => setStep('review')}>Back</Button>
@@ -206,7 +222,7 @@ export function SpoolerPage() {
       </div>
 
       {step === 'preview' && (
-        packet == null ? <p role="status" className="text-secondary print:hidden">Preparing {sheetCount} sheets…</p> : (
+        packet == null ? <p role="status" className="text-secondary print:hidden">Preparing {formsLabel(formCount)}…</p> : (
           <div className="print-preview flex flex-col gap-space-lg mt-space-md print:mt-0 print:gap-0" data-testid="spooler-preview">
             {packet.flatMap((d, pi) => formList.map((k, fi) => <FormSheet key={`${d.bundle.patient.id}-${k}`} kind={k} d={d} ctx={ctx} breakBefore={pi + fi > 0} />))}
           </div>
@@ -215,7 +231,7 @@ export function SpoolerPage() {
 
       {confirming && (
         <Dialog title="Print the packet?" onClose={() => setConfirming(false)}>
-          <p className="font-body-md">This opens the print dialog for <strong>{sheetCount} sheets</strong> for <strong>{chosen.length} patients</strong>{dataset === 'practice' ? ' (fictional Practice patients)' : ''}. Pick the printer there. ClinBridge cannot tell whether the pages printed.</p>
+          <p className="font-body-md">This opens the print dialog for <strong>{formsLabel(formCount)}</strong> for <strong>{chosen.length} patients</strong>{dataset === 'practice' ? ' (fictional Practice patients)' : ''}. The print dialog shows the real page count. Pick the printer there. ClinBridge cannot tell whether the pages printed.</p>
           <div className="flex gap-space-sm">
             <Button data-autofocus className="flex-1" onClick={() => { setConfirming(false); setTimeout(openPrintDialog, 0); }}><Icon name="print" />Open the print dialog</Button>
             <Button variant="secondary" className="flex-1" onClick={() => setConfirming(false)}>Cancel</Button>

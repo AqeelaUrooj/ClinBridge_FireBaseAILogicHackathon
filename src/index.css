@@ -51,4 +51,7 @@
 /* Paper downtime forms on screen: shown as a sheet of paper. */
 @media screen {
   .print-sheet { max-width: 210mm; margin: 0 auto; padding: 10mm 12mm; border: 1px solid #c5c6cd; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
+  /* On narrow screens the sheet keeps a readable width and scrolls sideways inside its own box, not the page. */
+  .print-preview { max-width: 100%; overflow-x: auto; }
+  .print-preview .print-sheet { min-width: 680px; }
 }

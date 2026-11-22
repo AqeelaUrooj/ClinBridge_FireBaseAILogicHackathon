@@ -69,7 +69,7 @@ export function VitalsPage() {
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Vitals' }]} />
       {savedId && <p role="status" className="rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant px-space-md py-space-sm flex items-center gap-2 font-body-md"><Icon name="check_circle" filled />Saved on this laptop.</p>}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-space-sm">
         <h1 className="font-headline-lg text-headline-lg text-primary">Vitals</h1>
         <div className="flex flex-wrap gap-space-sm">
           <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}><Icon name="print" />Paper vitals &amp; I/O sheet</ButtonLink>

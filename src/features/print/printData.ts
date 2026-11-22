@@ -55,7 +55,7 @@ export async function loadPrintData(db: DowntimeDB, patientId: string, nowIso: s
   const orders = orderRows
     .filter((o) => isMedOrder(o) && o.status === 'active')
     .map((o) => ({ order: o, group: orderGroup(o), highAlert: isHighAlert(o.drug_name), slots: slotStatuses(o, nowIso, meds) }))
-    .sort((a, b) => GROUP_RANK[a.group] - GROUP_RANK[b.group] || (a.order.drug_name ?? a.order.text).localeCompare(b.order.drug_name ?? b.order.text));
+    .sort((a, b) => GROUP_RANK[a.group] - GROUP_RANK[b.group] || (a.order.drug_name ?? a.order.text).localeCompare(b.order.drug_name ?? b.order.text, undefined, { numeric: true, sensitivity: 'base' }));
 
   const recentVitals = entries
     .filter((x) => x.entry.type === 'vital_sign' && x.entry.status === 'confirmed' && x.child)

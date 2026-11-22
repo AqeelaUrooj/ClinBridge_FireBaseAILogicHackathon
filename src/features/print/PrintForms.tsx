@@ -96,10 +96,11 @@ function Sheet({ kind, d, ctx, breakBefore, children }: { kind: FormKind; d: Pri
   );
 }
 
+/** Long sections (the order list) may continue on the next page; single rows never split, and a heading stays with what follows. */
 function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
-    <section className="mt-2 break-inside-avoid-page">
-      <h3 className="font-bold uppercase text-[11.5px] bg-black text-white px-1 py-0.5">{title}</h3>
+    <section className="mt-2">
+      <h3 className="font-bold uppercase text-[11.5px] bg-black text-white px-1 py-0.5 break-after-avoid">{title}</h3>
       {note && <p className="text-[10px] mt-0.5">{note}</p>}
       <div className="mt-1">{children}</div>
     </section>
