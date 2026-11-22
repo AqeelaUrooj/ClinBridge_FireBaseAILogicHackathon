@@ -290,3 +290,9 @@ Browser (`admin-recovery.spec.ts`):
 | **capture (3)** | Photo saved first ("Unchanged since saved") → typed pulse → draft → check and confirm beside the photo → confirmed with source photo; dark photo hint does not block; practice proposal labelled as simulated, missing photo file stated |
 
 Not tested yet: screen reader pass, tablet sizes, Firefox/Safari, real Gemini Nano (not available in this environment).
+
+## Documented administration body-map coverage
+
+- `src/features/body/medicationSites.test.ts` covers grouping, counts, timestamps, exact record links, non-administration events, corrections and mistakes, identity isolation, and missing or unmapped sites.
+- `src/features/body/regions.test.ts` verifies the 24 identifiers, patient laterality, and the six historical site mappings.
+- `e2e/body-map.spec.ts` verifies the document-to-region relationship and accessible counts, keyboard and touch selection, pins and linked records, mistaken record removal, verification and patient isolation, and offline persistence. Practice evidence is emitted under each test's `screens/` artifact directory.

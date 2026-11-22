@@ -9,6 +9,14 @@ Status: **24 regions implemented at `/patients/:id/body`** under D-76. The secti
 - The six medication-site mappings still resolve to the same regions. Region selection is display state. Dexie remains at schema version 2 with 19 tables, and this change requires no migration.
 - Clinical observation markers and `note.body_site` remain part of the separate P-03 proposal.
 
+## Documented medication administration highlights
+
+A highlighted region has at least one valid confirmed `administered` event with a mapped site in the opened patient's retained history. The view groups records by region and shows the count, medication, recorded dose and route when available, documented time and links to the original records. Corrections carry their existing version history to the linked detail. The region stays highlighted as long as a valid administration remains in the history.
+
+Teal means documented administration, and slate blue identifies the current selection. Accessible descriptions and the picker expose the count independently of the colors. Injection and IV pins continue to represent mapped medication sites. Unmapped sites are shown as text. The six fixed mappings and clipped anatomy are preserved. The picker provides a larger touch control for all 24 regions.
+
+The highlight is derived from the encrypted local records through the existing live query. Holding, refusing or changing the rate of medication does not contribute. Old corrected versions, records entered in error and drafts are excluded. This history does not indicate an active pharmacological effect or future site suitability.
+
 ## Where each list comes from
 
 | Source | Count | Where |

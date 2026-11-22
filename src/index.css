@@ -30,10 +30,19 @@
 }
 
 /* Body map regions (Theme 2 slate-blue on warm ivory). Art and regions share one SVG, so they stay aligned. */
-.bm-region { fill: #4A6078; fill-opacity: 0; cursor: pointer; outline: none; transition: fill-opacity 120ms; }
+.bm-region { fill: #4A6078; fill-opacity: 0; cursor: pointer; pointer-events: fill; outline: none; transition: fill-opacity 120ms; }
 .bm-region:hover { fill-opacity: 0.16; }
-.bm-region[aria-pressed='true'] { fill-opacity: 0.4; }
-.bm-region:focus-visible { fill-opacity: 0.22; stroke: #1C2536; stroke-width: 2.4; }
+.bm-region[data-has-admin="true"] { fill: #87C8BD; fill-opacity: 0.72; stroke: #337B70; stroke-width: 1.3; }
+.bm-region[data-has-admin="true"]:hover { fill-opacity: 0.92; }
+.bm-region[aria-pressed="true"] { fill: #4A6078; fill-opacity: 0.55; stroke: #4A6078; stroke-width: 1.6; }
+.bm-region:focus-visible { stroke: #1C2536; stroke-width: 2.8; }
+.bm-key { display: inline-block; width: 0.85rem; height: 0.85rem; flex: none; border: 1px solid; border-radius: 3px; }
+.bm-key-admin { background: #A5D6CC; border-color: #337B70; }
+.bm-key-selected { background: #98A3B0; border-color: #4A6078; }
+.bm-key-empty { background: #FBF7EF; border-color: #8E9BAC; }
+.bm-key-injection, .bm-key-iv { border-radius: 50%; }
+.bm-key-injection { background: #1C2536; border-color: #1C2536; }
+.bm-key-iv { background: #4A6078; border-color: #4A6078; }
 
 /* Print (browser print only). Black on white; patient identifiers repeat on every page. */
 @media print {
