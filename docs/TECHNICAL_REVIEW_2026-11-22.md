@@ -97,4 +97,5 @@ Run on DESKTOP-6NQ637E (Windows 10, Node 24.21.0) after the last change in PR #1
 1. Gemini Nano live verification is the main gap for the hackathon's Web (Chrome) requirement.
 2. The on-device guard depends on Firebase SDK 13.4.0 internals; re-check on any SDK upgrade.
 3. A hosted build would need a third-party licence file shipped with `dist/` (see `DEPLOYMENT.md`) and the App Check site key registered for the domain.
-4. FHIR warning/information counts for the latest CI runs weren't readable (log view truncated); the job fails on any error, so errors are 0.
+4. A flaky audit test (PIN digits appearing by chance inside a random SHA-256 value) failed CI once on `2e9603d`; replaced with structural checks (`TEST_REPORT.md`, round 13). No PIN was logged.
+5. FHIR warning/information counts for the latest CI runs weren't readable (log view truncated); the job fails on any error, so errors are 0.

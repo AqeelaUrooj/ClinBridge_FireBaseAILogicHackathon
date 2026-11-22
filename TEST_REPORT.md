@@ -22,6 +22,8 @@ Branch `docs/devpost-licence-readme` on DESKTOP-6NQ637E (Windows 10, Node 24.21.
 | `npm run build` | Pass; `dist/index.html` and the manifest say ClinBridge |
 | `npx playwright test` | **34 / 34 pass** |
 
+**CI failure on `2e9603d` (flaky test, fixed):** `check` failed in `src/db/repos/admin.test.ts` ("PINs are never logged") on `expect(JSON.stringify(rows)).not.toContain('9876')`. In the CI log, all 156 audit rows have only the 10 audit fields (no PIN or PIN-hash field, no `pbkdf2$` string), and the only `9876` was at position 26 of `prev_row_hash` in row `au-0156` (`staff_deactivated`): a SHA-256 value that changes every run because the new staff id is random. Not a leak. The substring check was replaced with structural checks: fixed audit-row shape; no stored PIN hash (old or new) in any row; who/which account on each staff action; each row's hashed content recomputed and equal to the non-secret facts only (`{pin_reset: true}` for the reset); PIN stored only as a salted PBKDF2 hash that changed on reset; chain check kept. Stability: 50 / 50 runs. Mutation check: putting the PIN into the reset's audited content makes the test fail. Full run after the fix: typecheck, lint, Vitest 210 passed / 1 skipped, build, Playwright 34 / 34.
+
 Second pass after the review corrections (docs only: cancellation wording, encryption and FHIR scope in README, IMPLEMENTATION_STATUS, KNOWN_LIMITATIONS, DEPLOYMENT licence note, technical review): typecheck pass, lint pass, Vitest 210 passed / 1 skipped, build pass, Playwright 34 / 34 against the fresh build. Secret scan of all tracked files and the branch diff: 0 findings.
 
 ## Round 12: ZIP navigation, clinical tools and patient history (22 Nov 2026)
