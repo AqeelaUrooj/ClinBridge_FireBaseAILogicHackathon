@@ -21,9 +21,9 @@ Design and artwork
 ------------------
 - The colour and type tokens (tailwind.stitch.json, docs/STITCH_DESIGN.md) and
   the unused reference figures in src/features/body/art/ came from a Google
-  Stitch design export supplied by the project owner for this project.
-- The illustrations in src/assets/medical/ were cut from an AI-generated
-  reference image supplied by the project owner for this project
+  Stitch design export the project owner made for this project.
+- The illustrations in src/assets/medical/ were cut from a reference image
+  the project owner generated with an AI tool for this project
   (see docs/ASSETS.md).
 - The body-map anatomy in src/features/body/anatomy.ts and the app icon
   public/icon.svg are original vector artwork made for ClinBridge.
