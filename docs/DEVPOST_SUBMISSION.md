@@ -54,7 +54,7 @@ We wanted the "paper" to be a laptop that keeps working with no network, and an 
 
 ClinBridge is an offline-first nursing documentation app that runs in Chrome on a ward laptop.
 
-- **During downtime (System Down):** nurses chart vitals, medicines (with a second-nurse check for high-alert drugs), notes, fluid balance, lab results phoned in by the lab, a body map and SBAR handovers. They can also photograph a paper form and type its values next to the photo. Everything is saved in an encrypted local database (AES-256-GCM) with a tamper-evident audit log. **No cloud call can happen in this phase**: the app blocks it, including any request that was already running when the outage started. AI, if used, may only run on-device.
+- **During downtime (System Down):** nurses chart vitals, medicines (with a second-nurse check for high-alert drugs), notes, fluid balance, lab results phoned in by the lab, a body map and SBAR handovers. They can also photograph a paper form and type its values next to the photo. Everything is saved in an encrypted local database (AES-256-GCM) with a tamper-evident audit log. **No cloud call can start in this phase.** A cloud call that was already running is aborted and its answer thrown away (data it had already sent can't be recalled, which is why cloud only runs on Practice data or after clearance). AI, if used, may only run on-device.
 - **Back online:** an admin confirms the network is safe and clears it. Only then may cloud AI run. In the Recovery Gate & Worklist, Firebase AI Logic gives each paper-photo record a **cloud second look**: it reads the photo and lists where its reading differs from what the nurse typed. **It never edits the record.** A nurse decides, and any fix is a new version with a reason.
 - **Export:** the checked records are exported as a FHIR R4 bundle for the hospital EHR team. The official HL7 validator runs on the export in CI: 0 errors.
 
@@ -74,7 +74,7 @@ ClinBridge is an offline-first nursing documentation app that runs in Chrome on 
 - **Proving where the AI really ran.** Without Chrome's Prompt API, the SDK quietly sends even `ONLY_ON_DEVICE` requests to the cloud. We added our own guards (Prompt API present, model available, network blocked during the call, `inferenceSource` checked) and tests for each one.
 - **App Check with two engines.** The AI SDK reads the App Check provider once, when it starts. We use two Firebase app instances, so on-device use never triggers App Check or reCAPTCHA traffic, and cloud calls always carry a token.
 - **Models that skip fields.** With optional fields the cloud model sometimes skipped clearly written values. Making every field required-but-nullable, with a description of how nurses write each value, fixed it. We checked this against live responses.
-- **A request in flight when the outage starts.** A cloud request started just before System Down is cancelled, and its answer is thrown away.
+- **A request in flight when the outage starts.** A cloud request started just before System Down is aborted, and its answer is thrown away. An abort can't recall what was already sent, so cloud is only ever used on Practice data or after network clearance.
 - **Honesty in the UI.** Every AI result shows where it ran (`ONLY_IN_CLOUD`, timing). Seed examples are labelled "Simulated proposal", and nothing is confirmed until a nurse checks it against the paper.
 
 ## Accomplishments that we're proud of
@@ -194,3 +194,4 @@ Put this in the Story or the "existing project" box if you answer "Existing":
 3. **Video not recorded yet.**
 4. **Licence:** shown on GitHub only after this PR is merged into `main`.
 5. **Dates and eligibility:** only the owner can answer these.
+6. **Saved Devpost draft needs one correction:** the Story saved on 22 Nov still says the app blocks cloud calls "including any request that was already running". Replace that paragraph and the "request in flight" challenge with the corrected text above when the submission phase starts (an abort can't recall data already sent).

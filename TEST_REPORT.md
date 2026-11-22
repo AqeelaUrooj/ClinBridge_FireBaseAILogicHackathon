@@ -22,6 +22,8 @@ Branch `docs/devpost-licence-readme` on DESKTOP-6NQ637E (Windows 10, Node 24.21.
 | `npm run build` | Pass; `dist/index.html` and the manifest say ClinBridge |
 | `npx playwright test` | **34 / 34 pass** |
 
+Second pass after the review corrections (docs only: cancellation wording, encryption and FHIR scope in README, IMPLEMENTATION_STATUS, KNOWN_LIMITATIONS, DEPLOYMENT licence note, technical review): typecheck pass, lint pass, Vitest 210 passed / 1 skipped, build pass, Playwright 34 / 34 against the fresh build. Secret scan of all tracked files and the branch diff: 0 findings.
+
 ## Round 12: ZIP navigation, clinical tools and patient history (22 Nov 2026)
 
 Branch `feat/zip-navigation-history` on DESKTOP-6NQ637E (Windows 10, Node 24.21.0). Scope and traceability: `docs/ZIP_REQUIREMENTS_TRACEABILITY.md`. No schema change, no migration.

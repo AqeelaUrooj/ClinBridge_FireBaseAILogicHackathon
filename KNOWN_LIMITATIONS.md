@@ -19,7 +19,7 @@
 - **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.
 - **Body map is a first model** (21 regions, draft ids). Neck, groin/perineum and hips are drawn but cannot be selected. Pain and skin markers need `note.body_site` (P-03, pending). Sites that are not in the fixed table are listed, not drawn.
 - **Records saved before DB v2** keep their old reason inside `entry.confirmed` as well as the new `change_reason` (migration was additive on purpose).
-- **Many pages are placeholders** — see ROUTES.md.
+- **Some screens from the Stitch design are not built** (printable sheets, verbal orders, NEWS2, mesh networking and others; reasons in docs/ZIP_REQUIREMENTS_TRACEABILITY.md). Every route that exists works; see ROUTES.md.
 - **Date picker format** follows the browser's language setting (may show month/day order). Saved times are ISO with the ward's offset.
 - **Icon font is large** (~4 MB, cached once for offline). Can be subset later.
 - **One browser tab at a time.** Writes are ordered inside one tab; two tabs writing at the same moment retry, but this is not fully tested.

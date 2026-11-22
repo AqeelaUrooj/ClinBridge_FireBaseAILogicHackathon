@@ -11,12 +11,12 @@ When ransomware or an outage takes the EHR offline, nurses fall back to paper an
 | Area | Status | Evidence |
 |---|---|---|
 | Offline nursing documentation (vitals, medicines with high-alert second check, notes, fluids, labs, body map, handover, paper-photo capture) | **Working** | Unit tests, Playwright browser tests, including a production build with the network off |
-| Encrypted local records (AES-256-GCM, unit passphrase, tamper-evident audit chain) | **Working** | Unit tests; checked live after reload |
-| System Down blocks all cloud AI calls | **Verified** | Unit + browser tests; live network log showed 0 requests |
+| Encrypted local records (AES-256-GCM per record, unit passphrase, tamper-evident audit chain) | **Working, prototype**: names, values and notes are encrypted; ids, times and statuses stay readable but tamper-checked. Not reviewed by hospital security | Unit tests; checked live after reload. Gaps: `KNOWN_LIMITATIONS.md` |
+| System Down blocks cloud AI: no new cloud call can start, and a call already running is aborted and its answer thrown away | **Verified** (automated tests; cloud button blocked and 0 requests seen live). An abort can't recall data that had already been sent | Unit + browser tests; `docs/AI_INTEGRATION.md` |
 | Back Online network clearance by an admin, then cloud second look (never edits the record) | **Verified live** | `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
 | Genuine Firebase cloud AI (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`, App Check enforced), text notes and paper-form photos | **Live-tested** on the owner's PC, 20 and 22 Nov 2026 | `docs/LIVE_TEST_RESULTS_2026-11-20.md`, `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
 | Gemini Nano on-device inference (`ONLY_ON_DEVICE`, network blocked during the call) | **Implemented and mock-tested, not live-verified.** The test PC's hardware can't run Gemini Nano | `docs/AI_TEST_MATRIX.md`, `docs/GEMINI_NANO_SECOND_LAPTOP.md` |
-| FHIR R4 export | **Working**: 0 errors from the official HL7 validator in CI | `docs/FHIR_VALIDATION.md` |
+| FHIR R4 export (file) | **Working**: 0 errors from the official HL7 validator in CI. Many fields are free text; no live EHR link | `docs/FHIR_VALIDATION.md` |
 | Real patient deployment | **Not approved** | Clinical rules and security are prototypes (`KNOWN_LIMITATIONS.md`) |
 
 AI is optional. Every record can be typed by hand, and no AI proposal is ever saved as confirmed: a nurse checks it against the paper first.
@@ -25,7 +25,7 @@ AI is optional. Every record can be typed by hand, and no AI proposal is ever sa
 
 | Phase | What the AI may do | Inference mode |
 |---|---|---|
-| **System Down** | On-device only (Gemini Nano in Chrome), if the laptop supports it. Cloud is blocked, including requests that were already running when the outage started. If on-device isn't available, the nurse types the values; nothing goes to the cloud | `ONLY_ON_DEVICE` |
+| **System Down** | On-device only (Gemini Nano in Chrome), if the laptop supports it. No cloud call can start. A cloud call that was already running is aborted and its answer thrown away, but anything it had already sent has left the laptop (that's why cloud only ever runs on Practice data or after clearance). If on-device isn't available, the nurse types the values; nothing goes to the cloud | `ONLY_ON_DEVICE` |
 | **Back Online** (after an admin's network clearance) | Cloud second look at paper-photo records: lists where the cloud reading differs from what the nurse typed. Nothing is changed automatically; fixes are new versions with a reason | `ONLY_IN_CLOUD` |
 | **Practice: Device vs Cloud** | Runs the same fictional note or form photo through each model separately, labelled with where it really ran | both, never mixed |
 
@@ -102,6 +102,10 @@ docs/            planning documents and the project docs below
 - [docs/ASSETS.md](docs/ASSETS.md): body map artwork and illustrations
 - [docs/DEVPOST_SUBMISSION.md](docs/DEVPOST_SUBMISSION.md): hackathon submission text
 - [docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md): 3-minute demo script and shot list
+
+## Name
+
+ClinBridge was called DowntimeKit while it was being planned. The planning documents in `docs/` and some storage names (for example the `downtimekit-backups` database and `downtimekit-seed.json`) keep the old name on purpose: renaming storage would cut existing laptops off from their saved data.
 
 ## Licence
 

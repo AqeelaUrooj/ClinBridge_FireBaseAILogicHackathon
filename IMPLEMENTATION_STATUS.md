@@ -1,6 +1,6 @@
 # Implementation status
 
-Last updated: 20 Nov 2026 (round 9)
+Last updated: 22 Nov 2026 (round 13). Full review: docs/TECHNICAL_REVIEW_2026-11-22.md
 
 | Phase | Scope | State |
 |---|---|---|
@@ -9,10 +9,17 @@ Last updated: 20 Nov 2026 (round 9)
 | 2 | Vertical slice: vitals | **Done** |
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
 | 4 | Fluids (intake/output), notes, labs | **Done** |
-| 5 | Photo of paper form (on-device AI) | Manual capture done; on-device AI proposals built (PR #7), tested with mocks only. Live laptop test pending (docs/LIVE_AI_TEST_CHECKLIST.md) |
+| 5 | Photo of paper form (on-device AI) | Manual capture done and used live. On-device Gemini Nano proposals built (PR #7) and tested with mocks only: the owner's PC can't run Gemini Nano (hardware), so it is not live-verified |
 | 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
-| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done; Device vs Cloud compare and cloud second look built (PR #7), mocks only. Cloud gate cancels running cloud requests on System down (D-62) |
+| 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done. Cloud second look and the cloud side of Device vs Cloud **live-tested** with real Firebase AI Logic responses (20 and 22 Nov 2026). Cloud gate aborts running cloud requests on System down and discards their answers (D-62); data already sent can't be recalled |
 | 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest merged (PR #4). F1 second-laptop enrollment (PR #5). Cleanup workflow on synthetic data (PR #6). Real-records migration and Real-records cleanup not approved. Not deployed |
+
+## Rounds 10–13 (20–22 Nov 2026)
+
+- **Round 10** (PR #8, #9): live tests on the owner's PC. Genuine cloud inference passed after the App Check fix (separate `clinbridge-cloud` app); Gemini Nano blocked by hardware. docs/LIVE_TEST_RESULTS_2026-11-20.md
+- **Round 11** (PR #10, #11): live re-check and demo rehearsal on 22 Nov (docs/LIVE_TEST_RESULTS_2026-11-22.md); the Practice clock continues after a reload.
+- **Round 12** (PR #12): Stitch-design sidebar groups, read-only ward clinical tools (`/tools/*`), rebuilt patient history with integrity facts. docs/ZIP_REQUIREMENTS_TRACEABILITY.md
+- **Round 13** (PR #13): Apache-2.0 licence and NOTICE, accurate README, product name ClinBridge in the app, Devpost and video preparation docs.
 
 ## Phase 2 slice — working end to end
 
@@ -109,12 +116,12 @@ Also working:
 
 ## Waiting on you
 
-- **Real-records cleanup** (P-04) and **Real-records migration** (P-06) approvals; hospital IT/security review (docs/SECURITY_REVIEW.md); Firebase config + Chrome 148+ test laptop for AI.
+- **Real-records cleanup** (P-04) and **Real-records migration** (P-06) approvals; hospital IT/security review (docs/SECURITY_REVIEW.md); a Gemini Nano-capable laptop for the live on-device test (docs/GEMINI_NANO_SECOND_LAPTOP.md).
 - **Final body map region model** (P-01). Then `note.body_site` (P-03).
 - **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
 ## Next
 
-- Real-model run of the three demo scenarios (needs Firebase config + a Chrome 148+ laptop with the model).
+- Live Gemini Nano run on compatible hardware (cloud runs are done).
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
-- On-device AI once Firebase config and a desktop Chrome 148+ test laptop are available (photo check, form reading as drafts, handover draft); cloud second look in Back online.
+- Printable downtime sheets (Stitch design) once approved.

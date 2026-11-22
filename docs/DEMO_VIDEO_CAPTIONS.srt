@@ -27,15 +27,15 @@ A nurse signs in with a PIN, and before charting, ClinBridge makes them confirm 
 name, date of birth and record number.
 
 8
-00:00:32,000 --> 00:00:35,164
+00:00:32,000 --> 00:00:34,763
 An admin declares the outage.
 
 9
-00:00:35,214 --> 00:00:44,807
-From now on the app blocks every cloud call, even one that was already running.
+00:00:34,812 --> 00:00:45,450
+From now on no cloud call can start, and one already running is stopped and its answer thrown away.
 
 10
-00:00:44,857 --> 00:00:49,950
+00:00:45,500 --> 00:00:49,950
 AI may only run on the device itself.
 
 11
