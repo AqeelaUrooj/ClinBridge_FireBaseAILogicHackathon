@@ -13,7 +13,7 @@
   - **Rollback is not detected:** someone with the files could put back an older genuine copy of a whole row. Edited index fields, ciphertext moved between rows, added plain rows and old-format (v1) copies are detected.
   - **Passphrase rules are guidance** (length, common words, patterns), not a strength guarantee.
 - **Session is in memory.** Reloading the page signs you out (records stay saved). This is on purpose for shared laptops.
-- **Practice clock restarts at 13:20 on every page load** (it follows the synthetic outage story). After a reload, new Practice times can be earlier than times saved before it, e.g. a downtime history showing "back online 13:20" after "down 13:26", and records typed then may fall before the practice outage start and stay out of the worklist. Real records use the laptop clock.
+- Fixed in PR #11: the Practice clock now continues from the latest saved time after a reload.
 - **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
 - **No Overdue status** for medicines until the hospital time window is given (D-18).
 - **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.

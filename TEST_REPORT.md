@@ -34,7 +34,8 @@ Live (synthetic Practice data, real Firebase project):
 - **Nurse review: PASS.** No review button for Admin; RN gets a draft with the cloud label, all fields editable; not auto-confirmed.
 - **Demo walkthrough (10 steps): steps 1–9 PASS live** (Wi-Fi on, network logged: 0 external requests while documenting); FHIR file validation CI only; step 10 hardware-blocked.
 - **Cloud second look: PASS.** 200, 4052 ms, IMAGE 1100 tokens; only the two hand-left-blank fields differ; record unchanged.
-- Findings, not defects: the Practice clock restarts at 13:20 on each page load (downtime history can show Back online before System down after the walkthrough's reload); a photo record whose care time is before the practice outage start is not added to the worklist.
+- Finding: a photo record whose care time is before the practice outage start is not added to the worklist (by design; keep the default "When measured" time in walkthrough step 4).
+- Fixed in PR #11: the Practice clock now continues from the latest saved time after a reload.
 
 ## Round 10: live tests on the owner's PC (20 Nov 2026)
 

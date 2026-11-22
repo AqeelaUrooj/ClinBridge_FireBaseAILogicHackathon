@@ -74,9 +74,9 @@ Wi-Fi stayed on (the Chrome extension needs it); every step's requests were read
 
 Cancelling a pending cloud request when System Down starts was not re-run live (needs a slow request); it stays covered by 7 unit tests + 1 browser test.
 
-## Findings (no code changed)
+## Findings
 
-1. **Practice clock restarts at 13:20 on every page load** (`practiceClock()` in `src/lib/time.ts`, by design). The walkthrough reloads in step 5, between System Down (step 2) and Back online (step 6), so the downtime history reads e.g. "down 13:26 · back online 13:20". Cosmetic, Practice only. Records typed in the first minutes after a reload also get a care time before the outage start.
+1. **Practice clock after a reload** (seen in this run: "down 13:26 · back online 13:20"). Fixed in PR #11: the Practice clock now continues from the latest saved time after a reload.
 2. **Only records whose care time is inside the current outage join the worklist** (`inDowntime`: care time ≥ declared). In the rehearsal the first photo record used the paper's time (08:05), earlier than the practice outage (13:26), so "Add new downtime records" correctly skipped it. Keep the default "When measured" time in step 4 (as the walkthrough does), or the photo record won't appear in step 7.
 
 ## Not verified today
