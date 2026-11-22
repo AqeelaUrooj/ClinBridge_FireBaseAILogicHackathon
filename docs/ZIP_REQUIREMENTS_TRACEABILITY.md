@@ -121,7 +121,7 @@ Requirements are marked **explicit** (written in a ZIP spec or shown on a ZIP sc
 | D. Notes: create, draft, confirm, fix, chronology | 1 | DAR template and quick tags: 6. Second-RN co-sign on notes: 7. |
 | E. Intake / output | 1 | Ward totals added. Oliguria (< 0.5 mL/kg/h) and fluid-restriction alerts: **7** (clinical rules, not approved). |
 | F. Labs: results, critical flag, read-back | 1 | Specimen courier, fridge temperature, LOINC: 7 / 6 |
-| G. Body map | 3 | 21 regions vs the spec's 24 (neck, perineum and posterior split differ). The region model is open decision P-01; changing region ids would change stored data, so it is not done without approval. |
+| G. Body map | 3 | D-76 extends the original 21 regions with front neck, back of neck, and perineum. The resulting 24 retain ClinBridge's original IDs and subdivisions. See [P-01](proposals/P-01-body-map-regions.md) for the differences from Stitch. |
 | H. Handover | 1 | Dual nurse sign-off / custody PIN: 7 (no approved policy) |
 | I. Offline, System Down, practice outage, restart, Back Online, worklist | 1 | Live-verified 22 Nov (`docs/LIVE_TEST_RESULTS_2026-11-22.md`) |
 | J. Admin: readiness, staff, laptops, backup, change log, settings | 1 / 3 | Settings are read only (needs an approved settings store) |

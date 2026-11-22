@@ -14,21 +14,34 @@ async function openBodyMap(page: Page, patientId: string) {
   await expect(page.getByRole('heading', { name: 'Body map' })).toBeVisible();
 }
 
-const ALL = ['HEAD', 'CHEST', 'ABDOMEN_LEFT', 'ABDOMEN_RIGHT', 'UPPER_BACK', 'LOWER_BACK', 'BUTTOCKS',
+const ORIGINAL = ['HEAD', 'CHEST', 'ABDOMEN_LEFT', 'ABDOMEN_RIGHT', 'UPPER_BACK', 'LOWER_BACK', 'BUTTOCKS',
   ...['UPPER_ARM', 'FOREARM', 'HAND', 'THIGH', 'LOWER_LEG', 'FOOT', 'HEEL'].flatMap((p) => [`LEFT_${p}`, `RIGHT_${p}`])];
+const ADDITIONS = [
+  { id: 'NECK', label: 'Neck', view: 'front' },
+  { id: 'BACK_OF_NECK', label: 'Back of neck', view: 'back' },
+  { id: 'PERINEUM', label: 'Perineum', view: 'back' },
+];
 
 test.describe('body map', () => {
   test.use({ viewport: { width: 1440, height: 1000 } });
 
-  test('front/back switching and all 21 regions selectable with the mouse', async ({ page }) => {
+  test('front/back switching and all 24 regions selectable with the mouse', async ({ page }) => {
     await openBodyMap(page, 'pt-02');
     await page.getByRole('button', { name: 'Front', exact: true }).click();
     await expect(page.locator('svg[data-view="back"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(page.locator('svg[data-view="front"]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Both', exact: true }).click();
-    expect(ALL).toHaveLength(21);
-    for (const id of ALL) {
+    const ids = [...ORIGINAL, ...ADDITIONS.map(({ id }) => id)];
+    const options = await page.getByLabel('Choose body area from a list').locator('option').evaluateAll(
+      (nodes) => nodes.map((node) => (node as HTMLOptionElement).value).filter(Boolean),
+    );
+    expect(options.sort()).toEqual(ids.sort());
+    for (const { id, view } of ADDITIONS) {
+      await expect(page.locator(`svg[data-view="${view}"] [data-region="${id}"]`)).toHaveCount(1);
+      await expect(page.locator(`[data-region="${id}"]`)).toHaveCount(1);
+    }
+    for (const id of ids) {
       const r = page.locator(`[data-region="${id}"]`).first();
       await r.click();
       await expect(r).toHaveAttribute('aria-pressed', 'true');
@@ -82,5 +95,33 @@ test.describe('body map', () => {
     const b = await ratio();
     expect(Math.abs(a[0]! - b[0]!)).toBeLessThan(0.01);
     expect(Math.abs(a[1]! - b[1]!)).toBeLessThan(0.01);
+  });
+});
+
+test.describe('body map on a touch viewport', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('new regions support list navigation, keyboard and touch', async ({ page }, testInfo) => {
+    await openBodyMap(page, 'pt-02');
+    const picker = page.getByLabel('Choose body area from a list');
+    for (const { id, label, view } of ADDITIONS) {
+      // Start in the opposite view and let the picker switch to the area’s view.
+      await page.getByRole('button', { name: view === 'front' ? 'Back' : 'Front', exact: true }).click();
+      await picker.selectOption(id);
+      const figure = page.locator(`svg[data-view="${view}"]`);
+      const target = figure.getByRole('button', { name: label, exact: true });
+      await expect(target).toHaveAttribute('aria-pressed', 'true');
+
+      await picker.selectOption('HEAD');
+      await target.focus();
+      await page.keyboard.press('Space');
+      await expect(picker).toHaveValue(id);
+
+      await picker.selectOption('HEAD');
+      await target.tap();
+      await expect(page.getByRole('heading', { name: label, exact: true })).toBeVisible();
+      await expect(page.getByText('Nothing recorded here.')).toBeVisible();
+    }
+    await page.screenshot({ path: testInfo.outputPath('screens', 'perineum-phone.png'), fullPage: true });
   });
 });

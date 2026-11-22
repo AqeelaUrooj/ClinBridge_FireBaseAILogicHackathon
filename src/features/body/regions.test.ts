@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { REGIONS, SITE_TO_REGION, regionById, regionsInView } from './regions';
+import { REGIONS, SITE_TO_REGION, regionById, regionsInView, siteRegion } from './regions';
 import { SITE_WORDS } from '../../config/medicationPolicy';
 
 const cx = (pts: [number, number][]) => pts.reduce((a, p) => a + p[0], 0) / pts.length;
 
-describe('body map regions (UI/UX 21-region first model)', () => {
-  it('keeps exactly the 21 region ids from the previous version', () => {
+describe('body map regions (D-76)', () => {
+  it('preserves the 21 original ids and adds exactly three', () => {
     expect(REGIONS.map((r) => r.id).sort()).toEqual([
-      'ABDOMEN_LEFT', 'ABDOMEN_RIGHT', 'BUTTOCKS', 'CHEST', 'HEAD',
+      'ABDOMEN_LEFT', 'ABDOMEN_RIGHT', 'BACK_OF_NECK', 'BUTTOCKS', 'CHEST', 'HEAD',
       'LEFT_FOOT', 'LEFT_FOREARM', 'LEFT_HAND', 'LEFT_HEEL', 'LEFT_LOWER_LEG', 'LEFT_THIGH', 'LEFT_UPPER_ARM',
-      'LOWER_BACK',
+      'LOWER_BACK', 'NECK', 'PERINEUM',
       'RIGHT_FOOT', 'RIGHT_FOREARM', 'RIGHT_HAND', 'RIGHT_HEEL', 'RIGHT_LOWER_LEG', 'RIGHT_THIGH', 'RIGHT_UPPER_ARM',
       'UPPER_BACK',
     ]);
@@ -34,9 +34,26 @@ describe('body map regions (UI/UX 21-region first model)', () => {
     for (const r of REGIONS) expect(Object.keys(r.zones).length).toBeGreaterThan(0);
     expect(regionById('LEFT_HEEL')!.zones.front).toBeUndefined();
     expect(regionById('LEFT_FOOT')!.zones.back).toBeUndefined();
-    expect(regionsInView('front').length + regionsInView('back').length).toBeGreaterThanOrEqual(21);
+    expect(regionsInView('front').length + regionsInView('back').length).toBeGreaterThanOrEqual(24);
   });
   it('maps every standard site word to a real region', () => {
     for (const w of SITE_WORDS) expect(regionById(SITE_TO_REGION[w]!)).toBeDefined();
+  });
+});
+
+describe('body map medication sites', () => {
+  it.each([
+    ['Abdomen, left side', 'ABDOMEN_LEFT'],
+    ['Abdomen, right side', 'ABDOMEN_RIGHT'],
+    ['Left forearm IV line', 'LEFT_FOREARM'],
+    ['Right forearm IV line', 'RIGHT_FOREARM'],
+    ['Left hand IV line', 'LEFT_HAND'],
+    ['Right hand IV line', 'RIGHT_HAND'],
+  ])('keeps the historical marker for %s', (site, id) => {
+    expect(siteRegion(site)?.id).toBe(id);
+  });
+
+  it.each(['Neck', 'Back of neck', 'Perineum', 'Coccyx'])('leaves %s without an inferred marker', (site) => {
+    expect(siteRegion(site)).toBeUndefined();
   });
 });

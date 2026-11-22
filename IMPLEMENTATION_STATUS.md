@@ -10,7 +10,7 @@ Last updated: 22 Nov 2026 (round 13). Full review: docs/TECHNICAL_REVIEW_2026-11
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
 | 4 | Fluids (intake/output), notes, labs | **Done** |
 | 5 | Photo of paper form (on-device AI) | Manual capture done and used live. On-device Gemini Nano proposals built (PR #7) and tested with mocks only: the owner's PC can't run Gemini Nano (hardware), so it is not live-verified |
-| 6 | Handover, body map | **Done** (body map redrawn; 21-region model still a first model) |
+| 6 | Handover, body map | **Done** (Theme 2 artwork, 24 selectable regions per D-76) |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done. Cloud second look and the cloud side of Device vs Cloud **live-tested** with real Firebase AI Logic responses (20 and 22 Nov 2026). Cloud gate aborts running cloud requests on System down and discards their answers (D-62); data already sent can't be recalled |
 | 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest merged (PR #4). F1 second-laptop enrollment (PR #5). Cleanup workflow on synthetic data (PR #6). Real-records migration and Real-records cleanup not approved. Not deployed |
 
@@ -118,11 +118,11 @@ Also working:
 ## Waiting on you
 
 - **Real-records cleanup** (P-04) and **Real-records migration** (P-06) approvals; hospital IT/security review (docs/SECURITY_REVIEW.md); a Gemini Nano-capable laptop for the live on-device test (docs/GEMINI_NANO_SECOND_LAPTOP.md).
-- **Final body map region model** (P-01). Then `note.body_site` (P-03).
+- **Note-to-body-area links** (`note.body_site`, P-03) remain a separate proposal.
 - **Approved hospital policy** for high-alert list, second checker, medicine timing and vital-sign warning ranges.
 
 ## Next
 
 - Live Gemini Nano run on compatible hardware (cloud runs are done).
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
-- Owner decisions listed in docs/V3_ZIP_COMPLETION_REPORT.md section 12 (body map 21 + 3, note templates, print audit).
+- Owner decisions on note templates and print audit, listed in docs/V3_ZIP_COMPLETION_REPORT.md section 12.
