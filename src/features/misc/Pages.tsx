@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useApp, useSession } from '../../state/app';
 import { resetPractice } from '../../db/seed';
@@ -23,14 +23,39 @@ export function NotBuilt({ title, phase }: { title: string; phase: string }) {
   );
 }
 
+const ADD_FORMS: [string, string, string][] = [
+  ['vitals/record', 'vital_signs', 'Vitals'], ['notes/new', 'edit_note', 'Note'], ['capture', 'photo_camera', 'Photo of paper'],
+  ['meds', 'medication', 'Medicine'], ['io/record', 'water_drop', 'Fluids'], ['labs/record', 'science', 'Lab'], ['handoff/new', 'swap_horiz', 'Handover'],
+];
+
 export function AddPage() {
+  const { db } = useApp();
+  const rows = useLiveQuery(async () => {
+    const encs = await db.encounter.toArray();
+    return (await db.patient.toArray()).map((p) => ({ p, bed: encs.find((e) => e.patient_id === p.id)?.bed ?? '' })).sort((a, b) => a.bed.localeCompare(b.bed));
+  }, [db]);
   return (
     <>
-      <PageTitle>Add</PageTitle>
-      <Card>
-        <p className="font-body-lg text-on-surface-variant mb-space-md">Pick a patient first. Every record belongs to one checked patient.</p>
-        <ButtonLink to="/ward"><Icon name="groups" />Go to My patients</ButtonLink>
-      </Card>
+      <PageTitle>Add Note / Form</PageTitle>
+      <p className="font-body-lg text-on-surface-variant">Every record belongs to one checked patient: the patient check (name, born, MRN) runs before the form opens.</p>
+      {!rows ? <p role="status">Loading…</p> : rows.length === 0 ? <EmptyState text="No patients in the patient list" /> : (
+        <Card>
+          <ul className="flex flex-col">
+            {rows.map(({ p, bed }) => (
+              <li key={p.id} className="flex flex-wrap items-center gap-space-sm py-space-sm border-b border-card-border last:border-0">
+                <span className="w-56 min-w-0 truncate"><span className="font-code-tabular font-bold">Bed {bed || '—'}</span> · {p.given_name} {p.family_name}</span>
+                <span className="flex flex-wrap gap-1" aria-label={`Forms for ${p.given_name} ${p.family_name}`}>
+                  {ADD_FORMS.map(([sub, icon, label]) => (
+                    <Link key={sub} to={`/patients/${p.id}/${sub}`} className="inline-flex items-center gap-1 min-h-9 px-2.5 rounded border border-card-border font-body-md hover:bg-surface-container-low">
+                      <Icon name={icon} className="text-[18px] text-secondary" />{label}
+                    </Link>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </>
   );
 }
@@ -38,9 +63,58 @@ export function AddPage() {
 export function AlertsPage() {
   const { db } = useApp();
   const drafts = useLiveQuery(() => db.entry.where('status').equals('draft').toArray(), [db]);
+  // Critical lab results on current records (confirmed or draft), and active orders per patient.
+  const ward = useLiveQuery(async () => {
+    const patients = await db.patient.toArray();
+    const encs = await db.encounter.toArray();
+    const labEntries = (await db.entry.where('status').anyOf('confirmed', 'draft').toArray()).filter((e) => e.type === 'lab_event');
+    const labs = await db.lab_event.where('entry_id').anyOf(labEntries.map((e) => e.id)).toArray();
+    const critical = labs.filter((l) => l.status === 'critical').map((l) => {
+      const e = labEntries.find((x) => x.id === l.entry_id)!;
+      return { l, e, p: patients.find((p) => p.id === e.patient_id), bed: encs.find((x) => x.patient_id === e.patient_id)?.bed };
+    }).sort((a, b) => b.e.care_time.localeCompare(a.e.care_time));
+    const orders = await db.active_order.toArray();
+    const perPatient = patients.map((p) => {
+      const enc = encs.find((x) => x.patient_id === p.id);
+      const own = enc ? orders.filter((o) => o.encounter_id === enc.id) : [];
+      return { p, bed: enc?.bed, total: own.length, meds: own.filter((o) => o.type === 'med' || o.type === 'iv').length };
+    }).sort((a, b) => (a.bed ?? '').localeCompare(b.bed ?? ''));
+    return { critical, perPatient };
+  }, [db]);
   return (
     <>
-      <PageTitle>Alerts</PageTitle>
+      <PageTitle>Alerts & Orders</PageTitle>
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><Icon name="emergency" className="text-clinical-red" />Critical lab results</h2>
+        {!ward ? <p role="status">Loading…</p> : ward.critical.length === 0 ? <EmptyState text="No critical lab results recorded" /> : (
+          <ul className="flex flex-col gap-space-sm">
+            {ward.critical.map(({ l, e, p, bed }) => (
+              <li key={l.id}>
+                <ButtonLink variant="secondary" className="w-full !justify-between" to={`/entries/${e.id}`}>
+                  <span>{e.care_time.slice(11, 16)} · Bed {bed ?? '—'} · {p ? `${p.given_name} ${p.family_name}` : e.patient_id} · {l.test_name}{l.value_num != null ? ` ${l.value_num} ${l.unit ?? ''}` : ''}</span>
+                  <span className={l.read_back ? 'text-sync-green' : 'text-clinical-red font-semibold'}>{l.read_back ? 'Read back' : 'Read-back not recorded'}</span>
+                </ButtonLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+      <Card>
+        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><Icon name="list_alt" />Orders from the patient list (read only)</h2>
+        <p className="font-body-sm text-secondary mb-space-sm">New electronic orders can't be made during downtime; these are the orders copied from the hospital system. Opening one runs the patient check.</p>
+        {!ward ? <p role="status">Loading…</p> : (
+          <ul className="flex flex-col">
+            {ward.perPatient.map(({ p, bed, total, meds }) => (
+              <li key={p.id}>
+                <Link to={`/patients/${p.id}/orders`} className="flex items-center justify-between min-h-[48px] px-space-sm border-b border-card-border last:border-0 hover:bg-surface-container-low rounded">
+                  <span><span className="font-code-tabular font-bold">Bed {bed ?? '—'}</span> · {p.given_name} {p.family_name}</span>
+                  <span className="text-secondary font-body-md">{total} order{total === 1 ? '' : 's'} ({meds} medicine)<Icon name="chevron_right" className="align-middle text-outline" /></span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
       <Card>
         <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name={drafts && drafts.length ? 'workflows/bell-alert' : 'workflows/bell-ok'} size={30} />Records to check</h2>
         {drafts === undefined ? <p role="status">Loading…</p> : drafts.length === 0 ? <EmptyState text="Nothing to check" /> : (

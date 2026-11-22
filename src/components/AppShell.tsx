@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { NavLink, Outlet, useMatch, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isAdmin, useApp, useSession } from '../state/app';
 import { Icon } from './ui';
@@ -64,29 +65,48 @@ export function ModeBanner() {
   );
 }
 
-function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; label: string; badge?: number; end?: boolean }) {
+function NavItem({ to, icon, label, badge, count, end }: { to: string; icon: string; label: string; badge?: number; count?: number; end?: boolean }) {
   return (
     <NavLink
       to={to}
       end={end}
       className={({ isActive }) =>
-        `flex items-center justify-between min-h-11 px-2.5 rounded transition-colors ${isActive ? 'bg-surface-container-high text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`
+        `flex items-center justify-between min-h-9 px-2.5 rounded transition-colors ${isActive ? 'bg-surface-container-high text-primary font-bold' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}`
       }
     >
-      <span className="flex items-center gap-2.5">
-        <Icon name={icon} className="text-[20px]" />
-        <span className="font-body-lg text-body-lg">{label}</span>
+      <span className="flex items-center gap-2 min-w-0">
+        <Icon name={icon} className="text-[19px] shrink-0" />
+        <span className="font-body-md text-[14px] font-medium whitespace-nowrap truncate">{label}</span>
       </span>
-      {badge ? <span className="px-1.5 rounded-full bg-error text-on-error font-code-tabular text-[11px] font-bold">{badge}</span> : null}
+      {badge ? <span className="px-1.5 rounded-full bg-error text-on-error font-code-tabular text-[11px] font-bold" aria-label={`${badge} to check`}>{badge}</span>
+        : count ? <span className="px-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-code-tabular text-[11px] font-bold" aria-label={`${count} patients`}>{count}</span> : null}
     </NavLink>
   );
 }
 
-/** Nurse menu has exactly four main buttons (UI/UX section 20); admins get their own menu. */
+function NavGroup({ title, children }: { title: string; children: ReactNode }) {
+  const id = `nav-${title.replace(/\W+/g, '-').toLowerCase()}`;
+  return (
+    <div role="group" aria-labelledby={id} className="flex flex-col gap-0.5">
+      <span id={id} className="px-2.5 pt-1.5 pb-0.5 font-label-uppercase text-[10px] tracking-wider text-slate-muted uppercase">{title}</span>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Menu groups from the Stitch design (PRIMARY OPERATIONS / CLINICAL TOOLS / SYSTEM ADMIN), by role:
+ * nurses get the clinical groups, admins get SYSTEM ADMIN. Nurses never see admin pages (and /admin
+ * stays guarded in AdminLayout). CLINICAL TOOLS open the current patient's page when one is open,
+ * otherwise a ward overview (the patient check still runs before any patient page).
+ */
 export function Sidebar() {
   const { db, snapshot } = useApp();
   const { user } = useSession();
   const drafts = useLiveQuery(() => db.entry.where('status').equals('draft').count(), [db], 0);
+  const patients = useLiveQuery(() => db.patient.count(), [db], 0);
+  const inPatient = useMatch('/patients/:id/*')?.params.id;
+  const tool = (sub: string, ward: string) => (inPatient ? `/patients/${inPatient}/${sub}` : ward);
   return (
     <aside className="fixed left-0 bottom-0 w-[220px] bg-surface-container-lowest border-r border-card-border z-40 flex flex-col justify-between overflow-y-auto" style={{ top: 'var(--header-h)' }} aria-label="Main menu">
       <div className="p-space-md flex flex-col gap-space-md">
@@ -97,22 +117,40 @@ export function Sidebar() {
             <span className="block font-code-tabular text-[10px] text-secondary font-semibold uppercase">{snapshot?.unit ?? 'No patient list'}</span>
           </div>
         </div>
-        <nav className="flex flex-col gap-0.5">
+        <nav className="flex flex-col gap-space-xs">
           {isAdmin(user) ? (
             <>
-              <NavItem to="/admin" icon="admin_panel_settings" label="Admin" end />
-              <NavItem to="/recovery" icon="checklist" label="To check" />
-              <NavItem to="/alerts" icon="notifications_active" label="Alerts" />
+              <NavGroup title="System admin">
+                <NavItem to="/admin" icon="monitor_heart" label="Readiness & Storage" end />
+                <NavItem to="/admin/downtime" icon="power_settings_new" label="Downtime Management" />
+                <NavItem to="/recovery" icon="checklist" label="Recovery Gate & Worklist" />
+                <NavItem to="/admin/audit" icon="verified_user" label="Audit Log" />
+              </NavGroup>
+              <NavGroup title="Operations">
+                <NavItem to="/alerts" icon="notifications_active" label="Alerts & Orders" badge={drafts} />
+                <NavItem to="/more" icon="more_horiz" label="More" />
+              </NavGroup>
             </>
           ) : (
             <>
-              <NavItem to="/ward" icon="grid_view" label="My patients" />
-              <NavItem to="/add" icon="add_box" label="Add" />
-              <NavItem to="/handover" icon="assignment_return" label="Handover" />
-              <NavItem to="/alerts" icon="notifications_active" label="Alerts" badge={drafts} />
+              <NavGroup title="Primary operations">
+                <NavItem to="/ward" icon="grid_view" label="My Patients" count={patients} />
+                <NavItem to="/add" icon="add_box" label="Add Note / Form" />
+                <NavItem to="/handover" icon="assignment_return" label="Handover" />
+                <NavItem to="/alerts" icon="notifications_active" label="Alerts & Orders" badge={drafts} />
+              </NavGroup>
+              <NavGroup title="Clinical tools">
+                <NavItem to={tool('meds', '/tools/meds')} icon="medication" label="Medication Schedule" />
+                <NavItem to={tool('vitals', '/tools/vitals')} icon="vital_signs" label="Vitals Flowsheet" />
+                <NavItem to={tool('io', '/tools/io')} icon="water_drop" label="Fluid Balance (I/O)" />
+                <NavItem to={tool('labs', '/labs')} icon="science" label="Lab Results" />
+                <NavItem to={tool('body', '/tools/body')} icon="accessibility_new" label="Body Map" />
+              </NavGroup>
+              <NavGroup title="Other">
+                <NavItem to="/more" icon="more_horiz" label="More" />
+              </NavGroup>
             </>
           )}
-          <NavItem to="/more" icon="more_horiz" label="More" />
         </nav>
       </div>
       <div className="p-space-md border-t border-card-border flex items-center gap-2">
