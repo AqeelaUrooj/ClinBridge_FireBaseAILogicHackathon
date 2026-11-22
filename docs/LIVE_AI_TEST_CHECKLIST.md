@@ -123,6 +123,7 @@ Send the filled template (and screenshots without the DevTools console) and the 
 ## Results so far
 
 - **20 Nov 2026, DESKTOP-6NQ637E** (Windows 10, Chrome 157): cloud parts of Scenario B and all of Scenario C **passed**; Scenario A on-device steps **blocked by hardware** (manual fallback passed); see `docs/LIVE_TEST_RESULTS_2026-11-20.md`.
+- **22 Nov 2026, DESKTOP-6NQ637E** (`main` `6636639`, fresh debug token): B1–B3, B5–B8 (cloud side) and C1–C6 **passed** again; cloud 200 with `gemini-3.5-flash-lite`, 7/7 on text and image, nulls for unwritten fields, record unchanged after the second look. B4 and A5–A7 **blocked by hardware**; A3/A10 (Wi-Fi off) and B9 not run live (automated only). See `docs/LIVE_TEST_RESULTS_2026-11-22.md`.
 
 ## Notes from the first live run
 

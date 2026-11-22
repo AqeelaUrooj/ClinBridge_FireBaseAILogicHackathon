@@ -14,7 +14,9 @@ It is **not** a completed hybrid-AI demonstration until on-device inference runs
 
 **Presenting:** follow `docs/DEMO_WALKTHROUGH.md` (10 steps, each marked live / automated / hardware-blocked). Gemini Nano on another laptop: `docs/GEMINI_NANO_SECOND_LAPTOP.md`.
 
-**App Check debug token:** the token used in live testing was revoked on 20 Nov 2026 (it was briefly exposed in a console log). Register a fresh one for each demo session and revoke it afterwards (walkthrough, "Before the demo").
+**Re-checked 22 Nov 2026** on the same PC (`main` `6636639`, see `docs/LIVE_TEST_RESULTS_2026-11-22.md`): local typecheck, lint, Vitest 199/1 skipped, build and Playwright 31/31 pass; App Check enforced; cloud 200 with gemini-3.5-flash-lite, 7/7 on text and image; walkthrough steps 1–9 pass live, step 10 hardware-blocked. Tip: in walkthrough step 4 keep the default "When measured" time, or the photo record won't join the worklist for step 7. Fixed in PR #11: the Practice clock now continues from the latest saved time after a reload.
+
+**App Check debug token:** the token used in live testing was revoked on 20 Nov 2026 (it was briefly exposed in a console log). Register a fresh one for each demo session and revoke it afterwards (walkthrough, "Before the demo"). A new one ("DESKTOP-6NQ637E localhost dev (22 Nov)") was registered on 22 Nov 2026 and must be revoked after the demo.
 
 ## Demo instructions (synthetic data only)
 
