@@ -7,6 +7,8 @@ export interface Clock {
   now(): number;
   nowIso(): string;
   offsetMinutes: number;
+  /** Practice only: move the clock forward to `ms` if it is behind it. Never moves it back. */
+  advanceTo?(ms: number): void;
 }
 
 export const PRACTICE_ANCHOR = '2026-11-14T13:20:00-05:00';
@@ -20,10 +22,25 @@ export function toIsoWithOffset(ms: number, offsetMinutes: number): string {
   return local.toISOString().slice(0, 19) + off;
 }
 
+/**
+ * Starts at the scenario anchor on every page load. After the Practice records open, the app calls
+ * `advanceTo(latest recorded time)` (see `latestPracticeTime`), so a reload never puts new times
+ * before ones already saved (e.g. "back online" before "down").
+ */
 export function practiceClock(bootMs = Date.now()): Clock {
-  const anchor = Date.parse(PRACTICE_ANCHOR);
-  const now = () => anchor + (Date.now() - bootMs);
-  return { now, nowIso: () => toIsoWithOffset(now(), PRACTICE_OFFSET_MIN), offsetMinutes: PRACTICE_OFFSET_MIN };
+  let startMs = Date.parse(PRACTICE_ANCHOR);
+  let fromMs = bootMs;
+  const now = () => startMs + (Date.now() - fromMs);
+  return {
+    now,
+    nowIso: () => toIsoWithOffset(now(), PRACTICE_OFFSET_MIN),
+    offsetMinutes: PRACTICE_OFFSET_MIN,
+    advanceTo(ms: number) {
+      if (!Number.isFinite(ms) || ms <= now()) return;
+      startMs = ms;
+      fromMs = Date.now();
+    },
+  };
 }
 
 export function liveClock(): Clock {
