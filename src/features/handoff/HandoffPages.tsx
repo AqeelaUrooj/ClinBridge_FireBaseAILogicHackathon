@@ -33,7 +33,10 @@ export function PatientHandoffPage() {
       {(location.state as { saved?: string } | null)?.saved && <p role="status" className="rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant px-space-md py-space-sm flex items-center gap-2"><Icon name="check_circle" filled />Handover saved on this laptop.</p>}
       <div className="flex items-center justify-between">
         <h1 className="font-headline-lg text-headline-lg text-primary flex items-center gap-3"><MedIllustration name="workflows/handover" size={36} />Handover</h1>
-        {isNurse(user) && <ButtonLink to={`${base}/handoff/new`}><Icon name="add" />New handover</ButtonLink>}
+        <div className="flex flex-wrap gap-space-sm">
+          <ButtonLink variant="secondary" to={`/print/sbar/${patient.id}`}><Icon name="print" />Paper SBAR sheet</ButtonLink>
+          {isNurse(user) && <ButtonLink to={`${base}/handoff/new`}><Icon name="add" />New handover</ButtonLink>}
+        </div>
       </div>
       <Card>
         <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">History</h2>

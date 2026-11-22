@@ -42,4 +42,13 @@
   .print-running-header { position: fixed; top: -14mm; left: 0; right: 0; font-size: 10pt; border-bottom: 1px solid #000; padding-bottom: 2mm; }
   .print-running-footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 8.5pt; border-top: 1px solid #000; padding-top: 1.5mm; }
   a { color: #000; text-decoration: none; }
+  /* Paper downtime forms: each patient's sheet starts on a new page; the id strip (table header) repeats on every page. */
+  .print-break { break-before: page; }
+  .print-sheet thead { display: table-header-group; }
+  .print-sheet { font-size: 9.5pt; }
+}
+
+/* Paper downtime forms on screen: shown as a sheet of paper. */
+@media screen {
+  .print-sheet { max-width: 210mm; margin: 0 auto; padding: 10mm 12mm; border: 1px solid #c5c6cd; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
 }

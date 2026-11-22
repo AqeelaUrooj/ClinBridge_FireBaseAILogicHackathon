@@ -40,7 +40,10 @@ export function IoPage() {
       <Saved />
       <div className="flex items-center justify-between">
         <h1 className="font-headline-lg text-headline-lg text-primary">Fluids (in and out)</h1>
-        <ButtonLink to={`${base}/io/record`}><Icon name="add" />Add fluid</ButtonLink>
+        <div className="flex flex-wrap gap-space-sm">
+          <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}><Icon name="print" />Paper vitals &amp; I/O sheet</ButtonLink>
+          <ButtonLink to={`${base}/io/record`}><Icon name="add" />Add fluid</ButtonLink>
+        </div>
       </div>
       <div>
         <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Totals for {dayLabel(clock.nowIso())} (from 00:00, confirmed only)</span>
