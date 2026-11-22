@@ -184,4 +184,14 @@ Not touched: `src/db/**`, `src/lib/ai/**`, `src/lib/cloud*.ts`, `src/lib/fhir.ts
 
 ## 13. PR and commits
 
-PR #14 and commit SHAs: see the PR page (filled in after push).
+PR: https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/pull/14 (not merged; awaiting the owner's review).
+
+| Commit | What |
+|---|---|
+| `6b23be6` | feat(history): SpO₂ trend from saved records |
+| `8f4a804` | feat(print): paper downtime forms and packet builder |
+| `5b8ad4f` | feat(shell): menu behind a header button on narrow screens |
+| `cb3d88c` | docs: V3 ZIP completion report, routes, decisions D-70 to D-75 |
+| (this commit) | docs: PR link and commit list in this report |
+
+CI results for the final head are on the PR page (`check`, `fhir-validate`).
