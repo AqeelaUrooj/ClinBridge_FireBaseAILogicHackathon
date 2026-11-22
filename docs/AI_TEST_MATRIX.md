@@ -42,6 +42,20 @@ So the real browser API was exercised for availability only, and ClinBridge's "c
 
 Details: `docs/LIVE_TEST_RESULTS_2026-11-20.md`.
 
+## Live results (22 Nov 2026, owner's PC, `main` `6636639`)
+
+| Scenario | Real model? | Result |
+|---|---|---|
+| App Check enforcement | **Real** | 401 before the fresh debug token was registered; 200 after |
+| Cloud compare, text notes (3 records) | **Real** gemini-3.5-flash-lite | 200, 7/7 each; "Responds to voice" read; unwritten blood sugar / O2 flow `null`; 1990–11489 ms |
+| Cloud compare, synthetic form image | **Real** | 200, IMAGE 1080 tokens, 7/7, 3577 ms |
+| Cloud second look, paper photo (Back online) | **Real** | 200, IMAGE 1100 tokens, 4052 ms; only hand-blank fields differ; record unchanged |
+| Nurse review of a cloud answer | **Real** | Admin: no button. RN: draft, cloud label, all fields editable, not auto-confirmed |
+| On-device (Gemini Nano) | Real Chrome 157, **model unavailable** | Blocked by hardware; fallback message; 0 requests |
+| Pending cloud request cancelled by System down | Not run live | Automated only (7 unit + 1 browser) |
+
+Details: `docs/LIVE_TEST_RESULTS_2026-11-22.md`.
+
 ## What still needs a real run (owner, on a prepared laptop)
 
 1. Desktop Chrome **148+**. Multimodal flag on. Model downloaded via ClinBridge → More → AI check → "Prepare on-device model".

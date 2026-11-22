@@ -13,6 +13,7 @@
   - **Rollback is not detected:** someone with the files could put back an older genuine copy of a whole row. Edited index fields, ciphertext moved between rows, added plain rows and old-format (v1) copies are detected.
   - **Passphrase rules are guidance** (length, common words, patterns), not a strength guarantee.
 - **Session is in memory.** Reloading the page signs you out (records stay saved). This is on purpose for shared laptops.
+- **Practice clock restarts at 13:20 on every page load** (it follows the synthetic outage story). After a reload, new Practice times can be earlier than times saved before it, e.g. a downtime history showing "back online 13:20" after "down 13:26", and records typed then may fall before the practice outage start and stay out of the worklist. Real records use the laptop clock.
 - **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
 - **No Overdue status** for medicines until the hospital time window is given (D-18).
 - **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.
@@ -26,7 +27,7 @@
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).
 - **Labs are typed in by nurses** as phoned/printed by the lab; no lab interface.
 - **Cloud AI is proven live; on-device AI is not.**
-  - 20 Nov 2026: genuine Firebase cloud inference (gemini-3.5-flash-lite, text + image, App Check enforced) worked on the owner's PC (docs/LIVE_TEST_RESULTS_2026-11-20.md).
+  - 20 Nov 2026: genuine Firebase cloud inference (gemini-3.5-flash-lite, text + image, App Check enforced) worked on the owner's PC (docs/LIVE_TEST_RESULTS_2026-11-20.md). Re-confirmed on 22 Nov 2026 (docs/LIVE_TEST_RESULTS_2026-11-22.md).
   - Gemini Nano is blocked on that PC by hardware (2 GB VRAM, 8 GB RAM, 2 cores). On-device proposals are tested with a mock Prompt API only.
   - The cloud model's output depends on Google's hosted model; values can be missed or wrong. Every proposal stays a draft for a nurse.
   - Live use needs desktop Chrome 148+, a downloaded Gemini Nano (with the multimodal flag for photos), and the owner's Firebase config + App Check.

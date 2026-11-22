@@ -11,6 +11,31 @@ Run: 20 Nov 2026 (round 9), local (Linux, Node 22, Chrome for Testing 153) on br
 | `npm run test:e2e` (Playwright) | **30 / 30 pass** (second server: AI build with fake Firebase values) |
 | Real AI model | **Not run.** Sandbox Chrome 153: Prompt API present, model "unavailable" |
 
+## Round 11: local checks + live rehearsal on the owner's PC (22 Nov 2026)
+
+Full write-up: `docs/LIVE_TEST_RESULTS_2026-11-22.md`. DESKTOP-6NQ637E, Windows 10, Node 24.21.0, Chrome 157, `main` = `6636639`, project folder `D:\ClinBridge_FireBaseAILogicHackathon`. No code changed.
+
+Automated, run locally (separate from CI):
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | Pass (exit 0) |
+| `npm run lint` | Pass (exit 0) |
+| `npx vitest run` | **199 passed, 1 skipped** (28 files + 1 skipped) |
+| `npm run build` | Pass (PWA, 26 precache entries) |
+| `npx playwright test` | **31 / 31 pass** (bundled Chromium) |
+| FHIR R4 validator | Not run locally (no Java); CI on `6636639`: 0 errors |
+
+Live (synthetic Practice data, real Firebase project):
+
+- **App Check enforcement: PASS.** 401 "Firebase App Check token is invalid" before the owner registered a fresh debug token; 200 after.
+- **Genuine cloud inference: PASS.** `gemini-3.5-flash-lite`, HTTP 200, label "Cloud · ONLY_IN_CLOUD": text 7/7 (11489 ms first call, 1990 ms, 2803 ms), image 7/7 (3577 ms, IMAGE 1080 tokens). Unwritten fields (blood sugar, O2 flow) stayed `null`.
+- **On-device fallback: PASS** (Gemini Nano still **blocked by hardware**): clear message, 0 requests.
+- **Nurse review: PASS.** No review button for Admin; RN gets a draft with the cloud label, all fields editable; not auto-confirmed.
+- **Demo walkthrough (10 steps): steps 1–9 PASS live** (Wi-Fi on, network logged: 0 external requests while documenting); FHIR file validation CI only; step 10 hardware-blocked.
+- **Cloud second look: PASS.** 200, 4052 ms, IMAGE 1100 tokens; only the two hand-left-blank fields differ; record unchanged.
+- Findings, not defects: the Practice clock restarts at 13:20 on each page load (downtime history can show Back online before System down after the walkthrough's reload); a photo record whose care time is before the practice outage start is not added to the worklist.
+
 ## Round 10: live tests on the owner's PC (20 Nov 2026)
 
 Full write-up: `docs/LIVE_TEST_RESULTS_2026-11-20.md`. Real Chrome 157 on DESKTOP-6NQ637E, real Firebase project `clinbridge-hackathon`, synthetic Practice data.
