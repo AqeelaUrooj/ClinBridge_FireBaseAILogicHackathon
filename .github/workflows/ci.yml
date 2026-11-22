@@ -31,7 +31,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-screens
-          path: test-results/**/screens/*.png
+          path: |
+            test-results/**/screens/*.png
+            test-results/print-multipage-*/*.pdf
           if-no-files-found: ignore
 
   fhir-validate:

@@ -101,15 +101,15 @@ test('packet builder: choose, check the list, preview with one patient per page 
   await pickDaniel(page);
   await page.getByRole('link', { name: 'Paper form packets' }).click();
   await expect(page.getByRole('heading', { name: 'Paper form packets' })).toBeVisible();
-  await expect(page.getByTestId('spooler-count')).toHaveText('0 of 10 patients selected · 0 sheets');
+  await expect(page.getByTestId('spooler-count')).toHaveText('0 of 10 patients selected · 0 forms');
   const next = page.getByRole('button', { name: 'Check the list' });
   await expect(next).toBeDisabled();
 
   // Select all, then none.
   await page.getByLabel('Select all 10 patients').check();
-  await expect(page.getByTestId('spooler-count')).toHaveText('10 of 10 patients selected · 30 sheets');
+  await expect(page.getByTestId('spooler-count')).toHaveText('10 of 10 patients selected · 30 forms');
   await page.getByLabel('Select all 10 patients').uncheck();
-  await expect(page.getByTestId('spooler-count')).toHaveText('0 of 10 patients selected · 0 sheets');
+  await expect(page.getByTestId('spooler-count')).toHaveText('0 of 10 patients selected · 0 forms');
 
   // No forms chosen: cannot go on.
   await page.getByLabel('Select Sam Rivera, bed 4B').check();
@@ -119,7 +119,7 @@ test('packet builder: choose, check the list, preview with one patient per page 
   for (const f of [/Medication record \(MAR\)/, /SBAR handover/]) await page.getByRole('checkbox', { name: f }).check();
 
   await page.getByLabel('Select Peter Novak, bed 8A').check();
-  await expect(page.getByTestId('spooler-count')).toHaveText('2 of 10 patients selected · 4 sheets');
+  await expect(page.getByTestId('spooler-count')).toHaveText('2 of 10 patients selected · 4 forms');
   await next.click();
   const review = page.getByTestId('spooler-review');
   await expect(review.locator('tbody tr')).toHaveCount(2);
@@ -138,7 +138,7 @@ test('packet builder: choose, check the list, preview with one patient per page 
   expect(await printCalls(page)).toBe(0);
   await page.getByRole('button', { name: 'Print the packet' }).click();
   const dlg = page.getByRole('dialog', { name: 'Print the packet?' });
-  await expect(dlg).toContainText('4 sheets');
+  await expect(dlg).toContainText('4 forms');
   await expect(dlg).toContainText('2 patients');
   await dlg.getByRole('button', { name: 'Cancel' }).click();
   expect(await printCalls(page)).toBe(0);
