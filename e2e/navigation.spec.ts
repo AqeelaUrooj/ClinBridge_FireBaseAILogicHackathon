@@ -84,6 +84,8 @@ test('patient history: filter tabs with counts, search, order, expand/collapse, 
   const filters = page.getByRole('group', { name: 'Record type' });
   const all = filters.getByRole('button', { name: /All entries/ });
   await expect(all).toHaveAttribute('aria-pressed', 'true');
+  await expect(all).toHaveText(/All entries \(\d+\)/); // counts appear only once the records have loaded
+  await expect(page.getByRole('list', { name: 'Records' }).locator(':scope > li').first()).toBeVisible();
   const total = Number((await all.textContent())!.match(/\((\d+)\)/)![1]);
   const parts = await Promise.all(['Vitals', 'Medications', 'Clinical notes', 'Lab / bloodwork', 'Fluids (I/O)'].map(async (n) =>
     Number((await filters.getByRole('button', { name: new RegExp(`^${n.replace(/[()/]/g, '\\$&')}`) }).textContent())!.match(/\((\d+)\)/)![1])));

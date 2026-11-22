@@ -74,7 +74,7 @@ export function Timeline() {
               {HISTORY_FILTERS.map((f) => (
                 <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}
                   className={`min-h-9 px-3 rounded font-body-md font-semibold border ${filter === f.key ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest text-on-surface-variant border-card-border hover:bg-surface-container-low'}`}>
-                  {f.label} <span className="font-code-tabular">({counts[f.key]})</span>
+                  {f.label}{entries !== undefined && <> <span className="font-code-tabular">({counts[f.key]})</span></>}
                 </button>
               ))}
             </div>
