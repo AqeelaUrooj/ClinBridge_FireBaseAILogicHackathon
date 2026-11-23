@@ -60,7 +60,7 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Batch 4 |
 | 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Small fix, batch 4 |
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
-| 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Not fixed yet; the body map print in #26 uses a header that does repeat |
+| 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (open, not merged). After #27, the body map page in #26 must drop its own print header |
 | 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
 
 ## 6. Screen by screen
@@ -332,7 +332,7 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 
 1. **Batch 1 (open for review):** ward board and summary; medication record and two-nurse check.
 2. **Batch 2 (open for review, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
-3. **Batch 3:** print identity on History and Handover (problem 7) first; paper capture, history and SBAR handover, recovery worklist.
+3. **Batch 3:** paper capture, history and SBAR handover, recovery worklist.
 4. **Batch 4:** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
 
