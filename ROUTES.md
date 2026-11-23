@@ -74,3 +74,5 @@ Every patient page and every `/entries/*` page asks for the patient check (name,
 | — | More | `/more` | everyone |
 
 Nurses never see admin links, and `/admin/*` refuses non-admins ("Admins only.") even if typed in.
+
+The public `/landing` route renders `LandingPage` outside the clinical providers. Launch Practice Demo opens the existing Practice sign-in flow.
