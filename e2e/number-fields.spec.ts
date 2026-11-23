@@ -9,8 +9,11 @@ async function go(page: Page, path: string) {
   await expect(page).toHaveURL(new RegExp(`${path}$`));
   const yes = page.getByRole('button', { name: 'Yes, open' });
   const field = page.locator('main input[inputmode]').first();
-  await expect(yes.or(field).first()).toBeVisible();
+  const values = page.getByRole('button', { name: 'Edit values' }); // a draft opens on its values
+  await expect(yes.or(field).or(values).first()).toBeVisible();
   if (await yes.isVisible()) await yes.click();
+  await expect(field.or(values).first()).toBeVisible();
+  if (await values.isVisible()) await values.click();
   await expect(field).toBeVisible();
 }
 

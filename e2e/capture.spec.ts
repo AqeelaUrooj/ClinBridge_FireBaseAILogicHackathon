@@ -40,8 +40,9 @@ test('paper capture works without AI: photo saved first, typed values, draft, th
   await expect(page.getByText('Check this').first()).toBeVisible();
   await page.getByRole('link', { name: 'Check and confirm' }).click();
   await expect(page.getByAltText('Photo of the paper form')).toBeVisible();
-  await expect(page.getByLabel('Pulse')).toHaveValue('88');
-  await page.getByRole('button', { name: 'Review' }).click();
+  await expect(page.getByRole('region', { name: 'Type and check' })).toContainText('88 /min'); // opens on the values, beside the photo
+  await expect(page.getByRole('button', { name: 'Confirm' })).toBeDisabled();
+  await page.getByLabel('I checked every value against the paper.').check();
   await page.getByRole('button', { name: 'Confirm' }).click();
   await expect(page.getByText('Confirmed').first()).toBeVisible();
   await page.getByText('Source photo').click();
@@ -57,6 +58,7 @@ test('dark photo gives a hint but never blocks', async ({ page }) => {
   await page.getByRole('button', { name: 'Assessment' }).click();
   await page.getByLabel('Note').fill('Copied from paper note.');
   await page.getByRole('button', { name: 'Review' }).click();
+  await page.getByLabel('I checked every value against the paper.').check();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('definition').filter({ hasText: 'Copied from paper note.' })).toBeVisible();
 });
