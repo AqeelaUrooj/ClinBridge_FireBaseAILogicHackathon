@@ -23,7 +23,7 @@ export function Field({ id, label, error, children }: { id: string; label: strin
   );
 }
 
-export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderReview, timeLabel = 'Time', initialCareTime, minCareTime, requireChangeReason, sourceCheck, saveLabel, onSubmit, onCancel }: {
+export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderReview, timeLabel = 'Time', initialCareTime, minCareTime, requireChangeReason, sourceCheck, saveLabel, cancelLabel = 'Cancel', onSubmit, onCancel }: {
   initial: F;
   validate: (f: F) => Checked<V>;
   renderFill: (f: F, set: (patch: Partial<F>) => void, errors: Record<string, string | undefined>) => ReactNode;
@@ -35,6 +35,7 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
   /** Ask for the "I checked every value against the paper" tick before saving. */
   sourceCheck?: boolean;
   saveLabel: string;
+  cancelLabel?: string;
   onSubmit: (s: { values: V; careTime: string; changeReason?: string }) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -116,7 +117,7 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
       )}
       <div className="flex gap-space-sm">
         <Button onClick={next}>Review<Icon name="arrow_forward" /></Button>
-        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+        <Button variant="secondary" onClick={onCancel}>{cancelLabel}</Button>
       </div>
     </Card>
   );

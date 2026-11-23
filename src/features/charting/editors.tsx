@@ -14,6 +14,7 @@ type Common<V> = {
   requireChangeReason?: boolean;
   sourceCheck?: boolean;
   saveLabel: string;
+  cancelLabel?: string;
   onSubmit: (s: { values: V; careTime: string; changeReason?: string }) => Promise<void>;
   onCancel: () => void;
 };

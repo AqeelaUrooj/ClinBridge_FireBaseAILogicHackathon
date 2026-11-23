@@ -26,25 +26,6 @@ const NurseOnly = () => <EmptyState icon="block" text="Only nurses can add recor
 
 /* ------------------------------ Notes ------------------------------ */
 
-export function NotesPage() {
-  const { patient } = useCurrentPatient();
-  const items = useTyped(patient.id, 'note');
-  const base = `/patients/${patient.id}`;
-  return (
-    <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Notes' }]} />
-      <Saved />
-      <div className="flex items-center justify-between">
-        <h1 className="font-headline-lg text-headline-lg text-primary">Notes</h1>
-        <ButtonLink to={`${base}/notes/new`}><Icon name="add" />New note</ButtonLink>
-      </div>
-      <Card>
-        {!items ? <p role="status">Loading…</p> : items.length ? items.map((x) => <EntryRow key={x.entry.id} item={x} />) : <EmptyState text="No notes yet" />}
-      </Card>
-    </>
-  );
-}
-
 export function RecordNote() {
   const { patient, encounter } = useCurrentPatient();
   const { db, clock, deviceId } = useApp();
