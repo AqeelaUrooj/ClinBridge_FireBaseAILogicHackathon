@@ -104,6 +104,7 @@ test('an admin reads notes but has no writing panel, Fix or New note', async ({ 
 
 test('paper holds every word of every note, also when the cards are closed', async ({ page }) => {
   await open(page, 'pt-03');
+  await expect(note(page, 'e-027')).toBeVisible(); // printed only after the notes are there
   const paper = (await pdfPageTexts(await page.pdf({ format: 'A4' }))).map(squash).join('');
   for (const t of ['Critical potassium 6.2 mmol/L phoned from the lab at 08:20. Dr. Whitaker reached at 08:55 (35 minutes later, was in a procedure). Read-back done. Heart tracing ordered.', 'Written by', 'MRN DK-004527']) expect(paper).toContain(squash(t));
   for (const t of ['Write a note', 'New note', 'Expand all', 'Open details', 'ClinBridge runs no timers']) expect(paper).not.toContain(squash(t));
