@@ -28,6 +28,7 @@ export function PatientBanner({ data }: { data: PatientBundle }) {
               <span className="font-code-tabular text-code-tabular font-semibold px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed" style={{ fontFeatureSettings: "'tnum' 1, 'zero' 1" }}>MRN {p.mrn}</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-space-md gap-y-1 mt-1 text-on-surface-variant font-body-md text-body-md">
+              {e?.admit_time && <span>Admitted: <span className="font-medium text-on-surface">{dayLabel(e.admit_time)}</span></span>}
               {e?.attending && <span>Doctor: <span className="font-medium text-on-surface">{e.attending}</span></span>}
               {e?.code_status && <span className="inline-flex items-center gap-1 font-semibold text-primary"><span className="w-2 h-2 rounded-full bg-primary" aria-hidden />{e.code_status}</span>}
               {e?.diet && <span>Diet: <span className="font-medium text-on-surface">{e.diet}</span></span>}

@@ -114,14 +114,18 @@ export function Sidebar({ open = false }: { open?: boolean } = {}) {
   const inPatient = useMatch('/patients/:id/*')?.params.id;
   const tool = (sub: string, ward: string) => (inPatient ? `/patients/${inPatient}/${sub}` : ward);
   return (
-    <aside id="main-menu" className={`fixed left-0 bottom-0 w-[220px] bg-surface-container-lowest border-r border-card-border z-40 flex-col justify-between overflow-y-auto ${open ? 'flex shadow-xl' : 'hidden'} md:flex md:shadow-none`} style={{ top: 'var(--header-h)' }} aria-label="Main menu">
+    <aside id="main-menu" className={`fixed left-0 bottom-0 w-[220px] lg:w-64 bg-surface-container-lowest border-r border-card-border z-40 flex-col justify-between overflow-y-auto ${open ? 'flex shadow-xl' : 'hidden'} md:flex md:shadow-none`} style={{ top: 'var(--header-h)' }} aria-label="Main menu">
       <div className="p-space-md flex flex-col gap-space-md">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded bg-primary-container flex items-center justify-center text-on-primary"><Icon name="emergency_home" className="text-[18px]" /></div>
           <div>
             <span className="block font-headline-sm text-headline-sm font-bold text-primary tracking-tight">ClinBridge</span>
-            <span className="block font-code-tabular text-[10px] text-secondary font-semibold uppercase">{snapshot?.unit ?? 'No patient list'}</span>
+            <span className="block font-code-tabular text-[10px] text-secondary font-semibold uppercase">Downtime charting</span>
           </div>
+        </div>
+        <div className="px-2 py-1 rounded bg-surface-container-low">
+          <span className="font-label-uppercase text-[10px] font-bold text-on-surface-variant tracking-wider block uppercase">Unit assignment</span>
+          <span className="font-body-sm text-body-sm font-bold text-primary block">{snapshot?.unit ?? 'No patient list'}</span>
         </div>
         <nav className="flex flex-col gap-space-xs">
           {isAdmin(user) ? (
@@ -194,8 +198,8 @@ export function AppShell() {
         {menuOpen && <div className="md:hidden fixed inset-0 z-30 bg-black/30" style={{ top: 'var(--header-h)' }} onClick={() => setMenuOpen(false)} aria-hidden />}
         <Sidebar open={menuOpen} />
       </div>
-      <main id="main" className="min-h-screen bg-background md:pl-[220px] print:pl-0 print:!pt-0 print:bg-white" style={{ paddingTop: headerH }}>
-        <div className="max-w-[1180px] mx-auto px-space-md md:px-space-xl py-space-lg flex flex-col gap-space-lg">
+      <main id="main" className="min-h-screen bg-background md:pl-[220px] lg:pl-64 print:pl-0 print:!pt-0 print:bg-white" style={{ paddingTop: headerH }}>
+        <div className="max-w-[1240px] mx-auto px-space-md md:px-space-lg py-space-md flex flex-col gap-space-lg">
           <Outlet />
         </div>
       </main>
