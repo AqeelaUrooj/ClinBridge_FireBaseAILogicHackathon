@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { listPatientEntries, type EntryWithChild } from '../../db/repos/entries';
-import type { MedAdmin } from '../../db/schema';
+import { listPatientEntries } from '../../db/repos/entries';
 import { useApp } from '../../state/app';
 import { formatDose } from '../../lib/dose';
 import { dateTimeLabel } from '../../lib/time';
@@ -10,10 +9,10 @@ import { MedIllustration } from '../../components/MedIllustration';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
-import { BodyFigure, type FigureMarker, type MarkerKind } from './BodyFigure';
-import { REGIONS, regionById, siteRegion, type View } from './regions';
+import { BodyFigure, type FigureMarker } from './BodyFigure';
+import { administrationCountLabel, medicationSites } from './medicationSites';
+import { REGIONS, regionById, type View } from './regions';
 
-const markerKind = (m: MedAdmin): MarkerKind => ((m.site ?? '').includes('IV line') || m.route === 'IV' ? 'iv' : 'injection');
 type ViewChoice = View | 'both';
 
 export function BodyMapPage() {
@@ -21,21 +20,17 @@ export function BodyMapPage() {
   const { db } = useApp();
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ViewChoice>(() => (typeof window !== 'undefined' && window.innerWidth >= 1280 ? 'both' : 'front'));
-  const meds = useLiveQuery(async () => (await listPatientEntries(db, patient.id))
-    .filter((x) => x.entry.type === 'med_admin' && x.entry.status === 'confirmed' && (x.child as MedAdmin | undefined)?.site), [db, patient.id]);
-
-  const marked: { item: EntryWithChild; regionId: string; kind: MarkerKind }[] = [];
-  const unmapped: EntryWithChild[] = [];
-  for (const item of meds ?? []) {
-    const m = item.child as MedAdmin;
-    const r = siteRegion(m.site);
-    if (r) marked.push({ item, regionId: r.id, kind: markerKind(m) });
-    else unmapped.push(item);
-  }
+  const snapshot = useLiveQuery(async () => ({
+    patientId: patient.id, records: await listPatientEntries(db, patient.id),
+  }), [db, patient.id]);
+  const records = snapshot?.patientId === patient.id ? snapshot.records : undefined;
+  const { marked, unmapped, administrations } = useMemo(
+    () => medicationSites(patient.id, records ?? []), [patient.id, records],
+  );
   const figureMarkers: FigureMarker[] = marked.map((m) => ({ regionId: m.regionId, kind: m.kind, key: m.item.entry.id }));
-  const recentInjections = marked.filter((m) => m.kind === 'injection').slice(0, 3);
+  const recentInjections = marked.filter((m) => m.kind === 'injection' && m.medication.event === 'administered').slice(0, 3);
   const sel = selected ? regionById(selected) : undefined;
-  const inSel = marked.filter((m) => m.regionId === selected);
+  const inSel = sel ? administrations.get(sel.id) : undefined;
   const base = `/patients/${patient.id}`;
 
   function choose(id: string) {
@@ -49,7 +44,7 @@ export function BodyMapPage() {
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'History', to: `${base}/timeline` }, { label: 'Body map' }]} />
       <div className="flex flex-wrap items-center justify-between gap-space-md">
         <h1 className="font-headline-lg text-headline-lg text-primary">Body map</h1>
-        <div className="flex flex-wrap items-center gap-space-md">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-space-md">
           <div className="flex items-center bg-surface-container-low rounded-lg p-0.5 border border-card-border" role="group" aria-label="Which view">
             {(['front', 'back', 'both'] as const).map((v) => (
               <button key={v} aria-pressed={view === v} onClick={() => setView(v)}
@@ -58,13 +53,13 @@ export function BodyMapPage() {
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-2 font-body-md">
-            <span className="text-secondary">Body area</span>
-            <select value={selected ?? ''} onChange={(e) => e.target.value && choose(e.target.value)} className="h-10 rounded-lg border border-card-border bg-surface-container-lowest px-2" aria-label="Choose body area from a list">
+          <label className="flex w-full min-w-0 max-w-full flex-col items-start gap-2 font-body-md sm:w-auto sm:flex-row sm:items-center">
+            <span className="shrink-0 text-secondary">Body area</span>
+            <select value={selected ?? ''} onChange={(e) => e.target.value && choose(e.target.value)} className="w-full min-h-11 min-w-0 rounded-lg border border-card-border bg-surface-container-lowest px-2 text-sm sm:w-auto sm:text-base" aria-label="Choose body area from a list">
               <option value="">Choose…</option>
               {REGIONS.map((r) => {
-                const n = marked.filter((m) => m.regionId === r.id).length;
-                return <option key={r.id} value={r.id}>{r.label}{n ? ` (${n})` : ''}</option>;
+                const n = administrations.get(r.id)?.records.length ?? 0;
+                return <option key={r.id} value={r.id}>{r.label}{n ? ` — ${administrationCountLabel(n)}` : ''}</option>;
               })}
             </select>
           </label>
@@ -77,29 +72,47 @@ export function BodyMapPage() {
             {(view === 'both' ? (['front', 'back'] as const) : [view]).map((v) => (
               <figure key={v} className="flex flex-col items-center gap-1 w-full max-w-[340px] mx-auto">
                 <figcaption id={`bm-${v}`} className="font-label-uppercase text-label-uppercase text-secondary uppercase">{v === 'front' ? 'Front' : 'Back'}</figcaption>
-                <BodyFigure view={v} markers={figureMarkers} selected={selected} onSelect={choose} titleId={`bm-${v}`} />
+                <BodyFigure view={v} markers={figureMarkers} administrations={administrations} selected={selected} onSelect={choose} titleId={`bm-${v}`} />
               </figure>
             ))}
           </div>
-          <div className="flex flex-wrap justify-center gap-space-lg mt-space-sm font-body-sm text-on-surface-variant" aria-label="Marker key">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-primary-container" />Injection</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-secondary" />IV line</span>
-            <span className="flex items-center gap-1 opacity-60"><span className="w-3 h-3 rounded-full border border-secondary" />Pain, skin: need notes linked to a body area (pending)</span>
-          </div>
+          <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-space-sm font-body-sm text-on-surface-variant" aria-label="Body map legend">
+            <li className="flex items-center gap-1"><span aria-hidden="true" className="bm-key bm-key-admin" />Documented administration site</li>
+            <li className="flex items-center gap-1"><span aria-hidden="true" className="bm-key bm-key-injection" />Injection marker</li>
+            <li className="flex items-center gap-1"><span aria-hidden="true" className="bm-key bm-key-iv" />IV marker</li>
+            <li className="flex items-center gap-1"><span aria-hidden="true" className="bm-key bm-key-selected" />Selected body area</li>
+            <li className="flex items-center gap-1"><span aria-hidden="true" className="bm-key bm-key-empty" />No recorded administration at this site</li>
+          </ul>
         </Card>
 
         <div className="flex flex-col gap-space-md">
-          <Card>
-            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm" aria-live="polite">{sel ? sel.label : 'Tap a body area'}</h2>
-            {sel ? (inSel.length ? inSel.map((m) => <EntryRow key={m.item.entry.id} item={m.item} />) : <p className="text-secondary">Nothing recorded here.</p>)
-              : <p className="text-secondary">Left and right are the patient’s own left and right. You can also pick from the list above.</p>}
+          <Card aria-label="Selected body area details">
+            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">{sel ? sel.label : 'Tap a body area'}</h2>
+            <p className="text-secondary" role="status">
+              {!sel ? 'Left and right are the patient’s own left and right. You can also pick from the list above.'
+                : !records ? 'Loading documented administrations…'
+                  : inSel ? administrationCountLabel(inSel.records.length)
+                  : 'No confirmed medication administrations are recorded at this body area.'}
+            </p>
+            {inSel && (
+              <ul className="divide-y divide-card-border">
+                {inSel.records.map(({ item, medication }) => (
+                  <li key={item.entry.id} className="pb-2">
+                    <EntryRow item={item} wrapSummary />
+                    <p className="px-space-sm font-body-sm text-secondary">
+                      {[medication.route, dateTimeLabel(item.entry.care_time), item.entry.supersedes_id ? 'Corrected version' : null].filter(Boolean).join(' · ')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
           <Card>
             <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name="medication/syringe" size={28} />Recent injection sites</h2>
             {recentInjections.length ? (
               <ul className="flex flex-col gap-1" data-testid="recent-injections">
                 {recentInjections.map((m) => {
-                  const ma = m.item.child as MedAdmin;
+                  const ma = m.medication;
                   return <li key={m.item.entry.id} className="font-body-md"><strong className="text-primary">{regionById(m.regionId)!.label}</strong> · {ma.drug_name} · {dateTimeLabel(m.item.entry.care_time)}</li>;
                 })}
               </ul>
@@ -111,7 +124,7 @@ export function BodyMapPage() {
             {marked.length === 0 && unmapped.length === 0 ? <p className="text-secondary">No sites recorded.</p> : (
               <ul className="flex flex-col gap-1">
                 {marked.map((m) => {
-                  const ma = m.item.child as MedAdmin;
+                  const ma = m.medication;
                   return (
                     <li key={m.item.entry.id} className="flex flex-wrap items-center gap-x-2 font-body-md">
                       <Icon name={m.kind === 'iv' ? 'water_drop' : 'vaccines'} className="text-secondary text-[18px]" />
@@ -120,7 +133,7 @@ export function BodyMapPage() {
                     </li>
                   );
                 })}
-                {unmapped.map((x) => <li key={x.entry.id} className="font-body-md text-on-surface-variant">Site not on the map: “{(x.child as MedAdmin).site}”</li>)}
+                {unmapped.map(({ item, site }) => <li key={item.entry.id} className="font-body-md text-on-surface-variant">Unmapped documented site: “{site}”</li>)}
               </ul>
             )}
           </Card>

@@ -44,7 +44,7 @@ export function SourceBadge({ entry }: { entry: Entry }) {
 
 export const isRetired = (e: Entry) => e.status === 'corrected' || e.status === 'entered-in-error';
 
-export function EntryRow({ item }: { item: EntryWithChild }) {
+export function EntryRow({ item, wrapSummary = false }: { item: EntryWithChild; wrapSummary?: boolean }) {
   const { entry } = item;
   const retired = isRetired(entry);
   return (
@@ -52,7 +52,7 @@ export function EntryRow({ item }: { item: EntryWithChild }) {
       <span className="w-12 shrink-0 font-code-tabular text-[13px] font-bold text-primary">{hm(entry.care_time)}</span>
       <span className="w-9 h-9 shrink-0 rounded-lg bg-surface-container-low grid place-items-center text-secondary"><Icon name={TYPE_ICON[entry.type]} className="text-[20px]" /></span>
       <span className="flex-1 min-w-0">
-        <span className={`block truncate font-body-lg text-body-lg ${retired ? 'line-through text-outline' : 'text-on-surface'}`}>{entrySummary(item)}</span>
+        <span className={`block ${wrapSummary ? 'break-words' : 'truncate'} font-body-lg text-body-lg ${retired ? 'line-through text-outline' : 'text-on-surface'}`}>{entrySummary(item)}</span>
         {/* Narrow screens: badges under the summary so the row never runs off the screen. */}
         <span className="flex sm:hidden flex-wrap gap-1 mt-1"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></span>
       </span>

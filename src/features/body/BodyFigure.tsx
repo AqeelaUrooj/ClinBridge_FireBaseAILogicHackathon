@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { BACK_DETAIL, BACK_DIVIDERS, BACK_ELLIPSES, FRONT_DETAIL, FRONT_DIVIDERS, FRONT_ELLIPSES, SHAPES, SILHOUETTE } from './anatomy';
+import { administrationCountLabel, type medicationSites } from './medicationSites';
 import { regionsInView, type View } from './regions';
 
 /** Theme 2 palette for the illustration only (the app's own colours are unchanged). */
@@ -13,9 +14,10 @@ export interface FigureMarker { regionId: string; kind: MarkerKind; key: string 
 /** Teardrop pin, tip at (0,0). */
 const PIN = 'M 0,0 C -2.2,-4.2 -6,-7.4 -6,-11.6 A 6 6 0 1 1 6,-11.6 C 6,-7.4 2.2,-4.2 0,0 Z';
 
-export function BodyFigure({ view, markers, selected, onSelect, titleId }: {
+export function BodyFigure({ view, markers, administrations, selected, onSelect, titleId }: {
   view: View;
   markers: FigureMarker[];
+  administrations: ReturnType<typeof medicationSites>['administrations'];
   selected: string | null;
   onSelect: (id: string) => void;
   titleId?: string;
@@ -79,6 +81,8 @@ export function BodyFigure({ view, markers, selected, onSelect, titleId }: {
       <g data-layer="regions">
         {ordered.map((r) => {
           const z = r.zones[view]!;
+          const count = administrations.get(r.id)?.records.length ?? 0;
+          const descriptionId = `${uid}-status-${r.id}`;
           return (
             <path
               key={r.id}
@@ -88,12 +92,15 @@ export function BodyFigure({ view, markers, selected, onSelect, titleId }: {
               role="button"
               tabIndex={0}
               aria-label={r.label}
+              aria-describedby={descriptionId}
               aria-pressed={selected === r.id}
               data-region={r.id}
+              data-has-admin={count > 0 ? 'true' : undefined}
               onClick={() => onSelect(r.id)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }}
             >
               <title>{r.label}</title>
+              <desc id={descriptionId}>{count ? administrationCountLabel(count) : 'No recorded administration at this site'}</desc>
             </path>
           );
         })}

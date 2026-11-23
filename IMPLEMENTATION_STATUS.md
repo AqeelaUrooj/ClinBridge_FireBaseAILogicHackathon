@@ -10,7 +10,7 @@ Last updated: 22 Nov 2026 (round 13). Full review: docs/TECHNICAL_REVIEW_2026-11
 | 3 | Medicines (incl. high-alert two-nurse check), orders | **Done** |
 | 4 | Fluids (intake/output), notes, labs | **Done** |
 | 5 | Photo of paper form (on-device AI) | Manual capture done and used live. On-device Gemini Nano proposals built (PR #7) and tested with mocks only: the owner's PC can't run Gemini Nano (hardware), so it is not live-verified |
-| 6 | Handover, body map | **Done** (Theme 2 artwork, 24 selectable regions per D-76) |
+| 6 | Handover, body map | **Done** (Theme 2 artwork, 24 selectable regions, documented administration highlights and accessible counts) |
 | 7 | Admin, network gate, recovery, FHIR export, setup, practice compare | Done. Cloud second look and the cloud side of Device vs Cloud **live-tested** with real Firebase AI Logic responses (20 and 22 Nov 2026). Cloud gate aborts running cloud requests on System down and discards their answers (D-62); data already sent can't be recalled |
 | 8 | Offline/security hardening, encryption at rest, deploy | Encryption at rest merged (PR #4). F1 second-laptop enrollment (PR #5). Cleanup workflow on synthetic data (PR #6). Real-records migration and Real-records cleanup not approved. Not deployed |
 

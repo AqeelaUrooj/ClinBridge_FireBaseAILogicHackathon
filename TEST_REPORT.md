@@ -291,6 +291,12 @@ Browser (`admin-recovery.spec.ts`):
 
 Not tested yet: screen reader pass, tablet sizes, Firefox/Safari, real Gemini Nano (not available in this environment).
 
+## Documented administration body-map coverage
+
+- `src/features/body/medicationSites.test.ts` covers grouping, counts, timestamps, exact record links, non-administration events, corrections and mistakes, identity isolation, and missing or unmapped sites.
+- `src/features/body/regions.test.ts` verifies the 24 identifiers, patient laterality, and the six historical site mappings.
+- `e2e/body-map.spec.ts` verifies the document-to-region relationship and accessible counts, keyboard and touch selection, pins and linked records, mistaken record removal, verification and patient isolation, and offline persistence. Practice evidence is emitted under each test's `screens/` artifact directory.
+
 ## Public landing-page branch
 
 The visual correction uses the shared Stitch v1 landing_page_2 and v3 landing HTML. Compared with the first PR #20 version, the header is shorter and adds a status strip, and the pale-blue hero has tighter typography, four compact metric cards, a panoramic workstation photo, and a detailed Practice dashboard. The workflow uses three columns, the clinical showcase uses two photographic panels, and the navy recovery band uses a photo alongside four proof cards. Scope cards take the place of endorsements. The centered accordion retains the ten accurate answers, and the gradient CTA leads to Practice sign-in above a multi-column footer. The photos are original illustrative assets. The responsive layout adapts the desktop reference at tablet and phone widths.

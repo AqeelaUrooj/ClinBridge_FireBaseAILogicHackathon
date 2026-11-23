@@ -17,7 +17,7 @@
 - **Clinical warning ranges are placeholders** (D-17b). They only warn and are not a score.
 - **No Overdue status** for medicines until the hospital time window is given (D-18).
 - **No dose-range, allergy-vs-drug or interaction checks.** Those need approved clinical content. The allergy banner is always visible.
-- **Body map** has 24 selectable areas. The hips and front of the pelvis have no dedicated targets. Pain and skin markers need `note.body_site` (P-03, pending). Medication sites outside the fixed mapping appear as text.
+- **Body map** has 24 selectable areas. The hips and front of the pelvis have no dedicated targets. Pain and skin markers need `note.body_site` (P-03, pending). Medication sites outside the fixed mapping appear as text. A highlight means at least one valid confirmed administration is documented at that site in retained history. The map provides no assessment of drug activity or future site suitability. Compact neck and perineum targets are also available through the full-size body-area picker.
 - **Records saved before DB v2** keep their old reason inside `entry.confirmed` as well as the new `change_reason` (migration was additive on purpose).
 - **Some screens and controls from the Stitch design are not built** (verbal-order authorisation, NEWS2, mesh networking, port-9100 printing and others; reasons in docs/V3_ZIP_COMPLETION_REPORT.md). Every route that exists works; see ROUTES.md.
 - **Paper forms and packets** (`/print/*`, `/spooler`) use the browser's print dialog. ClinBridge cannot send to a printer or tell whether pages printed, and printing is not written to the change log. No barcode or QR code (nothing verified to encode or scan). Writing on a printed sheet does not put anything into ClinBridge.
