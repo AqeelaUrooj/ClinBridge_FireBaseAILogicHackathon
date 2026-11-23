@@ -3,6 +3,7 @@ import { useSession } from '../../state/app';
 import { Button, Dialog, EmptyState, ButtonLink } from '../../components/ui';
 import { dayLabel } from '../../lib/time';
 import { PatientBanner } from './PatientBanner';
+import { PatientPrint } from './PatientPrint';
 import { fullName, usePatient, type PatientBundle } from './patientData';
 import { createContext, useContext, type ReactNode } from 'react';
 
@@ -32,8 +33,11 @@ export function VerifyPatientDialog({ data, onConfirm, onCancel }: { data: Patie
   );
 }
 
-/** Loads a patient, asks for the two-identifier check once, then shows the banner and the page. */
-export function PatientFrame({ patientId, children }: { patientId: string | undefined; children: ReactNode }) {
+/**
+ * Loads a patient, asks for the two-identifier check once, then shows the banner and the page.
+ * On paper the banner is replaced by a header on every page. `ownPrintHeader`: the page brings its own (paper forms).
+ */
+export function PatientFrame({ patientId, ownPrintHeader = false, children }: { patientId: string | undefined; ownPrintHeader?: boolean; children: ReactNode }) {
   const data = usePatient(patientId);
   const { verifiedPatientId, verifyPatient } = useSession();
   const navigate = useNavigate();
@@ -46,7 +50,7 @@ export function PatientFrame({ patientId, children }: { patientId: string | unde
   return (
     <PatientCtx.Provider value={data}>
       <div className="print:hidden"><PatientBanner data={data} /></div>
-      {children}
+      {ownPrintHeader ? children : <PatientPrint data={data}>{children}</PatientPrint>}
     </PatientCtx.Provider>
   );
 }

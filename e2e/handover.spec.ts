@@ -29,8 +29,8 @@ test('handover: write from confirmed records, review, save, view history, print 
   await expect(page.getByText('Recheck temperature at 16:00')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Print' })).toBeVisible();
   await page.emulateMedia({ media: 'print' });
-  await expect(page.locator('.print-running-header')).toBeVisible();
-  await expect(page.locator('.print-running-header')).toContainText('MRN');
+  await expect(page.locator('[data-print-identity]')).toBeVisible();
+  await expect(page.locator('[data-print-identity]')).toContainText('Peter Novak · Born 9 Dec 1963 · MRN DK-004563 · Bed 8A');
   await expect(page.getByRole('button', { name: 'Print' })).toBeHidden();
 });
 
