@@ -301,33 +301,6 @@ export function DevicesPage() {
   );
 }
 
-export function AuditPage() {
-  const { db } = useApp();
-  const [filter, setFilter] = useState('');
-  const rows = useLiveQuery(() => db.audit_log.orderBy('seq').reverse().toArray(), [db]);
-  const chain = useLiveQuery(async () => verifyChain(await db.audit_log.orderBy('seq').toArray()), [db]);
-  const actions = [...new Set((rows ?? []).map((r) => r.action))].sort();
-  const shown = (rows ?? []).filter((r) => !filter || r.action === filter).slice(0, 200);
-  return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-space-md mb-space-sm">
-        <h2 className="font-headline-sm text-headline-sm text-primary">Change log</h2>
-        {chain && <Badge tone={chain.ok ? 'green' : 'red'} icon={chain.ok ? 'verified' : 'gpp_bad'}>{chain.ok ? `All ${chain.total} rows verified` : `Broken at row ${chain.brokenAtSeq}`}</Badge>}
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="h-10 rounded-lg border border-card-border px-2" aria-label="Filter by action">
-          <option value="">All actions</option>{actions.map((a) => <option key={a}>{a}</option>)}
-        </select>
-      </div>
-      <table className="w-full font-body-sm">
-        <thead><tr className="text-left text-secondary"><th className="py-1">#</th><th>Time</th><th>Who</th><th>Laptop</th><th>Action</th><th>What</th></tr></thead>
-        <tbody>{shown.map((r) => (
-          <tr key={r.id} className="border-t border-card-border"><td className="py-1 font-code-tabular">{r.seq}</td><td className="font-code-tabular">{dateTimeLabel(r.time)}</td><td>{r.user_id}</td><td>{r.device_id}</td><td>{r.action}</td><td className="font-code-tabular truncate max-w-[220px]">{r.entity}</td></tr>
-        ))}</tbody>
-      </table>
-      <p className="font-body-sm text-secondary mt-space-sm">Read only. Rows store fingerprints (hashes) of the data, never PINs. Showing up to 200 rows.</p>
-    </Card>
-  );
-}
-
 export function SettingsPage() {
   const item = (label: string, value: ReactNode, approved: boolean) => (
     <li className="py-space-sm border-b border-card-border last:border-0 flex flex-wrap items-start gap-space-md">

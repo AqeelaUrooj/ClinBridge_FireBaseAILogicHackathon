@@ -22,7 +22,8 @@ test('admin: readiness, staff, change log, settings marked not approved; nurses 
   await expect(page.getByText('Lee Ward')).toBeVisible();
   await page.getByRole('link', { name: 'Change log' }).click();
   await page.getByLabel('Filter by action').selectOption('staff_added');
-  await expect(page.getByRole('cell', { name: 'staff_added' })).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'Rows' }).getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('list', { name: 'Rows' })).toContainText('Staff added');
   await expect(page.getByText(/All \d+ rows verified/)).toBeVisible();
   await page.getByRole('link', { name: 'Settings' }).click();
   await expect(page.getByText('Not approved').first()).toBeVisible();
