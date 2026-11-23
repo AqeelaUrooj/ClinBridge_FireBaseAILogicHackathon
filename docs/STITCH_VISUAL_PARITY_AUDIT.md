@@ -47,8 +47,9 @@ The task text says v3; the attached archive is v4. v4 contains everything in v3 
 | `main` at `d08635dc` (when the audit was made) | 0 | 7 | 26 | 0 |
 | With batch 1 (#21, #22; merged 23 November) | 0 | 11 | 22 | 0 |
 | With batch 1 and batch 2 (#24, #25, #26; merged 23 November) | 0 | 13 | 20 | 0 |
+| With batch 3 as well (#29, #30, #32, #33; merged 23 November, `main` at `c4db9b5`) | 0 | 16 | 17 | 0 |
 
-Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer.
+Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer.
 
 ## 5. Problems found while comparing (not only looks)
 
@@ -62,6 +63,12 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
 | 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (merged, `main` is `bfea237`). The body map page in #26 now uses the shared header |
 | 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
+| 9 | **Numbers cut off in forms.** The − and + buttons added in #24 and #25 left too little room in a narrow form. On the check-and-confirm page a top blood pressure of 114 was shown as "1"; at 1280 px the box was 0 px wide. Stored values were right. | On `main` from batch 2 until #28 (merged) |
+| 10 | **Blank sheet on paper.** In a narrow band of lengths (about 25 px) the first or last printed sheet of a patient page came out blank. No wrong patient. | On `main` from #27 until #31 (merged) |
+| 11 | A proposal read from one photo could be saved with another photo after a retake. Confirming a draft dropped its weight and the words copied from the paper. | Fixed in #29 (merged) |
+| 12 | A handover printed a linked record that was fixed or marked as a mistake later with its old value and no mark. | Fixed in #32 (merged) |
+| 13 | Recovery worklist: the tenfold amLODIPine record said only "the rules no longer find a problem". A fixed record was called a possible duplicate of its own old version. On a phone the time and kind of record were hidden. | Fixed in #33 (merged). The rules themselves are unchanged |
+| 14 | The oxygen table on the history page was cut off on paper. | Fixed in #30 (merged) |
 
 ## 6. Screen by screen
 
@@ -98,7 +105,7 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: "Emergency Transfer Packet", custody transfer sign-off, NEWS2, OCR confidence.
 - Priority P1.
 
-### 5. Patient history: B
+### 5. Patient history: B (closer with batch 3, #30)
 - Ref `patient_history_clinical_timeline_minimal_with_expandable_cards` · App `/patients/:id/timeline`, `Timeline` · Similarity medium to high
 - Missing: entry-id chips, value tiles in an expanded vitals card, red critical card, paper slip inset, care-team strip, sign-off log link, patient-list baseline as a card.
 - Mobile: repaired in PR #18.
@@ -142,10 +149,10 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: site logging and Braden (deferred P-03), flush log.
 - Priority P2.
 
-### 11. Paper capture: C
+### 11. Paper capture: C on main, B with batch 3 (#29)
 - Ref `bedside_paper_capture_ai_review_peter_novak` · App `/patients/:id/capture` then `/capture/:entry/confirm` · Similarity low
-- Only the first step (form picker) was captured. The code shows a photo card beside the form, with Retake, once a photo is taken; that state was read in the source, not compared as a picture.
-- Missing: the reference opens with photo and review panes together; zoom, rotate, per-field edit rows, flag for worklist.
+- In batch 3 all states were compared as pictures: start, photo taken, and confirm, with a drawn fictional form. Before that only the first step had been captured.
+- Missing on main: photo and review panes together; zoom, rotate, per-field edit rows, the "matches the paper" tick, keep for later.
 - Backend: photo store, proposal, field review, confirm.
 - Approval / hardware: confidence figures; a real AI reading stays off during System Down.
 - Priority P2.
@@ -162,9 +169,9 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: new allergy report (read-only patient list), pharmacy pager, allergy broadcast.
 - Priority P3.
 
-### 14. SBAR handover: C
+### 14. SBAR handover: C on main, B with batch 3 (#32)
 - Ref `clinical_sbar_handover_peter_novak` · App `/patients/:id/handoff` · Similarity low
-- Missing: patient tabs, four S/B/A/R cards, vitals table, checklist beside the text.
+- Missing on main: patient tabs, four S/B/A/R cards, vitals table, trail and sign-off card beside the text.
 - Approval / hardware: custody sign-off and counter-signature, badge tap.
 - Priority P2.
 
@@ -240,9 +247,9 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: automatic network probes.
 - Priority P3.
 
-### 27. Recovery worklist: C
+### 27. Recovery worklist: C on main, B with batch 3 (#33)
 - Ref `recovery_worklist_second_look_reconciliation_simulation` · App `/recovery` · Similarity low
-- Missing: list, record and resolution in three panes; slip view; severity tabs.
+- Missing on main: list, record and decision together; paper source, record and order in three columns; counts on the tabs.
 - Backend: items, rules, open-to-fix and sign off exist.
 - Priority P2.
 
@@ -283,6 +290,10 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 | Vitals (batch 2) | No NEWS2, mean pressure, target bands, "normal" wording, next check time, cuff position, rhythm, GCS or per-row verified mark. The form is a page, not a pop-up. |
 | Intake and output (batch 2) | No target, amount left of a limit, urine rate, preset amounts or pitcher picture. "Flag alert" is off with its reason. No weight box in the vitals form (the column exists; owner decision). Totals from 00:00, because there is no shift. |
 | Body map (batch 2) | No next-site advice, rotation, line details, phlebitis or Braden calculation, skin and pain pins, or site photos (P-03). Theme 2 figure. |
+| Paper capture (batch 3) | No confidence figures, "OCR verified", perspective correction, FEVER / CRITICAL labels, MAP or normal ranges. No invented handwriting picture. A retake deletes nothing. |
+| History (batch 3) | No event names such as "Acute desaturation", NEWS2, "bedside verified", countersign status, badge or pager numbers, doctor in the care team, telephony log. "Unusual" is the draft mark of the vitals page. |
+| SBAR handover (batch 3) | No transfer of care, counter-signature PIN, badge or attestation tick: the card says so and opens the paper sheet. Tick boxes for open items only on paper. No NEWS2, targets or monitor pictures. |
+| Recovery worklist (batch 3) | No second reviewer PIN, recommended value, maximum dose, dispensing data, Code Blue text or automatic reason. No record opens by itself. |
 
 Phone layouts: the archive has no phone pictures, so these follow the desktop order in one column.
 
@@ -290,7 +301,7 @@ Phone layouts: the archive has no phone pictures, so these follow the desktop or
 
 Repeated on most screens and judged once: sidebar links **1**; Quick Lock **1** (header Lock); "Ward Board / Add / Capture…" names **2** (ClinBridge names); Device & Mesh link **2** (Laptops); Settings, Snapshot, Compare, Gate, Recovery links **1** for the roles that may open them.
 
-States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November).
+States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § with batch 3 (merged 23 November).
 
 | Screen | 1 Implemented | 2 Equivalent | 3 Safe to implement | 4 Deferred | 5 Not applicable |
 |---|---|---|---|---|---|
@@ -298,16 +309,16 @@ States marked † came with batch 1 and ‡ with batch 2 (both merged 23 Novembe
 | 2 Lock | digits, Clear, Unlock (4th digit), Switch Caregiver | — | header and stat panels | Code Override, reason list, Confirm bypass | — |
 | 3 Ward | Search, All, Due Meds†, Critical Lab, Drafts†, Expand All†, Refresh†, card open, Show Details / Less†, Open Record, Vitals†, Give Med†, body map†, Reset Filters†, Prepare SBAR† | Critical Response and Labs Flow → Labs†; Give Insulin → Give med†; BGL Flow, Resp Assessment → Vitals†; Scan Form, Reconcile Med → Check draft†; Print Ward Summary → Paper form packets | Strict I/O, Log Output → fluids link | Dual Sign-Off from card, Whitaker Call Log | Log Turn, Pre-Op Checklist |
 | 4 Summary | Record Vitals†, Log Fluids†, Add Note†, Start†, Open full map†, Inspect Slip†, View handover†, Quick lock† | Quick Administer → Give medicine†; Print Summary → paper forms | Prepare (opens the order) | Transfer custody | Emergency Transfer Packet |
-| 5 History | tabs, Expand / Collapse All, search, newest / oldest, Add past-dated note, Print sheet, expand rows | View MAR Log → Medicines; Append Addendum → Fix; Export PDF → print | Inspect slip inset, sign-off log | View Telephony Log | — |
+| 5 History | tabs, Expand / Collapse All, search, newest / oldest, Add past-dated note, Print sheet, expand rows, patient tabs§, Inspect slip§, sign-off log§, baseline card§ | View MAR Log → Open MAR§; Append Addendum → Fix or Add a note§; Export PDF → print | — | View Telephony Log | — |
 | 6 MAR | patient tabs†, All / Scheduled / PRN / Infusions / Stopped tabs†, search†, View Proof → View record†, Verify Dose → Check dose†, Record PRN†, Record New Administration†, Print MAR† | Check Line / Rate → New rate†; paper log tile → record link†; eMAR refresh (always live); Flagged for Worklist → worklist (admin) | — | Record Non-MAR Med (off, with reason)†, Flag Time Conflict (off, with reason)† | Accept 5 mg (AI must not change a record) |
 | 7 Two-nurse | pick nurse, PIN, Cancel† | Confirm Dual Sign-off → Save dose record; three ticks → printed check list† | — | witnessed waste, volumes | RFID Tap, mesh staging |
 | 8 Vitals | Record, Print, patient tabs‡, column tabs‡, chart switch‡, old versions‡, steppers‡, View timeline‡, Open row‡ | Save to ledger → Save; Export PDF → print | — | NEWS2, GCS tab, View Scale, rhythm | Verified mark per row |
 | 9 I/O | Add intake, Add output‡, Print, Cancel, Save, tabs‡, steppers‡, ledger rows‡, chart hours‡, notes / labs / history links‡ | Recalculate (always live) | — | preset volumes, Flag Alert | — |
 | 10 Body map | Front, Back, Both, site rows, tabs‡, layer switches‡, Reset‡, Print‡, Handover‡ | Export sheet → Print‡; Snap site → Photo of paper | — | Snap New Site, Add Line, Log Flush, Save Site, skin and pain pins (P-03) | — |
-| 11 Capture | Retake, photo beside the form, edit fields, Save | Flag for worklist → Save as a draft; Discard → Change form type; confirm tick → confirm page | zoom, rotate, per-field edit rows | confidence | — |
+| 11 Capture | Retake, photo beside the form, edit fields, Save, zoom§, rotate§, per-field edit§, confirm tick§ | Flag for worklist → Keep as a draft§; Discard → Change form type§ | — | confidence | — |
 | 12 Notes | New note, reset, sign (PIN user) | Attach photo → Photo of paper | tabs, expand, composer beside list, print | templates (4), risk scores, dual sign, verbal orders | Re-stock |
 | 13 Orders | Open order | Prepare Dose → Open; Print → paper MAR; Link order → record page | tabs, filter, allergy card | Report allergy | Pharmacy pager, Broadcast |
-| 14 SBAR | New handover, Print | tabs via menu; Export PDF → print | four cards, vitals table, checklist | Sign & transfer, counter-sign, PIN | Tap Badge |
+| 14 SBAR | New handover, Print, patient tabs§, four cards§, vitals table§, linked records§, Return to ward§ | Export PDF → print; checklist → open items and printed tick boxes§ | — | Sign & transfer, counter-sign, PIN | Tap Badge |
 | 15 Entry | History, All versions, Back, Fix | Print → print history | three-column compare | Approve Amendment, Request Clarification | Medico-legal certificate |
 | 16 Labs | open result | Record Phoned Result and Log Draw → Record lab on the patient's lab page | tabs, filter, table, print list | Review Protocol, Titration Log | View ECG |
 | 17 Compare | pick sample, Run device, Run cloud (both off until allowed) | Reset | Export JSON of a real run | Run Benchmark | Simulate drop, Simulate throttle, bounding boxes |
@@ -320,7 +331,7 @@ States marked † came with batch 1 and ‡ with batch 2 (both merged 23 Novembe
 | 24 Downtime | Start, End, gate | Force backup → Backup; Print MAR backup → spooler; run checksum → verify | timeline, history table, runbook print | sub-events | Broadcast, mesh alert, simulate resumption |
 | 25 Setup | steps on Real records (not viewed) | — | — | key slot choices | Helpdesk, peripherals |
 | 26 Gate | four checks, authorise | PIN keypad → PIN field; preview worklist → Recovery link in the menu | own layout, confirm dialog | re-run probe | SIM FAIL |
-| 27 Recovery | filter tabs, Export, open item, sign off | Encrypted backup → Backup | three panes, slip view | — | — |
+| 27 Recovery | filter tabs with counts§, Export, open item, sign off, three panes§, Inspect slip§, decision§, print§, Encrypted backup§ | PIN authorise → signed-in user and choice§ | — | second reviewer, dual sign-off | dispensing register |
 | 28 FHIR | prepare file, download, backup | dry run → checks before download | dashboard layout | — | Sync to hospital EHR |
 | 29 Spooler | form ticks, select all, rows, check list, print | Batch PDF → print | Inspect, remove row, order, blank packs | print log | Hold spooler, background queue |
 | 30–32 Forms | Print, other forms | Batch census → spooler | tabs, blank sheet | barcodes, QR | Encrypted PDF |
@@ -332,7 +343,7 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 
 1. **Batch 1 (merged):** ward board and summary; medication record and two-nurse check.
 2. **Batch 2 (merged, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
-3. **Batch 3:** paper capture, history and SBAR handover, recovery worklist.
+3. **Batch 3 (merged: fixes #28 and #31, then #29, #30, #32, #33):** paper capture, history and SBAR handover, recovery worklist.
 4. **Batch 4:** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
 
@@ -342,4 +353,6 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 - Should the wrong-PIN lockout be kept per person until the minute is over, even after leaving the page? It is a security-policy change, so it was not made.
 - Still open from before: note templates, print logging, barcodes, site logging (P-03).
 - A weight box in the vitals form (the database column already exists).
+- New in batch 3: a required tick before a record from paper is confirmed, and a required choice before a recovery sign-off. Both follow the design; the owner may want a nurse to judge them.
+- May the nurse who recorded an item also sign it off in recovery? Today yes; the design asks for a second person.
 - System Admin sidebar order stays deferred, as asked.
