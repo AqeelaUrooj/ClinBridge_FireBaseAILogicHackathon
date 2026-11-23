@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { useApp, useSession, isNurse, readCloudContext } from '../../state/app';
-import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
+import { Badge, Button, ButtonLink, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { readAiConfig } from '../../lib/ai/config';
 import { checkReadiness, type ReadinessItem } from '../../lib/ai/readiness';
 import { deviceModel } from '../../lib/ai/firebase';
@@ -13,6 +13,8 @@ import {
 } from '../../lib/ai/service';
 import { proposalRecord, syntheticNote } from '../../lib/ai/proposal';
 import { drawSyntheticVitalsForm } from '../../lib/ai/syntheticForm';
+import { compareRows, knownValues, sameCount, type Verdict } from '../../lib/ai/compare';
+import { Block, Head, PANEL, saveJson } from '../admin/adminUi';
 import { VITAL_RULES, type VitalKey } from '../../lib/vitals';
 import { createEntry } from '../../db/repos/entries';
 import { getPhoto, savePhoto } from '../../db/photos';
@@ -147,6 +149,8 @@ export function OnDeviceProposalCard({ photoRef, onUse }: { photoRef: string; on
 
 /* ------------------------------ Practice: Device vs Cloud ------------------------------ */
 
+const VERDICT: Record<Exclude<Verdict, null>, { tone: 'green' | 'red' | 'amber'; label: string }> = { same: { tone: 'green', label: 'Same' }, different: { tone: 'red', label: 'Different' }, missing: { tone: 'amber', label: 'Not read' }, extra: { tone: 'red', label: 'Not in the input' } };
+
 type Side = { busy: boolean; result?: { proposal: VitalsProposal; raw: AiRaw }; error?: string };
 
 export function PracticeComparePage() {
@@ -221,40 +225,86 @@ export function PracticeComparePage() {
     } catch (e) { setError(cloudMsg(e)); }
   };
 
-  const sideCard = (title: string, s: Side, run: () => void, enabled: boolean, why: string) => (
-    <Card className="flex flex-col gap-space-sm" aria-label={title}>
-      <h2 className="font-headline-sm text-headline-sm text-primary">{title}</h2>
-      {!s.result && <Button variant="secondary" className="self-start" disabled={!src || s.busy || !enabled || (kind === 'image' && !image)} onClick={run}>{s.busy ? 'Running…' : `Run ${title.toLowerCase()}`}</Button>}
-      {!enabled && <p className="font-body-sm text-secondary">{why}</p>}
-      {s.error && <p role="alert" className="text-[#7a5410]">{s.error}</p>}
-      {s.result && (s.result.raw.source === 'on_device' || cloud.allowed) && <><SourceLabel raw={s.result.raw} /><ProposalTable p={s.result.proposal} />
-        {isNurse(user) && <Button variant="secondary" className="self-start" onClick={() => void saveDraft(s.result!)}>Review this one as a draft</Button>}</>}
-    </Card>
+  const rows = src ? compareRows(src.v, dev.result?.proposal, cloud.allowed ? cld.result?.proposal : null) : [];
+  const known = src ? knownValues(src.v) : {};
+  const ran = !!dev.result || (!!cld.result && cloud.allowed);
+  const prompt = typeof (globalThis as { LanguageModel?: unknown }).LanguageModel !== 'undefined';
+  const save = () => src && saveJson(`clinbridge-practice-compare-${clock.nowIso().slice(0, 16).replace(/[:T]/g, '-')}.json`, {
+    made_at: clock.nowIso(), note: 'Practice drill. Fictional input. Only answers that really ran are in this file; neither is assumed correct.', input: kind, source_record: src.entry.id, known_values: { ...known, consciousness: src.v.consciousness ?? null },
+    on_device: dev.result ? { ran_at: dev.result.raw.source, ms: dev.result.raw.ms, proposal: dev.result.proposal } : 'not run',
+    cloud: cld.result && cloud.allowed ? { ran_at: cld.result.raw.source, ms: cld.result.raw.ms, proposal: cld.result.proposal } : 'not run',
+  });
+
+  const sideCard = (title: string, icon: string, where: string, s: Side, run: () => void, enabled: boolean, why: string, side: 'deviceVerdict' | 'cloudVerdict') => {
+    const on = s.result && (s.result.raw.source === 'on_device' || cloud.allowed);
+    const n = sameCount(rows, side);
+    return (
+      <Block title={title} icon={icon} badge={<Badge tone={on ? 'green' : s.error ? 'amber' : 'neutral'}>{s.busy ? 'Running' : on ? 'Ran' : s.error ? 'No answer' : 'Not run'}</Badge>} text={where}>
+        {!s.result && <Button variant="secondary" className="self-start" disabled={!src || s.busy || !enabled || (kind === 'image' && !image)} onClick={run}><Icon name="play_arrow" />{s.busy ? 'Running…' : `Run ${title.toLowerCase()}`}</Button>}
+        {!src && <p className="font-body-sm text-body-sm text-secondary">Pick a fictional source record first.</p>}
+        {!enabled && <p className="font-body-sm text-body-sm text-secondary">{why}</p>}
+        {s.error && <p role="alert" className="text-[#7a5410]">{s.error}</p>}
+        {on && <><SourceLabel raw={s.result!.raw} /><p className="font-body-md text-body-md"><strong className="font-code-tabular text-[24px] text-primary">{n.same} of {n.known}</strong> known values repeated exactly</p><ProposalTable p={s.result!.proposal} />
+          {isNurse(user) && <Button variant="secondary" className="self-start" onClick={() => void saveDraft(s.result!)}>Review this one as a draft</Button>}</>}
+      </Block>
+    );
+  };
+  const tile = (icon: string, label: string, value: string, note: string) => (
+    <div className="min-w-0 rounded-lg bg-surface-container-low p-space-sm flex items-start gap-space-sm"><Icon name={icon} className="text-primary" /><div className="min-w-0"><p className="font-label-uppercase text-label-uppercase uppercase text-secondary">{label}</p><p className="font-body-md text-body-md font-semibold text-primary [overflow-wrap:anywhere]">{value}</p><p className="font-body-sm text-body-sm text-on-surface-variant [overflow-wrap:anywhere]">{note}</p></div></div>
   );
+  const result = (x: Verdict) => (x ? <Badge tone={VERDICT[x].tone}>{VERDICT[x].label}</Badge> : null);
 
   return (
     <>
       <PageTitle>Device vs Cloud (Practice only)</PageTitle>
-      <Card className="flex flex-col gap-space-md">
-        <p className="text-on-surface-variant">Runs the same fictional input through the on-device model and, only when you press it, the cloud model, using Firebase AI Logic. Each answer shows where it really ran. Neither is assumed correct; a nurse checks before anything is saved.</p>
+      <Head label="Practice drill" title="One input, two models"
+        badges={<><Badge tone="blue" icon="school">Practice drill</Badge><Badge>Fictional patients only</Badge></>}
+        text="Runs the same fictional input through the on-device model and, only when you press it, the cloud model, using Firebase AI Logic. Each answer shows where it really ran. Neither is assumed correct; a nurse checks before anything is saved."
+        actions={<><ButtonLink variant="secondary" to="/ai"><Icon name="neurology" />AI check</ButtonLink><Button variant="secondary" disabled={!ran} onClick={save}><Icon name="download" />Save answers (JSON)</Button></>}>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-2">
+          {tile('memory', 'On-device', prompt ? 'Prompt API found' : 'Not available here', 'Whether the model runs: AI check')}
+          {tile('cloud', 'Cloud', cloud.allowed ? 'Allowed for this drill' : 'Blocked', cloud.allowed ? 'Runs only when you press it' : cloud.reason)}
+          {tile('science', 'Records', 'Practice, fictional', 'Real records are refused')}
+          {tile('fact_check', 'Known values', src ? String(Object.keys(known).length + (src.v.consciousness ? 1 : 0)) : '—', src ? 'Written in the input' : 'Pick a source first')}
+        </div>
+      </Head>
+
+      <section aria-label="Choose the input" className={`${PANEL} flex flex-col gap-space-md`}>
         <div className="flex flex-wrap gap-space-md items-end">
-          <label className="flex flex-col gap-1"><span className="font-label-uppercase text-label-uppercase text-secondary">Fictional source record</span>
-            <select value={pick} onChange={(e) => setPick(e.target.value)} className="h-12 rounded-lg border border-card-border px-space-md" aria-label="Fictional source record">
+          <label className="flex flex-col gap-1 w-full sm:w-auto"><span className="font-label-uppercase text-label-uppercase text-secondary">Fictional source record</span>
+            <select value={pick} onChange={(e) => setPick(e.target.value)} className="h-12 w-full rounded-lg border border-card-border px-space-md bg-surface-container-lowest" aria-label="Fictional source record">
               <option value="">Pick one</option>{(sources ?? []).map((s) => <option key={s.entry.id} value={s.entry.id}>{s.label}</option>)}
             </select></label>
-          <div role="radiogroup" aria-label="Input type" className="flex gap-space-sm">
+          <div role="radiogroup" aria-label="Input type" className="flex flex-wrap gap-space-sm">
             <Button variant={kind === 'text' ? 'primary' : 'secondary'} role="radio" aria-checked={kind === 'text'} onClick={() => setKind('text')}>Synthetic note (text)</Button>
             <Button variant={kind === 'image' ? 'primary' : 'secondary'} role="radio" aria-checked={kind === 'image'} onClick={() => setKind('image')}>Synthetic paper form (image)</Button>
           </div>
         </div>
-        {src && kind === 'text' && <p data-testid="compare-input" className="rounded-lg bg-surface-container-low p-space-sm font-code-tabular">{note}</p>}
-        {src && kind === 'image' && image && <img src={image.url} alt="Synthetic practice paper vitals form" className="max-w-xl rounded-lg border border-card-border" />}
-        {src && <p className="font-body-sm text-secondary">The input was generated from this fictional record, so its values are known: {Object.entries(src.v).filter(([k, v]) => v != null && k in VITAL_RULES).map(([k, v]) => `${VITAL_RULES[k as VitalKey].label} ${String(v)}`).join(', ')}.</p>}
-      </Card>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
-        {sideCard('On-device model', dev, () => void runDev(), true, '')}
-        {sideCard('Cloud model', cld, () => void runCloud(), cloud.allowed, `Cloud blocked: ${cloud.reason}`)}
+        <ul aria-label="Sources" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-space-sm">
+          {(sources ?? []).slice(0, 3).map((s, i) => (
+            <li key={s.entry.id}><button type="button" aria-pressed={pick === s.entry.id} onClick={() => setPick(s.entry.id)} className={`w-full text-left rounded-lg p-space-sm border-2 ${pick === s.entry.id ? 'border-primary bg-surface-container' : 'border-transparent bg-surface-container-low hover:bg-surface-container'}`}><span className="flex items-center justify-between gap-2 font-label-uppercase text-label-uppercase uppercase text-secondary">Sample {i + 1}{pick === s.entry.id && <Badge tone="navy">Chosen</Badge>}</span><span className="block font-body-md text-body-md font-semibold text-primary">{s.label}</span><span className="block font-body-sm text-body-sm text-on-surface-variant">{Object.keys(knownValues(s.v)).length} vital signs, drawn from a fictional record</span></button></li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-space-md items-start">
+        <Block title="Source" icon="description" badge={<Badge>{kind === 'image' ? 'Drawn form' : 'Typed note'}</Badge>}>
+          {!src && <p className="font-body-md text-body-md text-secondary">Nothing chosen yet.</p>}
+          {src && kind === 'text' && <p data-testid="compare-input" className="rounded-lg bg-[#fdfbf3] border border-card-border p-space-sm font-code-tabular">{note}</p>}
+          {src && kind === 'image' && image && <img src={image.url} alt="Synthetic practice paper vitals form" className="w-full rounded-lg border border-card-border" />}
+          {src && <p className="font-body-sm text-body-sm text-secondary">The input was generated from this fictional record, so its values are known: {Object.entries(known).map(([k, v]) => `${VITAL_RULES[k as VitalKey].label} ${String(v)}`).join(', ')}.</p>}
+        </Block>
+        {sideCard('On-device model', 'memory', 'On this laptop only. Never falls back to the cloud.', dev, () => void runDev(), true, '', 'deviceVerdict')}
+        {sideCard('Cloud model', 'cloud', 'Only in the cloud, only when you press it.', cld, () => void runCloud(), cloud.allowed, `Cloud blocked: ${cloud.reason}`, 'cloudVerdict')}
       </div>
+
+      {src && (
+        <section aria-label="Field by field" className={`${PANEL} flex flex-col gap-space-sm`}>
+          <div><h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2"><Icon name="rule" />Field by field</h2><p className="font-body-sm text-body-sm text-on-surface-variant">What is written in the input beside each answer. One drill is not a test of a model and says nothing about real paper.</p></div>
+          <div className="overflow-x-auto"><table className="w-full font-body-md text-body-md"><thead><tr className="text-left bg-surface-container-low font-label-uppercase text-label-uppercase uppercase text-secondary"><th className="p-2">Field</th><th className="p-2">In the input</th><th className="p-2">On-device</th><th className="p-2">Cloud</th></tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.key} className="border-t border-card-border align-top"><th scope="row" className="p-2 text-left font-semibold text-primary">{r.label}</th><td className="p-2 font-code-tabular">{r.source ?? '—'}</td><td className="p-2"><span className="font-code-tabular">{r.device ?? (dev.result ? '—' : 'Not run')}</span> <span className="block sm:inline">{result(r.deviceVerdict)}</span></td><td className="p-2"><span className="font-code-tabular">{r.cloud ?? (cld.result && cloud.allowed ? '—' : 'Not run')}</span> <span className="block sm:inline">{result(r.cloudVerdict)}</span></td></tr>)}</tbody></table></div>
+        </section>
+      )}
       {diffs && (
         <Card aria-label="Differences">
           <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Differences</h2>
