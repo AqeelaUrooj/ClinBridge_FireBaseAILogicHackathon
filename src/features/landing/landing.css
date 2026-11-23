@@ -1,4 +1,6 @@
 .landing { --ink: #071020; --navy: #1c2536; --muted: #4a6078; --line: #dee3e9; --tint: #f2f4f6; color: var(--ink); background: #f8f9fb; line-height: 1.5; }
+/* Reserve a glyph box while the bundled icon font loads. */
+.landing .material-symbols-outlined { display: inline-block; box-sizing: content-box; inline-size: 1em; flex-shrink: 0; overflow: hidden; }
 .landing :focus-visible { outline: 3px solid #24718a; outline-offset: 3px; }
 .lp-skip:not(:focus) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .lp-skip:focus { display: block; padding: 12px; }
