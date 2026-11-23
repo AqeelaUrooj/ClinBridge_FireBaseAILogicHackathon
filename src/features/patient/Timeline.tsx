@@ -53,7 +53,7 @@ export function Timeline() {
 
   return (
     <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'History' }]} />
+      <div className="print:hidden"><Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'History' }]} /></div>
       <div className="flex flex-wrap items-end justify-between gap-space-sm">
         <div>
           <h1 className="font-headline-lg text-headline-lg text-primary">History</h1>
@@ -118,7 +118,7 @@ export function Timeline() {
                 const retired = isRetiredStatus(entry.status);
                 const lateBy = Math.round((Date.parse(entry.entry_time) - Date.parse(entry.care_time)) / 60_000);
                 return (
-                  <li key={entry.id} className={`bg-surface-container-lowest rounded-xl border ${entry.status === 'draft' ? 'border-downtime-amber-border' : 'border-card-border'}`} data-testid={`history-${entry.id}`}>
+                  <li key={entry.id} className={`break-inside-avoid bg-surface-container-lowest rounded-xl border ${entry.status === 'draft' ? 'border-downtime-amber-border' : 'border-card-border'}`} data-testid={`history-${entry.id}`}>
                     <button type="button" aria-expanded={isOpen} aria-controls={`body-${entry.id}`} onClick={() => toggle(entry.id)}
                       className="w-full grid grid-cols-[auto_minmax(0,1fr)_auto] sm:flex items-center gap-2 sm:gap-space-md min-h-[60px] px-space-md py-space-sm text-left hover:bg-surface-container-low rounded-xl">
                       <span className="w-12 shrink-0 font-code-tabular text-[13px] font-bold text-primary">{hm(entry.care_time)}</span>
