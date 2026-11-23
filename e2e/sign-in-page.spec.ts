@@ -108,7 +108,7 @@ for (const width of [1440, 1280, 1024, 768, 390, 360]) {
     await page.setViewportSize({ width, height: 844 });
     await open(page);
     const measure = async () => {
-    await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
+    await page.evaluate(() => Promise.all(Array.from(document.fonts as unknown as Iterable<FontFace>).map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
     return page.evaluate(() => {
       const W = document.documentElement.clientWidth;
       const seen = Array.from(document.querySelectorAll('main button, main p, main h1, main span, main summary')).filter((e) => e.getBoundingClientRect().width > 1);
