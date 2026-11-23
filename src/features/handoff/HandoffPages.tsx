@@ -216,8 +216,7 @@ function HandoffBody({ shift, situation, background, assessment, openItems, sour
 export function HandoffViewPage() {
   const { hid } = useParams();
   const { patient } = useCurrentPatient();
-  const { db, clock } = useApp();
-  const { user } = useSession();
+  const { db } = useApp();
   const names = useNames();
   const data = useLiveQuery(async () => {
     const list = await listHandoffs(db, patient.id);
@@ -235,19 +234,12 @@ export function HandoffViewPage() {
       <div className="print:hidden">
         <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover', to: `${base}/handoff` }, { label: h.shift }]} />
       </div>
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex items-center justify-between">
         <h1 className="font-headline-lg text-headline-lg text-primary">Handover</h1>
-        <Button variant="secondary" onClick={() => window.print()}><Icon name="print" />Print</Button>
-      </div>
-      {/* Print header: patient identifiers on every printed page */}
-      <div className="hidden print:block print-running-header">
-        <strong>{fullName(patient)}</strong> · Born {dayLabel(patient.birth_date)} · MRN {patient.mrn} · Handover
+        <Button variant="secondary" className="print:hidden" onClick={() => window.print()}><Icon name="print" />Print</Button>
       </div>
       <p className="font-body-sm text-secondary print:text-black">Written by {names.get(h.created_by) ?? h.created_by}{data.savedAt ? ` · saved ${dateTimeLabel(data.savedAt)}` : ''} · {h.id}</p>
       <HandoffBody shift={h.shift} situation={h.situation} background={h.background} assessment={h.assessment} openItems={h.open_items} sources={data.sources} />
-      <div className="hidden print:block print-running-footer">
-        Printed by {user?.name} · {dateTimeLabel(clock.nowIso())} · laptop DT-4W-01 · Fake practice data, not a clinical record
-      </div>
     </>
   );
 }
