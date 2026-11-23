@@ -89,8 +89,10 @@ test('printing keeps the patient identifiers and the records, and leaves the con
   await page.getByRole('button', { name: 'Print this map' }).click();
   expect(await page.evaluate(() => (window as unknown as { __prints: number }).__prints)).toBe(1);
   await page.emulateMedia({ media: 'print' });
-  await expect(page.locator('[data-print-header]')).toContainText('Lena Ortiz · Born 30 Jul 1972 · MRN DK-004518 · Bed 4C · Body map · Fake practice data, not a clinical record');
-  await expect(page.getByText('Printed by Daniel Okafor')).toBeVisible();
+  // The shared patient print header, once.
+  await expect(page.locator('[data-print-identity]')).toHaveCount(1);
+  await expect(page.locator('[data-print-identity]')).toContainText('Lena Ortiz · Born 30 Jul 1972 · MRN DK-004518 · Bed 4C');
+  await expect(page.getByText('Printed by Daniel Okafor')).toHaveCount(1);
   await expect(card(page, 'All marked sites')).toBeVisible();
   for (const name of ['Print this map', 'Reset view', 'Front', 'Both']) await expect(page.getByRole('button', { name, exact: true })).toBeHidden();
   await expect(page.getByRole('link', { name: 'Open medicines' })).toBeHidden();

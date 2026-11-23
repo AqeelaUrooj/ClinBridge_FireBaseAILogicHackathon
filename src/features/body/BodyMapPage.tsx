@@ -5,12 +5,11 @@ import { listPatientEntries } from '../../db/repos/entries';
 import type { Note } from '../../db/schema';
 import { isNurse, useApp, useSession } from '../../state/app';
 import { formatDose } from '../../lib/dose';
-import { dateTimeLabel, dayLabel, hm } from '../../lib/time';
+import { dateTimeLabel, hm } from '../../lib/time';
 import { Badge, Button, ButtonLink, Card, Icon } from '../../components/ui';
 import { MedIllustration } from '../../components/MedIllustration';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { PatientTabs } from '../patient/PatientTabs';
-import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
 import { latestMeasures } from '../ward/wardData';
 import { BodyFigure, type FigureMarker } from './BodyFigure';
@@ -37,8 +36,8 @@ function PanelTitle({ children, aside }: { children: ReactNode; aside?: ReactNod
 }
 
 export function BodyMapPage() {
-  const { patient, encounter } = useCurrentPatient();
-  const { db, clock, dataset } = useApp();
+  const { patient } = useCurrentPatient();
+  const { db } = useApp();
   const { user } = useSession();
   const [selected, setSelected] = useState<string | null>(null);
   const [view, setView] = useState<ViewChoice>(startView);
@@ -77,14 +76,6 @@ export function BodyMapPage() {
   return (
     <>
       <div className="print:hidden"><PatientTabs patientId={patient.id} /></div>
-      {/* On paper this is a table whose header row repeats, so the patient identifiers are on every printed page. */}
-      <div className="contents print:table print:w-full">
-        <div className="hidden print:table-header-group break-inside-avoid">
-          <div className="print:table-row"><div className="print:table-cell border-b border-black pb-1 text-[10pt]" data-print-header="">
-            <strong>{fullName(patient)}</strong> · Born {dayLabel(patient.birth_date)} · MRN {patient.mrn}{encounter?.bed ? ` · Bed ${encounter.bed}` : ''} · Body map{dataset === 'practice' ? ' · Fake practice data, not a clinical record' : ''}
-          </div></div>
-        </div>
-        <div className="contents print:table-row-group"><div className="contents print:table-row"><div className="contents print:table-cell">
       <div className="flex flex-wrap items-center justify-between gap-space-sm">
         <div>
           <h1 className="font-headline-lg text-headline-lg text-primary">Body map</h1>
@@ -273,9 +264,6 @@ export function BodyMapPage() {
             <p className="font-body-sm text-[12px] text-secondary mt-space-sm">Photos are of paper sheets. Photos of the patient’s skin or lines are not kept in ClinBridge.</p>
           </Card>
         </div>
-      </div>
-      <p className="hidden print:block font-body-sm text-body-sm">Printed by {user?.name} · {dateTimeLabel(clock.nowIso())}</p>
-        </div></div></div>
       </div>
     </>
   );
