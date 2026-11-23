@@ -125,3 +125,21 @@ test('the header follows the patient, shows the time of printing, and is not on 
   await expect(page.locator('.print-sheet')).toBeVisible();
   await expect(head).toHaveCount(0); // the paper form has its own repeating strip
 });
+
+test('no blank page, whatever the length of the record', async ({ page }) => {
+  test.setTimeout(120_000);
+  await signIn(page, '/patients/pt-05/notes');
+  await page.getByRole('button', { name: 'Yes, open' }).click();
+  await expect(page.getByRole('heading', { name: 'Notes' })).toBeVisible();
+  // A spacer on paper only, made longer step by step over more than one page of length.
+  await page.evaluate(() => {
+    const d = document.createElement('div');
+    d.id = 'spacer'; d.className = 'hidden print:block';
+    Array.from(document.querySelectorAll('div')).find((x) => x.className.includes('print:space-y-4'))!.appendChild(d);
+  });
+  for (let h = 0; h <= 1000; h += 8) {
+    await page.evaluate((px) => { document.getElementById('spacer')!.style.height = `${px}px`; }, h);
+    const pages = (await pdfPageTexts(await page.pdf({ format: 'A4' }))).map(squash);
+    expect(pages.filter((t) => !t.includes('tomhale')).length, `spacer ${h}px: pages without the patient's name`).toBe(0);
+  }
+});
