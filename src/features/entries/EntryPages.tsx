@@ -53,7 +53,7 @@ function Crumbs({ last }: { last: string }) {
 
 function VitalsValues({ v }: { v: VitalSign }) {
   return (
-    <dl className="grid grid-cols-2 lg:grid-cols-3 gap-space-sm">
+    <dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(9rem,30%)),1fr))] gap-space-sm">
       {(Object.keys(VITAL_RULES) as VitalKey[]).filter((k) => v[k] != null).map((k) => (
         <div key={k} className="rounded-lg bg-surface-container-low p-space-md">
           <dt className="font-label-uppercase text-label-uppercase text-secondary uppercase">{VITAL_RULES[k].label}</dt>
