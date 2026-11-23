@@ -67,7 +67,7 @@ export function PrintFormPage() {
   const { kind, id } = useParams();
   if (!isFormKind(kind)) return <EmptyState icon="search_off" text="There is no paper form with that name." action={<ButtonLink variant="secondary" to="/ward">Back to My patients</ButtonLink>} />;
   // Same two-identifier patient check as every patient page, before any patient data is shown.
-  return <PatientFrame patientId={id}><SingleForm kind={kind} patientId={id!} /></PatientFrame>;
+  return <PatientFrame patientId={id} ownPrintHeader><SingleForm kind={kind} patientId={id!} /></PatientFrame>;
 }
 
 /* ------------------------------ Packet builder: /spooler ------------------------------ */
