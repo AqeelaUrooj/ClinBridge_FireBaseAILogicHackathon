@@ -1,10 +1,11 @@
-import { StrictMode } from 'react';
+import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
 import './index.css';
-import { AppProvider, SessionProvider } from './state/app';
-import { App } from './App';
+import { LandingPage } from './features/landing/LandingPage';
+
+const ClinicalApplication = lazy(() => import('./ClinicalApplication'));
 
 // Offline: the service worker caches the whole app shell so it opens with no network.
 if (import.meta.env.PROD) registerSW({ immediate: true });
@@ -12,11 +13,10 @@ if (import.meta.env.PROD) registerSW({ immediate: true });
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <AppProvider>
-        <SessionProvider>
-          <App />
-        </SessionProvider>
-      </AppProvider>
+      <Routes>
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="*" element={<Suspense fallback={<p role="status">Opening ClinBridge…</p>}><ClinicalApplication /></Suspense>} />
+      </Routes>
     </BrowserRouter>
   </StrictMode>,
 );

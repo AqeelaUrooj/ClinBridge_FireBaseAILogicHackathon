@@ -126,3 +126,7 @@ Also working:
 - Live Gemini Nano run on compatible hardware (cloud runs are done).
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
 - Owner decisions listed in docs/V3_ZIP_COMPLETION_REPORT.md section 12 (body map 21 + 3, note templates, print audit).
+
+## Public prototype introduction
+
+The landing-page branch implements `/landing` with locally bundled Practice screenshots, workflow, capabilities, safeguards and FAQ. The public page renders independently of the vault.
