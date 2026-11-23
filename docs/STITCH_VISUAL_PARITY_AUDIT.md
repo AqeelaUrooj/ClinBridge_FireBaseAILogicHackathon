@@ -47,9 +47,9 @@ The task text says v3; the attached archive is v4. v4 contains everything in v3 
 | `main` at `d08635dc` (when the audit was made) | 0 | 7 | 26 | 0 |
 | With batch 1 (#21, #22; merged 23 November) | 0 | 11 | 22 | 0 |
 | With batch 1 and batch 2 (#24, #25, #26; merged 23 November) | 0 | 13 | 20 | 0 |
-| With batch 3 as well (#29, #30, #32, #33; open, not merged) | 0 | 16 | 17 | 0 |
+| With batch 3 as well (#29, #30, #32, #33; merged 23 November, `main` at `c4db9b5`) | 0 | 16 | 17 | 0 |
 
-Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 (open) moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer.
+Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer.
 
 ## 5. Problems found while comparing (not only looks)
 
@@ -63,12 +63,12 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
 | 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (merged, `main` is `bfea237`). The body map page in #26 now uses the shared header |
 | 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
-| 9 | **Numbers cut off in forms.** The − and + buttons added in #24 and #25 left too little room in a narrow form. On the check-and-confirm page a top blood pressure of 114 was shown as "1"; at 1280 px the box was 0 px wide. Stored values were right. | On `main` since batch 2. Fixed in #28 (open) |
-| 10 | **Blank sheet on paper.** In a narrow band of lengths (about 25 px) the first or last printed sheet of a patient page came out blank. No wrong patient. | On `main` since #27. Fixed in #31 (open) |
-| 11 | A proposal read from one photo could be saved with another photo after a retake. Confirming a draft dropped its weight and the words copied from the paper. | Fixed in #29 (open) |
-| 12 | A handover printed a linked record that was fixed or marked as a mistake later with its old value and no mark. | Fixed in #32 (open) |
-| 13 | Recovery worklist: the tenfold amLODIPine record said only "the rules no longer find a problem". A fixed record was called a possible duplicate of its own old version. On a phone the time and kind of record were hidden. | Fixed in #33 (open). The rules themselves are unchanged |
-| 14 | The oxygen table on the history page was cut off on paper. | Fixed in #30 (open) |
+| 9 | **Numbers cut off in forms.** The − and + buttons added in #24 and #25 left too little room in a narrow form. On the check-and-confirm page a top blood pressure of 114 was shown as "1"; at 1280 px the box was 0 px wide. Stored values were right. | On `main` from batch 2 until #28 (merged) |
+| 10 | **Blank sheet on paper.** In a narrow band of lengths (about 25 px) the first or last printed sheet of a patient page came out blank. No wrong patient. | On `main` from #27 until #31 (merged) |
+| 11 | A proposal read from one photo could be saved with another photo after a retake. Confirming a draft dropped its weight and the words copied from the paper. | Fixed in #29 (merged) |
+| 12 | A handover printed a linked record that was fixed or marked as a mistake later with its old value and no mark. | Fixed in #32 (merged) |
+| 13 | Recovery worklist: the tenfold amLODIPine record said only "the rules no longer find a problem". A fixed record was called a possible duplicate of its own old version. On a phone the time and kind of record were hidden. | Fixed in #33 (merged). The rules themselves are unchanged |
+| 14 | The oxygen table on the history page was cut off on paper. | Fixed in #30 (merged) |
 
 ## 6. Screen by screen
 
@@ -301,7 +301,7 @@ Phone layouts: the archive has no phone pictures, so these follow the desktop or
 
 Repeated on most screens and judged once: sidebar links **1**; Quick Lock **1** (header Lock); "Ward Board / Add / Capture…" names **2** (ClinBridge names); Device & Mesh link **2** (Laptops); Settings, Snapshot, Compare, Gate, Recovery links **1** for the roles that may open them.
 
-States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § comes with batch 3 (open).
+States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § with batch 3 (merged 23 November).
 
 | Screen | 1 Implemented | 2 Equivalent | 3 Safe to implement | 4 Deferred | 5 Not applicable |
 |---|---|---|---|---|---|
@@ -343,7 +343,7 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 
 1. **Batch 1 (merged):** ward board and summary; medication record and two-nurse check.
 2. **Batch 2 (merged, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
-3. **Batch 3 (open: #28 and #31 fixes, then #29, #30, #32, #33):** paper capture, history and SBAR handover, recovery worklist.
+3. **Batch 3 (merged: fixes #28 and #31, then #29, #30, #32, #33):** paper capture, history and SBAR handover, recovery worklist.
 4. **Batch 4:** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
 
