@@ -40,14 +40,14 @@ test('encrypted backup on one laptop, restored on a fresh one with its own passp
   await confirmCode(pa, 'Create admin and encrypt');
   await pa.getByRole('button', { name: /Backup Admin/ }).click();
   for (const d of '8642') await pa.getByRole('button', { name: d, exact: true }).click();
-  await pa.getByRole('link', { name: 'Staff' }).click();
+  await pa.getByRole('link', { name: 'Staff', exact: true }).click();
   await pa.getByLabel('Name').fill('Restored Nurse');
   await pa.getByLabel('Initials').fill('RN');
   await pa.getByLabel('PIN', { exact: true }).fill('1357');
   await pa.getByRole('button', { name: 'Add' }).click();
   await expect(pa.getByText('Restored Nurse')).toBeVisible();
 
-  await pa.getByRole('link', { name: 'Backup' }).click();
+  await pa.getByRole('link', { name: 'Backup', exact: true }).click();
   await pa.getByLabel('Backup passphrase', { exact: true }).fill(UNIT_A);
   await pa.getByLabel('Backup passphrase again').fill(UNIT_A);
   await pa.getByRole('button', { name: 'Make encrypted backup' }).click();

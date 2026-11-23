@@ -41,14 +41,14 @@ test('enroll a second laptop: fingerprint check, own passphrase, nurse activated
   await pa.getByRole('button', { name: 'Next: recovery key' }).click();
   await confirmCode(pa, 'Create admin and encrypt');
   await pin(pa, /Ana Admin/, '8642');
-  await pa.getByRole('link', { name: 'Staff' }).click();
+  await pa.getByRole('link', { name: 'Staff', exact: true }).click();
   await pa.getByLabel('Name').fill('Nina Nurse');
   await pa.getByLabel('Initials').fill('NN');
   await pa.getByLabel('PIN', { exact: true }).fill('1357');
   await pa.getByRole('button', { name: 'Add' }).click();
   await expect(pa.getByText('Nina Nurse')).toBeVisible();
 
-  await pa.getByRole('link', { name: 'Laptops' }).click();
+  await pa.getByRole('link', { name: 'Laptops', exact: true }).click();
   await pa.getByLabel('Enrollment passphrase', { exact: true }).fill(ENROLL);
   await pa.getByLabel('Enrollment passphrase again').fill(ENROLL);
   const dl = pa.waitForEvent('download');
@@ -91,7 +91,7 @@ test('enroll a second laptop: fingerprint check, own passphrase, nurse activated
   for (const d of '9753') await pb.getByRole('button', { name: d, exact: true }).click();
   await expect(pb).toHaveURL(/\/admin$/);
 
-  await pb.getByRole('link', { name: 'Staff' }).click();
+  await pb.getByRole('link', { name: 'Staff', exact: true }).click();
   await expect(pb.getByText('Needs activation')).toBeVisible();
   await pb.getByRole('button', { name: 'Activate' }).click();
   await pb.getByLabel('Their new PIN', { exact: true }).fill('4826');
@@ -102,7 +102,7 @@ test('enroll a second laptop: fingerprint check, own passphrase, nurse activated
   await activate.click();
   await expect(pb.getByText('Needs activation')).toHaveCount(0);
 
-  await pb.getByRole('link', { name: 'Change log' }).click();
+  await pb.getByRole('link', { name: 'Change log', exact: true }).click();
   await pb.getByLabel('Filter by action').selectOption('credential_activated');
   await expect(pb.getByRole('list', { name: 'Rows' }).getByRole('listitem')).toHaveCount(1);
   await expect(pb.getByRole('list', { name: 'Rows' })).toContainText('Staff sign-in activated');
