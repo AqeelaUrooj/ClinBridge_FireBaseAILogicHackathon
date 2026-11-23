@@ -20,7 +20,8 @@ import { NotesPage } from './features/charting/NotesPage';
 import { IoPage, RecordIo } from './features/charting/IoPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
-import { AdminLayout, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
+import { AdminLayout, SetupPage, BackupPage } from './features/admin/AdminPages';
+import { SettingsPage } from './features/admin/SettingsPage';
 import { DevicesPage } from './features/admin/DevicesPage';
 import { StaffPage } from './features/admin/StaffPage';
 import { SnapshotPage } from './features/admin/SnapshotPage';
@@ -67,7 +68,7 @@ export function App() {
       <Route path="/sign-in" element={<SignIn />} />
       <Route path="/lock" element={<LockScreen />} />
       {/* Reachable before anyone exists: the page itself only works while Real records has no staff. */}
-      <Route path="/setup" element={<main className="min-h-screen bg-background p-space-xl flex flex-col gap-space-lg"><SetupPage /></main>} />
+      <Route path="/setup" element={<main className="min-h-screen bg-background p-space-md md:p-space-xl flex flex-col items-center gap-space-lg"><SetupPage /></main>} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route index element={<Home />} />

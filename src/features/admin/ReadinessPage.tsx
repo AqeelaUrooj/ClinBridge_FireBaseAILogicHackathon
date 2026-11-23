@@ -13,7 +13,7 @@ type Ok = boolean | null;
 interface Item { id: string; ok: Ok; label: string; detail: string }
 
 /** What this browser can tell about the laptop. Read again on demand; nothing is probed on the network. */
-function useBrowser(n: number) {
+export function useBrowser(n = 0) {
   const [online, setOnline] = useState(navigator.onLine);
   const [sw, setSw] = useState<Ok>(null);
   const [persisted, setPersisted] = useState<Ok>(null);
