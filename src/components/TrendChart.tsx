@@ -26,7 +26,7 @@ export function TrendChart({ series, label, unit, testId, table = true }: { seri
   const tag = (p: (typeof rows)[number]) => (p.status === 'draft' ? ' (draft, not confirmed)' : p.status === 'baseline' ? ' (hospital list before the outage)' : '');
   const desc = `${label} readings: ${rows.map((p) => `${p.value}${unit} at ${when(p.time)}${tag(p)}`).join('; ')}.`;
   return (
-    <figure className="flex flex-col gap-2" data-testid={testId}>
+    <figure className={`flex flex-col gap-2 ${table ? '' : '[&>div]:hidden'}`} data-testid={testId}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[96px]" role="img" aria-label={desc}>
         <line x1={PX} x2={W - PX} y1={H - PB} y2={H - PB} stroke="#C5C6CD" strokeWidth="1" />
         {series.confirmed.length > 1 && (
@@ -47,7 +47,7 @@ export function TrendChart({ series, label, unit, testId, table = true }: { seri
         {series.baseline.length > 0 && <span><span aria-hidden>■</span> hospital list before the outage</span>}
         {series.missing > 0 && <span>{series.missing} vital-sign record{series.missing === 1 ? '' : 's'} without {label}</span>}
       </figcaption>
-      {table && <div className="max-h-40 overflow-y-auto border border-card-border rounded">
+      <div className="max-h-40 overflow-y-auto border border-card-border rounded">
         <table className="w-full font-body-sm text-left">
           <caption className="sr-only">{label} values by measurement time</caption>
           <thead className="bg-surface-container-low text-secondary"><tr><th scope="col" className="px-2 py-1 font-semibold">Measured</th><th scope="col" className="px-2 py-1 font-semibold">{label}</th><th scope="col" className="px-2 py-1 font-semibold">Status</th></tr></thead>
@@ -61,7 +61,7 @@ export function TrendChart({ series, label, unit, testId, table = true }: { seri
             ))}
           </tbody>
         </table>
-      </div>}
+      </div>
     </figure>
   );
 }
