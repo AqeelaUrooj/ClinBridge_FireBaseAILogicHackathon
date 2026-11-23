@@ -1,60 +1,48 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { listPatientEntries, type EntryWithChild } from '../../db/repos/entries';
 import { createHandoff, listHandoffs, validateHandoff } from '../../db/repos/handoff';
 import { isNurse, useApp, useSession } from '../../state/app';
 import { dateTimeLabel, dayLabel, hm } from '../../lib/time';
 import { Breadcrumbs, Button, ButtonLink, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
-import { MedIllustration } from '../../components/MedIllustration';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
-import { EntryRow, TYPE_LABEL, entrySummary } from '../entries/entryView';
+import { TYPE_ICON, TYPE_LABEL, entrySummary } from '../entries/entryView';
+import { HandoverScreen, LetterCard, LinkedTrail, SavedText, cardTitle, useHandovers } from './HandoffView';
+import { linkedRecords } from './handoffData';
 import { fieldCls, labelCls } from '../charting/TwoStepEditor';
 
-function useNames() {
-  const { db } = useApp();
-  return useLiveQuery(async () => new Map((await db.practitioner.toArray()).map((p) => [p.id, p.name])), [db]) ?? new Map<string, string>();
-}
-
-/* ------------------------------ Patient handover list ------------------------------ */
+/* ------------------------------ Patient handover: the newest, or the one in the address ------------------------------ */
 
 export function PatientHandoffPage() {
   const { patient } = useCurrentPatient();
-  const { db } = useApp();
-  const { user } = useSession();
-  const names = useNames();
+  const data = useHandovers();
   const location = useLocation();
-  const items = useLiveQuery(() => listHandoffs(db, patient.id), [db, patient.id]);
   const base = `/patients/${patient.id}`;
+  if (!data) return <p role="status">Loading…</p>;
+  const saved = (location.state as { saved?: string } | null)?.saved;
   return (
     <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover' }]} />
-      {(location.state as { saved?: string } | null)?.saved && <p role="status" className="rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant px-space-md py-space-sm flex items-center gap-2"><Icon name="check_circle" filled />Handover saved on this laptop.</p>}
-      <div className="flex flex-wrap items-center justify-between gap-space-sm">
-        <h1 className="font-headline-lg text-headline-lg text-primary flex items-center gap-3"><MedIllustration name="workflows/handover" size={36} />Handover</h1>
-        <div className="flex flex-wrap gap-space-sm">
-          <ButtonLink variant="secondary" to={`/print/sbar/${patient.id}`}><Icon name="print" />Paper SBAR sheet</ButtonLink>
-          {isNurse(user) && <ButtonLink to={`${base}/handoff/new`}><Icon name="add" />New handover</ButtonLink>}
-        </div>
-      </div>
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">History</h2>
-        {!items ? <p role="status">Loading…</p> : items.length === 0 ? <EmptyState text="No handovers yet" /> : (
-          <ul className="flex flex-col">
-            {items.map(({ handoff: h, savedAt }) => (
-              <li key={h.id}>
-                <Link to={`${base}/handoff/${h.id}`} className="flex items-center gap-space-md min-h-[60px] border-b border-card-border last:border-0 hover:bg-surface-container-low px-space-sm rounded">
-                  <span className="w-28 font-code-tabular text-body-sm text-primary">{savedAt ? dateTimeLabel(savedAt) : '—'}</span>
-                  <span className="flex-1 min-w-0 truncate font-body-lg">{h.shift}</span>
-                  <span className="text-body-sm text-secondary">{names.get(h.created_by) ?? h.created_by} · {h.source_entry_ids.length} linked</span>
-                  <Icon name="chevron_right" className="text-outline" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <div className="print:hidden"><Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover' }]} /></div>
+      <HandoverScreen data={data} current={data.list[0] ?? null}
+        banner={saved && <p role="status" className="rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant px-space-md py-space-sm flex items-center gap-2 print:hidden"><Icon name="check_circle" filled />Handover saved on this laptop.</p>} />
+    </>
+  );
+}
+
+export function HandoffViewPage() {
+  const { hid } = useParams();
+  const { patient } = useCurrentPatient();
+  const data = useHandovers();
+  const base = `/patients/${patient.id}`;
+  if (!data) return <p role="status">Loading…</p>;
+  const current = data.list.find((x) => x.handoff.id === hid);
+  if (!current) return <EmptyState icon="search_off" text="Handover not found." action={<ButtonLink variant="secondary" to={`${base}/handoff`}>Back</ButtonLink>} />;
+  return (
+    <>
+      <div className="print:hidden"><Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover', to: `${base}/handoff` }, { label: current.handoff.shift }]} /></div>
+      <HandoverScreen data={data} current={current} />
     </>
   );
 }
@@ -108,25 +96,24 @@ export function NewHandoffPage() {
     }
   }
 
-  const block = (id: string, label: string, value: string, set: (v: string) => void, extra?: React.ReactNode) => (
-    <Card className="flex flex-col gap-space-sm">
-      <div className="flex items-center justify-between">
-        <label htmlFor={id} className="font-headline-sm text-headline-sm text-primary">{label}</label>
-        {extra}
-      </div>
+  const block = (id: string, letter: string, label: string, value: string, set: (v: string) => void, extra?: React.ReactNode) => (
+    <LetterCard letter={letter} title={<label htmlFor={id} className={cardTitle}>{label}</label>} aside={extra}>
       <textarea id={id} rows={4} value={value} onChange={(e) => set(e.target.value)} aria-invalid={!!errors[id]}
         className={`rounded-lg border p-space-md bg-surface-container-lowest w-full font-body-lg ${errors[id] ? 'border-error' : 'border-card-border'}`} />
       {errors[id] && <span className="text-error font-body-sm">{errors[id]}</span>}
-    </Card>
+    </LetterCard>
   );
 
   if (step === 'review') {
-    const chosen = (entries ?? []).filter((x) => linked.includes(x.entry.id));
     return (
       <>
         <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover', to: `${base}/handoff` }, { label: 'Check' }]} />
         <h1 className="font-headline-lg text-headline-lg text-primary">Check before saving</h1>
-        <HandoffBody shift={shift} situation={situation} background={background} assessment={assessment} openItems={openItems.filter((x) => x.trim())} sources={chosen} />
+        <p className="font-headline-sm text-headline-sm text-primary">{shift}</p>
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-space-md items-start">
+          <div className="min-w-0 flex flex-col gap-space-md"><SavedText situation={situation} background={background} assessment={assessment} openItems={openItems.filter((x) => x.trim())} /></div>
+          <LinkedTrail records={linkedRecords(linked, entries ?? [], patient.id)} />
+        </div>
         {saveError && <p role="alert" className="text-error">{saveError}</p>}
         <div className="flex gap-space-sm">
           <Button onClick={save} disabled={saving}><Icon name="save" />{saving ? 'Saving…' : 'I reviewed it — save'}</Button>
@@ -140,20 +127,19 @@ export function NewHandoffPage() {
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover', to: `${base}/handoff` }, { label: 'New' }]} />
       <h1 className="font-headline-lg text-headline-lg text-primary">New handover</h1>
-      <p className="font-body-sm text-secondary -mt-space-sm">Draft — only on this screen until you review and save it. Written by you; no AI is used.</p>
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-space-lg items-start">
-        <div className="flex flex-col gap-space-md">
+      <p className="font-body-sm text-body-sm text-secondary -mt-space-sm">Draft — only on this screen until you review and save it. Written by you; no AI is used.</p>
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-space-md items-start">
+        <div className="min-w-0 flex flex-col gap-space-md">
           <div className="md:w-2/3 flex flex-col gap-1">
             <label htmlFor="shift" className={labelCls}>Which handover</label>
             <input id="shift" value={shift} onChange={(e) => setShift(e.target.value)} aria-invalid={!!errors.shift} className={fieldCls(errors.shift)} />
             {errors.shift && <span className="text-error font-body-sm">{errors.shift}</span>}
           </div>
-          {block('situation', 'Situation', situation, setSituation)}
-          {block('background', 'Background', background, setBackground,
+          {block('situation', 'S', 'Situation', situation, setSituation)}
+          {block('background', 'B', 'Background', background, setBackground,
             <Button variant="ghost" onClick={() => setBackground((b) => (b ? `${b}\n${facts}` : facts))}><Icon name="add" />Insert patient facts</Button>)}
-          {block('assessment', 'Assessment', assessment, setAssessment)}
-          <Card className="flex flex-col gap-space-sm">
-            <h2 className="font-headline-sm text-headline-sm text-primary">Open items</h2>
+          {block('assessment', 'A', 'Assessment', assessment, setAssessment)}
+          <LetterCard letter="R" title={<h2 className={cardTitle}>Recommendation, open items</h2>}>
             {openItems.map((it, i) => (
               <div key={i} className="flex gap-space-sm">
                 <input aria-label={`Open item ${i + 1}`} value={it} onChange={(e) => setOpenItems(openItems.map((x, k) => (k === i ? e.target.value : x)))} className={fieldCls()} />
@@ -161,7 +147,7 @@ export function NewHandoffPage() {
               </div>
             ))}
             <Button variant="secondary" className="self-start" onClick={() => setOpenItems([...openItems, ''])}><Icon name="add" />Add open item</Button>
-          </Card>
+          </LetterCard>
           <div className="flex gap-space-sm">
             <Button onClick={() => { const e = validateHandoff(input); setErrors(e); if (!Object.keys(e).length) setStep('review'); }}>Review<Icon name="arrow_forward" /></Button>
             <Button variant="secondary" onClick={() => navigate(`${base}/handoff`)}>Cancel</Button>
@@ -170,76 +156,23 @@ export function NewHandoffPage() {
         <Card className="flex flex-col gap-space-sm xl:sticky xl:top-[calc(var(--header-h)+16px)]">
           <h2 className="font-headline-sm text-headline-sm text-primary">Confirmed records</h2>
           <p className="font-body-sm text-secondary">Tick to link a record. “Add line” copies it into the assessment and links it. Drafts and old versions are not shown.</p>
-          <ul className="flex flex-col max-h-[60vh] overflow-auto">
+          <ul className="flex flex-col gap-1.5 max-h-[60vh] overflow-auto">
             {(entries ?? []).map((x) => (
-              <li key={x.entry.id} className="flex items-center gap-2 min-h-12 border-b border-card-border last:border-0">
-                <input type="checkbox" className="w-5 h-5 shrink-0" checked={linked.includes(x.entry.id)} onChange={() => toggle(x.entry.id)} aria-label={`Link ${hm(x.entry.care_time)} ${entrySummary(x)}`} />
-                <span className="w-11 font-code-tabular text-body-sm font-bold text-primary">{hm(x.entry.care_time)}</span>
-                <span className="flex-1 min-w-0 truncate font-body-md">{entrySummary(x)}</span>
-                <Button variant="ghost" className="shrink-0" onClick={() => insertLine(x)}>Add line</Button>
+              <li key={x.entry.id} className={`flex items-start gap-2 rounded-lg p-2 ${linked.includes(x.entry.id) ? 'bg-secondary-fixed/50' : 'bg-surface-container-low'}`}>
+                <label className="flex flex-1 min-w-0 items-start gap-2 cursor-pointer">
+                  <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0" checked={linked.includes(x.entry.id)} onChange={() => toggle(x.entry.id)} aria-label={`Link ${hm(x.entry.care_time)} ${entrySummary(x)}`} />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1 font-body-sm text-body-sm text-secondary"><Icon name={TYPE_ICON[x.entry.type]} className="text-[16px]" /><strong className="font-code-tabular text-primary">{hm(x.entry.care_time)}</strong> {TYPE_LABEL[x.entry.type]}</span>
+                    <span className="block font-body-md text-body-md [overflow-wrap:anywhere]">{entrySummary(x)}</span>
+                  </span>
+                </label>
+                <Button variant="ghost" className="shrink-0 px-2" onClick={() => insertLine(x)}>Add line</Button>
               </li>
             ))}
             {entries && entries.length === 0 && <li className="text-secondary">No confirmed records.</li>}
           </ul>
         </Card>
       </div>
-    </>
-  );
-}
-
-/* ------------------------------ View + print ------------------------------ */
-
-function HandoffBody({ shift, situation, background, assessment, openItems, sources }: { shift: string; situation: string; background: string; assessment: string; openItems: string[]; sources: EntryWithChild[] }) {
-  const sec = (t: string, v: React.ReactNode) => (
-    <Card as="section" className="flex flex-col gap-1 break-inside-avoid print:border-black print:shadow-none">
-      <h2 className="font-label-uppercase text-label-uppercase text-secondary uppercase print:text-black">{t}</h2>
-      <div className="font-body-lg text-on-surface whitespace-pre-wrap print:text-black">{v}</div>
-    </Card>
-  );
-  return (
-    <div className="flex flex-col gap-space-md">
-      <p className="font-headline-sm text-headline-sm text-primary print:text-black">{shift}</p>
-      {sec('Situation', situation)}
-      {sec('Background', background)}
-      {sec('Assessment', assessment)}
-      {sec('Open items', openItems.length ? <ul className="list-disc pl-6">{openItems.map((x, i) => <li key={i}>{x}</li>)}</ul> : 'None')}
-      {sec('Linked confirmed records', sources.length ? (
-        <>
-          <div className="print:hidden">{sources.map((x) => <EntryRow key={x.entry.id} item={x} />)}</div>
-          <ul className="hidden print:block">{sources.map((x) => <li key={x.entry.id}>{dateTimeLabel(x.entry.care_time)} · {entrySummary(x)} ({x.entry.id})</li>)}</ul>
-        </>
-      ) : 'None linked')}
-    </div>
-  );
-}
-
-export function HandoffViewPage() {
-  const { hid } = useParams();
-  const { patient } = useCurrentPatient();
-  const { db } = useApp();
-  const names = useNames();
-  const data = useLiveQuery(async () => {
-    const list = await listHandoffs(db, patient.id);
-    const item = list.find((x) => x.handoff.id === hid);
-    if (!item) return null;
-    const all = await listPatientEntries(db, patient.id);
-    return { ...item, sources: all.filter((x) => item.handoff.source_entry_ids.includes(x.entry.id)) };
-  }, [db, patient.id, hid]);
-  const base = `/patients/${patient.id}`;
-  if (data === undefined) return <p role="status">Loading…</p>;
-  if (data === null) return <EmptyState icon="search_off" text="Handover not found." action={<ButtonLink variant="secondary" to={`${base}/handoff`}>Back</ButtonLink>} />;
-  const h = data.handoff;
-  return (
-    <>
-      <div className="print:hidden">
-        <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Handover', to: `${base}/handoff` }, { label: h.shift }]} />
-      </div>
-      <div className="flex items-center justify-between">
-        <h1 className="font-headline-lg text-headline-lg text-primary">Handover</h1>
-        <Button variant="secondary" className="print:hidden" onClick={() => window.print()}><Icon name="print" />Print</Button>
-      </div>
-      <p className="font-body-sm text-secondary print:text-black">Written by {names.get(h.created_by) ?? h.created_by}{data.savedAt ? ` · saved ${dateTimeLabel(data.savedAt)}` : ''} · {h.id}</p>
-      <HandoffBody shift={h.shift} situation={h.situation} background={h.background} assessment={h.assessment} openItems={h.open_items} sources={data.sources} />
     </>
   );
 }

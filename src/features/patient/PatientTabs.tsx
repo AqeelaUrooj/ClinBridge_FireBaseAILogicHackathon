@@ -4,7 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 /** Patient page tabs, as on the Stitch patient screens. Every tab is a real page of this patient. */
 const TABS: [label: string, path: string][] = [
   ['Summary', ''], ['History', '/timeline'], ['Medications (MAR)', '/meds'], ['Vitals', '/vitals'],
-  ['Intake / Output', '/io'], ['Clinical notes', '/notes'], ['Body map and sites', '/body'],
+  ['Intake / Output', '/io'], ['Clinical notes', '/notes'], ['Body map and sites', '/body'], ['SBAR handover', '/handoff'],
 ];
 
 export function PatientTabs({ patientId }: { patientId: string }) {

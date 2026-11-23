@@ -8,7 +8,8 @@ import { hm, dayLabel } from '../lib/time';
  * - The values are also listed in a table, so nothing depends on reading the chart or on colour.
  * No thresholds, target bands or scores are drawn.
  */
-export function TrendChart({ series, label, unit, testId }: { series: TrendSeries; label: string; unit: string; testId?: string }) {
+/** `table={false}` only where the page already lists every value in a table of its own. */
+export function TrendChart({ series, label, unit, testId, table = true }: { series: TrendSeries; label: string; unit: string; testId?: string; table?: boolean }) {
   const all = [...series.baseline, ...series.confirmed, ...series.drafts];
   if (!all.length) return <p className="font-body-sm text-secondary" data-testid={testId}>No {label} readings saved for this patient yet.</p>;
   const W = 300, H = 96, PX = 14, PT = 16, PB = 18;
@@ -46,7 +47,7 @@ export function TrendChart({ series, label, unit, testId }: { series: TrendSerie
         {series.baseline.length > 0 && <span><span aria-hidden>■</span> hospital list before the outage</span>}
         {series.missing > 0 && <span>{series.missing} vital-sign record{series.missing === 1 ? '' : 's'} without {label}</span>}
       </figcaption>
-      <div className="max-h-40 overflow-y-auto border border-card-border rounded">
+      {table && <div className="max-h-40 overflow-y-auto border border-card-border rounded">
         <table className="w-full font-body-sm text-left">
           <caption className="sr-only">{label} values by measurement time</caption>
           <thead className="bg-surface-container-low text-secondary"><tr><th scope="col" className="px-2 py-1 font-semibold">Measured</th><th scope="col" className="px-2 py-1 font-semibold">{label}</th><th scope="col" className="px-2 py-1 font-semibold">Status</th></tr></thead>
@@ -60,7 +61,7 @@ export function TrendChart({ series, label, unit, testId }: { series: TrendSerie
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
     </figure>
   );
 }
