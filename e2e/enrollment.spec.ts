@@ -104,7 +104,8 @@ test('enroll a second laptop: fingerprint check, own passphrase, nurse activated
 
   await pb.getByRole('link', { name: 'Change log' }).click();
   await pb.getByLabel('Filter by action').selectOption('credential_activated');
-  await expect(pb.getByRole('cell', { name: 'credential_activated' })).toHaveCount(1);
+  await expect(pb.getByRole('list', { name: 'Rows' }).getByRole('listitem')).toHaveCount(1);
+  await expect(pb.getByRole('list', { name: 'Rows' })).toContainText('Staff sign-in activated');
 
   await pb.goto('/sign-in');
   await pb.getByLabel('Unit passphrase').fill(UNIT_B);

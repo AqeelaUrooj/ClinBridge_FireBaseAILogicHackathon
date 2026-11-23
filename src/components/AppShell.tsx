@@ -8,9 +8,14 @@ import { PHASE_LABEL } from '../lib/phase';
 
 /** Header: always visible, shows mode, snapshot age, laptop and the signed-in person (Stitch status rail). */
 export function ModeBanner({ onMenu, menuOpen, menuRef }: { menuRef?: Ref<HTMLButtonElement>; onMenu?: () => void; menuOpen?: boolean } = {}) {
-  const { phase, event, snapshot, clock, dataset, db, vault } = useApp();
+  const { phase, event, snapshot, clock, dataset, db, vault, deviceId } = useApp();
   const { user, lock } = useSession();
   const navigate = useNavigate();
+  // The header is also on the unlock screen: the laptop's name is read only while the records are open, and never breaks the page.
+  const laptop = useLiveQuery(async () => {
+    if (vault !== 'unlocked') return undefined;
+    try { return (await db.device.get(deviceId))?.label; } catch { return undefined; }
+  }, [db, deviceId, vault]);
   const clearedBy = useLiveQuery(async () => (event?.cleared_by ? (await db.practitioner.get(event.cleared_by))?.name : undefined), [db, event?.cleared_by]);
   const ageH = snapshot ? Math.floor((clock.now() - Date.parse(snapshot.taken_at)) / 3_600_000) : null;
   const dot = phase === 'down' ? 'bg-downtime-amber' : phase === 'online' ? 'bg-tertiary-fixed' : 'bg-tertiary-fixed-dim';
@@ -43,7 +48,7 @@ export function ModeBanner({ onMenu, menuOpen, menuRef }: { menuRef?: Ref<HTMLBu
         </div>
         <div className="flex items-center gap-space-md font-code-tabular text-code-tabular">
           <span className="hidden md:flex items-center gap-1 text-on-primary"><Icon name="schedule" className="text-[15px]" />{hm(clock.nowIso())}</span>
-          <span className="hidden xl:flex items-center gap-1 font-bold"><Icon name="desktop_windows" className="text-[15px]" />DT-4W-01</span>
+          {laptop && <span className="hidden xl:flex items-center gap-1 font-bold max-w-[14rem]" title={laptop}><Icon name="desktop_windows" className="text-[15px]" /><span className="truncate">{laptop.replace(/\s*\(.*\)$/, '')}</span></span>}
           {user && (
             <>
               <span className="text-right leading-tight hidden sm:block">

@@ -17,7 +17,8 @@ import { NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from 
 import { IoPage, RecordIo } from './features/charting/IoPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
-import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
+import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
+import { AuditPage } from './features/admin/AuditPage';
 import { ExportPage } from './features/recovery/RecoveryPages';
 import { RecoveryItemPage, RecoveryLayout, RecoveryNothingOpen } from './features/recovery/RecoveryWorklist';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
