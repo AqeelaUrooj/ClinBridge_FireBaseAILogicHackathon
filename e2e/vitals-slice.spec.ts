@@ -52,7 +52,8 @@ test('record vitals, survive reload, then fix them', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Check before saving' })).toBeVisible();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved on this laptop.')).toBeVisible();
-  await expect(page.getByText('BP 128/82 · Pulse 77 · O₂ 97%')).toBeVisible();
+  const saved = page.getByRole('region', { name: 'Vitals flowsheet' }).locator('tbody tr').first();
+  for (const [col, text] of [['bp', '128/82'], ['hr', '77'], ['spo2', '97']] as const) await expect(saved.locator(`[data-col="${col}"]`)).toContainText(text);
 
   // Reload: IndexedDB keeps it. The key and the session are only in memory, so the records are locked:
   // unlock with the unit passphrase, then sign in again.

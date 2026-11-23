@@ -1,123 +1,166 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { createEntry, listPatientEntries, type EntryWithChild } from '../../db/repos/entries';
-import type { VitalSign } from '../../db/schema';
-import { useApp, useSession } from '../../state/app';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { createEntry, listPatientEntries } from '../../db/repos/entries';
+import { isNurse, useApp, useSession } from '../../state/app';
 import { VITAL_RULES, isUnusual, type VitalKey } from '../../lib/vitals';
-import { hm, dayLabel } from '../../lib/time';
-import { Badge, Breadcrumbs, ButtonLink, Card, EmptyState, Icon, SectionLabel } from '../../components/ui';
+import { dateTimeLabel, dayLabel, hm } from '../../lib/time';
+import { Badge, ButtonLink, Card, EmptyState, Icon } from '../../components/ui';
 import { useCurrentPatient } from '../patient/PatientLayout';
+import { PatientTabs } from '../patient/PatientTabs';
 import { fullName } from '../patient/patientData';
-import { EntryRow } from '../entries/entryView';
 import { VitalsEditor } from './VitalsEditor';
 import { TrendChart } from '../../components/TrendChart';
-import { vitalSeries } from '../../lib/vitalTrend';
+import { SPO2_LOINC, vitalSeries, withBaseline } from '../../lib/vitalTrend';
 import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
+import { Flowsheet, seg } from './Flowsheet';
+import { GlucoseChart, PulsePressureChart } from './VitalsCharts';
+import { flowRows, insulinDoses, tile, type FlowRow } from './flowsheetData';
 
-const CARDS: VitalKey[] = ['bp_systolic', 'heart_rate', 'spo2', 'temp_c', 'resp_rate'];
-/** Pictures for each measure. Decorative: the number and label carry the meaning. */
-export const VITAL_ART: Partial<Record<VitalKey, MedicalAsset>> = {
-  bp_systolic: 'vitals/bp-monitor', bp_diastolic: 'vitals/bp-monitor', heart_rate: 'vitals/heart', spo2: 'vitals/pulse-oximeter',
-  temp_c: 'vitals/thermometer', resp_rate: 'vitals/lungs', glucose_mgdl: 'vitals/glucose-meter',
-};
+/**
+ * Vitals flowsheet, after the Stitch "Vital Signs Flowsheet & Charts" screen: latest-value tiles, two charts and one
+ * table. Not shown, because nothing approved or recorded is behind it: NEWS2, mean pressure, target bands, "normal"
+ * labels, next check time, cuff position, heart rhythm, GCS, a verified mark per row.
+ */
+const TILES: { k: VitalKey; label: string; art: MedicalAsset }[] = [
+  { k: 'bp_systolic', label: 'Blood pressure', art: 'vitals/bp-monitor' }, { k: 'heart_rate', label: 'Pulse', art: 'vitals/heart' },
+  { k: 'spo2', label: 'Oxygen level', art: 'vitals/pulse-oximeter' }, { k: 'temp_c', label: 'Temp', art: 'vitals/thermometer' },
+  { k: 'resp_rate', label: 'Breathing', art: 'vitals/lungs' }, { k: 'glucose_mgdl', label: 'Blood sugar', art: 'vitals/glucose-meter' },
+];
 
-function useVitals(patientId: string) {
-  const { db } = useApp();
-  return useLiveQuery(async () => (await listPatientEntries(db, patientId)).filter((x) => x.entry.type === 'vital_sign'), [db, patientId]);
+const signed = (n: number) => (n > 0 ? `+${n}` : n === 0 ? 'same' : `−${Math.abs(n)}`);
+
+function VitalTile({ k, label, art, rows }: { k: VitalKey; label: string; art: MedicalAsset; rows: FlowRow[] }) {
+  const { latest, before, change } = tile(rows, k);
+  const out = !!latest && (isUnusual(k, latest.n) || (k === 'bp_systolic' && isUnusual('bp_diastolic', latest.row.values.bp_diastolic)));
+  return (
+    <section aria-label={`Latest ${label.toLowerCase()}`} className={`min-w-0 rounded-xl border p-space-sm bg-surface-container-lowest shadow-sm flex flex-col gap-2 ${out ? 'border-downtime-amber-border' : 'border-card-border'}`}>
+      <div className="flex items-center justify-between gap-1">
+        <span className="flex items-center gap-1.5 min-w-0"><MedIllustration name={art} size={24} /><span className="font-label-uppercase text-[11px] leading-[14px] text-secondary font-bold uppercase">{label}</span></span>
+        <span className="font-code-tabular text-[12px] text-on-surface-variant">{latest ? hm(latest.time) : ''}</span>
+      </div>
+      <div className="flex flex-wrap items-baseline gap-x-1 my-auto py-1">
+        <span className="font-code-tabular text-[30px] leading-none font-bold text-primary tracking-tight">{latest ? latest.value : '—'}</span>
+        {latest && <span className="font-body-sm text-body-sm text-secondary">{VITAL_RULES[k].unit}</span>}
+        {out && <Badge tone="amber" icon="warning">Unusual</Badge>}
+      </div>
+      <div className="rounded bg-surface-container-low px-2 py-1.5 min-h-[52px] font-body-sm text-[12px] leading-[17px] text-on-surface-variant">
+        {latest && (
+          <span className="flex items-center justify-between gap-1 text-primary font-semibold">
+            <span>{latest.time.slice(0, 10) === rows[0]!.time.slice(0, 10) ? 'Confirmed' : dayLabel(latest.time)}</span>
+            {change != null && <span className="font-code-tabular" title="Change from the value before">{signed(change)}</span>}
+          </span>
+        )}
+        <span className="block">{before ? `Before: ${before.value} at ${hm(before.time)}${before.row.kind === 'baseline' ? ' (hospital list)' : ''}` : latest ? 'No earlier value' : 'Not recorded yet'}</span>
+      </div>
+    </section>
+  );
 }
 
-/** Small line chart of one measure over the confirmed readings. Plain SVG, no library. */
-function Trend({ items, k }: { items: EntryWithChild[]; k: VitalKey }) {
-  const pts = items
-    .filter((x) => x.entry.status === 'confirmed' && (x.child as VitalSign | undefined)?.[k] != null)
-    .map((x) => ({ t: Date.parse(x.entry.care_time), v: (x.child as VitalSign)[k] as number, label: hm(x.entry.care_time) }))
-    .sort((a, b) => a.t - b.t);
-  if (pts.length < 2) return <p className="font-body-sm text-secondary">Need two readings for a trend.</p>;
-  const W = 520, H = 120, P = 24;
-  const t0 = pts[0]!.t, t1 = pts[pts.length - 1]!.t;
-  const vs = pts.map((p) => p.v);
-  const lo = Math.min(...vs), hi = Math.max(...vs);
-  const span = hi - lo || 1;
-  const x = (t: number) => P + ((t - t0) / (t1 - t0 || 1)) * (W - 2 * P);
-  const y = (v: number) => H - P - ((v - lo) / span) * (H - 2 * P);
-  const r = VITAL_RULES[k];
+function AwakePainTile({ rows }: { rows: FlowRow[] }) {
+  const awake = rows.find((r) => r.kind === 'confirmed' && r.values.consciousness);
+  const pain = tile(rows, 'pain_0_10').latest;
   return (
-    <figure>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[120px]" role="img" aria-label={`${r.label} trend: ${pts.map((p) => `${p.v} at ${p.label}`).join(', ')}`}>
-        <polyline fill="none" stroke="#4A6078" strokeWidth="2" points={pts.map((p) => `${x(p.t)},${y(p.v)}`).join(' ')} />
-        {pts.map((p) => (
-          <g key={p.t}>
-            <circle cx={x(p.t)} cy={y(p.v)} r="4" fill={isUnusual(k, p.v) ? '#C18A28' : '#1C2536'} />
-            <text x={x(p.t)} y={y(p.v) - 8} textAnchor="middle" fontSize="11" fill="#1C2536" fontFamily="Inter">{p.v}</text>
-            <text x={x(p.t)} y={H - 4} textAnchor="middle" fontSize="10" fill="#5A6E85" fontFamily="Inter">{p.label}</text>
-          </g>
-        ))}
-      </svg>
-    </figure>
+    <section aria-label="Latest awake and pain" className="min-w-0 col-span-2 sm:col-span-3 lg:col-span-2 xl:col-span-1 rounded-xl p-space-sm bg-primary-container text-on-primary shadow-sm flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-1">
+        <span className="font-label-uppercase text-[11px] leading-[14px] font-bold uppercase text-primary-fixed">Awake and pain</span>
+        <span className="font-code-tabular text-[12px] text-primary-fixed">{awake ? hm(awake.time) : ''}</span>
+      </div>
+      <span className="my-auto py-1 font-headline-sm text-[22px] leading-[26px] font-bold break-words">{awake ? awake.values.consciousness : 'Not recorded'}</span>
+      <div className="rounded bg-primary px-2 py-1.5 min-h-[52px] font-body-sm text-[12px] leading-[17px]">
+        <span className="block font-semibold">{pain ? `Pain ${pain.value} / 10 at ${hm(pain.time)}` : 'Pain not recorded'}</span>
+        <span className="block text-primary-fixed">No score is calculated</span>
+      </div>
+    </section>
   );
 }
 
 export function VitalsPage() {
-  const { patient } = useCurrentPatient();
-  const items = useVitals(patient.id);
+  const { patient, encounter } = useCurrentPatient();
+  const { db } = useApp();
+  const { user } = useSession();
+  const data = useLiveQuery(async () => {
+    const [items, results, staff, orders] = await Promise.all([
+      listPatientEntries(db, patient.id), db.snapshot_result.where('patient_id').equals(patient.id).toArray(), db.practitioner.toArray(),
+      encounter ? db.active_order.where('encounter_id').equals(encounter.id).toArray() : Promise.resolve([]),
+    ]);
+    return { patientId: patient.id, items, results, names: new Map(staff.map((p) => [p.id, `${p.name}, ${p.role}`])), careOrders: orders.filter((o) => o.type === 'nursing' && o.status === 'active') };
+  }, [db, patient.id, encounter?.id]);
+  const [second, setSecond] = useState<'sugar' | 'oxygen' | null>(null);
   const location = useLocation();
   const savedId = (location.state as { saved?: string } | null)?.saved;
-  const latest = items?.find((x) => x.entry.status === 'confirmed');
-  const lv = latest?.child as VitalSign | undefined;
   const base = `/patients/${patient.id}`;
+  if (!data || data.patientId !== patient.id) return <p role="status">Loading…</p>;
+
+  const vitals = data.items.filter((x) => x.entry.type === 'vital_sign');
+  const rows = flowRows(vitals, data.results, patient.id);
+  const doses = insulinDoses(data.items, patient.id);
+  const last = rows.find((r) => r.kind === 'confirmed');
+  const drafts = rows.filter((r) => r.kind === 'draft');
+  const anySugar = rows.some((r) => r.kind !== 'retired' && r.values.glucose_mgdl != null);
+  const chart = second ?? (anySugar ? 'sugar' : 'oxygen');
+  const chartName = chart === 'sugar' ? 'Blood sugar over time' : 'Oxygen level (SpO₂) over time';
+  const chartCard = 'shadow-sm flex flex-col gap-space-sm min-w-0';
   return (
     <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Vitals' }]} />
+      <PatientTabs patientId={patient.id} />
       {savedId && <p role="status" className="rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant px-space-md py-space-sm flex items-center gap-2 font-body-md"><Icon name="check_circle" filled />Saved on this laptop.</p>}
       <div className="flex flex-wrap items-center justify-between gap-space-sm">
-        <h1 className="font-headline-lg text-headline-lg text-primary">Vitals</h1>
+        <div>
+          <h1 className="font-headline-lg text-headline-lg text-primary">Vitals</h1>
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-body-md text-body-md text-on-surface-variant">
+            <Icon name="history_toggle_off" className="hidden sm:inline text-[18px] text-secondary" />
+            {last ? <span>Last recorded: <strong className="text-primary">{dateTimeLabel(last.time)}</strong> by <strong className="text-primary">{data.names.get(last.item!.entry.performer_id) ?? last.item!.entry.performer_id}</strong></span> : <span>No confirmed vitals on this laptop yet</span>}
+            <Badge>Kept on this laptop</Badge>
+          </p>
+        </div>
         <div className="flex flex-wrap gap-space-sm">
+          {isNurse(user) ? <ButtonLink to={`${base}/vitals/record`}><Icon name="add_circle" />Record vitals</ButtonLink> : <span className="min-h-11 px-4 rounded-lg bg-surface-container text-secondary font-body-sm text-body-sm grid place-items-center">Only nurses can record vitals</span>}
           <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}><Icon name="print" />Paper vitals &amp; I/O sheet</ButtonLink>
-          <ButtonLink to={`${base}/vitals/record`}><Icon name="add" />Record vitals</ButtonLink>
         </div>
       </div>
-      {items === undefined ? <p role="status">Loading…</p> : !latest ? <EmptyState text="No vitals yet" /> : (
-        <>
+
+      {drafts.length > 0 && (
+        <div role="note" className="rounded-xl bg-downtime-amber-bg border border-downtime-amber-border p-space-md flex flex-wrap items-center gap-space-sm">
+          <Icon name="rule" className="text-[#7a5410] text-[20px]" />
+          <span className="flex-1 min-w-[220px] font-body-md text-body-md text-[#6b4a0e]"><strong>{drafts.length === 1 ? 'One vitals draft is' : `${drafts.length} vitals drafts are`} not confirmed.</strong> Drafts are left out of the tiles and the chart lines.</span>
+          {drafts.map((d) => <ButtonLink key={d.id} variant="secondary" to={`/entries/${d.id}`}>Check draft {hm(d.time)}</ButtonLink>)}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-space-sm">
+        {TILES.map((t) => <VitalTile key={t.k} {...t} rows={rows} />)}
+        <AwakePainTile rows={rows} />
+      </div>
+      <p className="font-body-sm text-body-sm text-secondary -mt-space-sm">Each tile shows the newest confirmed value with its own time. “Unusual” uses draft ranges that are not clinically approved yet.</p>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-md items-stretch">
+        <Card aria-label="Pulse and blood pressure over time" className={`${chartCard} xl:col-span-7`}>
           <div>
-            <SectionLabel>Latest · {hm(latest.entry.care_time)}, {dayLabel(latest.entry.care_time)}</SectionLabel>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-space-md mt-space-sm">
-              {CARDS.map((k) => {
-                const r = VITAL_RULES[k];
-                const n = lv?.[k];
-                const out = isUnusual(k, n);
-                return (
-                  <div key={k} className={`rounded-xl border p-space-md bg-surface-container-lowest ${out ? 'border-downtime-amber-border' : 'border-card-border'}`}>
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">{k === 'bp_systolic' ? 'Blood pressure' : r.label}</span>
-                      {VITAL_ART[k] && <MedIllustration name={VITAL_ART[k]!} size={30} />}
-                    </span>
-                    <span className="block font-code-tabular text-[26px] font-bold text-primary">
-                      {n == null ? '—' : k === 'bp_systolic' ? `${n}/${lv?.bp_diastolic ?? '?'}` : n}
-                      <span className="text-body-sm font-normal text-secondary"> {n == null ? '' : r.unit}</span>
-                    </span>
-                    {out && <Badge tone="amber" icon="warning">Unusual</Badge>}
-                  </div>
-                );
-              })}
+            <h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2"><Icon name="timeline" className="text-[20px] text-secondary" />Pulse and blood pressure over time</h2>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">Both use the same number scale. Point at or tap a reading to see its values.</p>
+          </div>
+          <PulsePressureChart rows={rows} />
+        </Card>
+        <Card aria-label={chartName} className={`${chartCard} xl:col-span-5`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2"><Icon name={chart === 'sugar' ? 'bloodtype' : 'air'} className="text-[20px] text-secondary" />{chartName}</h2>
+            <div role="group" aria-label="Second chart" className="flex bg-surface-container-low rounded-lg border border-card-border p-0.5">
+              <button type="button" aria-pressed={chart === 'sugar'} onClick={() => setSecond('sugar')} className={seg(chart === 'sugar')}>Blood sugar</button>
+              <button type="button" aria-pressed={chart === 'oxygen'} onClick={() => setSecond('oxygen')} className={seg(chart === 'oxygen')}>Oxygen</button>
             </div>
           </div>
-          <p className="font-body-sm text-secondary -mt-space-sm">“Unusual” uses draft ranges that are not clinically approved yet.</p>
-          <div className="grid lg:grid-cols-2 gap-space-md">
-            <Card>
-              <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Pulse over time</h2>
-              <Trend items={items} k="heart_rate" />
-            </Card>
-            <Card aria-label="Oxygen level (SpO₂) over time">
-              <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Oxygen level (SpO₂) over time</h2>
-              <TrendChart series={vitalSeries(items, patient.id, 'spo2')} label="SpO₂" unit="%" testId="vitals-spo2-trend" />
-            </Card>
-          </div>
-          <Card>
-            <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">All vitals</h2>
-            {items.map((x) => <EntryRow key={x.entry.id} item={x} />)}
-          </Card>
-        </>
-      )}
+          <p className="font-body-sm text-body-sm text-on-surface-variant -mt-2">{chart === 'sugar' ? 'With recorded insulin doses. No target range is drawn.' : 'No target range is drawn.'}</p>
+          {chart === 'sugar' ? <GlucoseChart rows={rows} doses={doses} />
+            : <TrendChart series={withBaseline(vitalSeries(vitals, patient.id, 'spo2'), data.results, patient.id, SPO2_LOINC)} label="SpO₂" unit="%" testId="vitals-spo2-trend" />}
+        </Card>
+      </div>
+
+      <Flowsheet rows={rows} names={data.names} />
+      <div className="rounded-xl bg-surface-container-low border border-card-border px-space-md py-space-sm flex flex-wrap items-center justify-between gap-2 font-body-sm text-body-sm text-on-surface-variant">
+        <Link to={`${base}/timeline`} className="min-h-9 inline-flex items-center gap-1.5 font-semibold text-primary underline"><Icon name="history" className="text-[16px]" />View the full history</Link>
+        <span>{data.careOrders.length ? <>Care orders on the patient list: <strong className="text-primary">{data.careOrders.map((o) => o.text).join(' · ')}</strong></> : 'No care orders on the patient list'}</span>
+      </div>
     </>
   );
 }
@@ -128,10 +171,20 @@ export function RecordVitals() {
   const { user } = useSession();
   const navigate = useNavigate();
   const base = `/patients/${patient.id}`;
+  if (!isNurse(user)) return <EmptyState icon="block" text="Only nurses can add records." />;
   return (
     <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Vitals', to: `${base}/vitals` }, { label: 'Record' }]} />
-      <h1 className="font-headline-lg text-headline-lg text-primary">Record vitals</h1>
+      <PatientTabs patientId={patient.id} />
+      <div className="flex flex-wrap items-center justify-between gap-space-sm">
+        <div className="flex items-center gap-space-sm">
+          <span className="w-11 h-11 rounded-lg bg-primary text-on-primary grid place-items-center shrink-0"><Icon name="add_task" className="text-[22px]" /></span>
+          <div>
+            <h1 className="font-headline-lg text-headline-lg text-primary">Record vitals</h1>
+            <p className="font-body-md text-body-md text-on-surface-variant">{fullName(patient)}{encounter?.bed ? ` · Bed ${encounter.bed}` : ''} · recorded by {user?.name}</p>
+          </div>
+        </div>
+        <ButtonLink variant="secondary" to={`${base}/vitals`}><Icon name="close" />Close</ButtonLink>
+      </div>
       <VitalsEditor
         saveLabel="Save"
         minCareTime={encounter?.admit_time ?? undefined}
