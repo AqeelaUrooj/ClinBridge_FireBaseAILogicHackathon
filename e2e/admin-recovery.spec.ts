@@ -45,8 +45,9 @@ test('recovery: worklist, possible duplicate explained, sign off; FHIR export va
   const before = Number((await page.getByText(/ of 45 signed off/).textContent())!.split(' ')[0]);
   await page.getByRole('button', { name: 'Possible duplicate' }).click();
   await page.getByTestId('wl-e-018').click(); // Grace Bell, acetaminophen 07:25 after 05:40
-  await expect(page.getByText(/the order says every 6 hours/)).toBeVisible();
-  await expect(page.getByText('Compare with')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Record to check' }).getByText(/the order says every 6 hours/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Compare with' })).toBeVisible();
+  await page.getByRole('radio', { name: 'The record matches the paper' }).check();
   await page.getByRole('button', { name: 'Checked — sign off' }).click();
   await expect(page.getByText(`${before + 1} of 45 signed off`)).toBeVisible();
 

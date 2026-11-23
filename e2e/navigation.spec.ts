@@ -66,7 +66,7 @@ test('admin menu: system admin group; every link has a working page', async ({ p
   for (const [link, check] of [
     ['Readiness & Storage', page.getByRole('heading', { name: 'This laptop' })],
     ['Downtime Management', page.getByText(/^Now: /)],
-    ['Recovery Gate & Worklist', page.getByRole('heading', { name: /To check/ })],
+    ['Recovery Gate & Worklist', page.getByRole('heading', { name: 'Recovery worklist' })],
     ['Audit Log', page.getByText(/rows verified|log rows/).first()],
   ] as const) {
     await m.getByRole('link', { name: link }).click();

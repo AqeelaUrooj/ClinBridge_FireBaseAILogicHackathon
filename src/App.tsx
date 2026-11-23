@@ -18,7 +18,8 @@ import { IoPage, RecordIo } from './features/charting/IoPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
 import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
-import { RecoveryListPage, RecoveryItemPage, ExportPage } from './features/recovery/RecoveryPages';
+import { ExportPage } from './features/recovery/RecoveryPages';
+import { RecoveryItemPage, RecoveryLayout, RecoveryNothingOpen } from './features/recovery/RecoveryWorklist';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 import { AiCheckPage, PracticeComparePage } from './features/ai/AiPages';
 import { PrintFormPage, SpoolerPage } from './features/print/PrintPages';
@@ -87,8 +88,10 @@ export function App() {
             <Route path="backup" element={<BackupPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
-          <Route path="/recovery" element={<RecoveryListPage />} />
-          <Route path="/recovery/:item" element={<RecoveryItemPage />} />
+          <Route path="/recovery" element={<RecoveryLayout />}>
+            <Route index element={<RecoveryNothingOpen />} />
+            <Route path=":item" element={<RecoveryItemPage />} />
+          </Route>
           <Route path="/patients/:id" element={<PatientLayout />}>
             <Route index element={<PatientSummary />} />
             <Route path="timeline" element={<Timeline />} />
