@@ -145,7 +145,7 @@ test.describe('body map', () => {
     await expect(page.locator('[data-has-admin]')).toHaveCount(0);
     await openBodyMap(page, 'pt-02');
     await expect(page.locator('[data-region="ABDOMEN_LEFT"][data-has-admin="true"]')).toHaveCount(1);
-    await page.getByRole('main').getByRole('link', { name: 'My patients' }).click();
+    await page.getByRole('complementary', { name: 'Main menu' }).getByRole('link', { name: /My Patients/ }).click();
     await page.getByTestId('patient-pt-07').click();
     await expect(page.getByRole('button', { name: 'Yes, open' })).toBeVisible();
     await expect(page.locator('[data-has-admin]')).toHaveCount(0);

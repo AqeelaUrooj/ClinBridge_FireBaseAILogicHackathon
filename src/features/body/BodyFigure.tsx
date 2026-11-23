@@ -14,13 +14,15 @@ export interface FigureMarker { regionId: string; kind: MarkerKind; key: string 
 /** Teardrop pin, tip at (0,0). */
 const PIN = 'M 0,0 C -2.2,-4.2 -6,-7.4 -6,-11.6 A 6 6 0 1 1 6,-11.6 C 6,-7.4 2.2,-4.2 0,0 Z';
 
-export function BodyFigure({ view, markers, administrations, selected, onSelect, titleId }: {
+export function BodyFigure({ view, markers, administrations, selected, onSelect, titleId, emptyText = 'No recorded administration at this site' }: {
   view: View;
   markers: FigureMarker[];
   administrations: ReturnType<typeof medicationSites>['administrations'];
   selected: string | null;
   onSelect: (id: string) => void;
   titleId?: string;
+  /** Said for areas without a shown administration (changes while a layer is hidden, so hidden is never read as none). */
+  emptyText?: string;
 }) {
   const uid = useId().replace(/:/g, '');
   const regions = regionsInView(view);
@@ -100,7 +102,7 @@ export function BodyFigure({ view, markers, administrations, selected, onSelect,
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(r.id); } }}
             >
               <title>{r.label}</title>
-              <desc id={descriptionId}>{count ? administrationCountLabel(count) : 'No recorded administration at this site'}</desc>
+              <desc id={descriptionId}>{count ? administrationCountLabel(count) : emptyText}</desc>
             </path>
           );
         })}
