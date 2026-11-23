@@ -5,6 +5,7 @@ import {
   IO_IN, IO_METHODS, IO_OUT, LAB_STATUSES, NOTE_CATEGORIES, ioLabel, labLabel, noteLabel,
   validateIo, validateLab, validateNote, type IoForm, type LabForm, type NoteForm,
 } from '../../lib/charting';
+import { stepVolume } from './ioData';
 import { Field, TwoStepEditor, fieldCls, labelCls } from './TwoStepEditor';
 
 type Common<V> = {
@@ -33,6 +34,16 @@ function Choice({ name, value, options, onChange, error }: { name: string; value
 
 /* ------------------------------ Fluids ------------------------------ */
 
+function Step({ dir, value, onStep }: { dir: 1 | -1; value: string; onStep: (v: string) => void }) {
+  const next = stepVolume(value, dir);
+  return (
+    <button type="button" disabled={next == null} onClick={() => next && onStep(next)}
+      className="h-full w-12 shrink-0 grid place-items-center text-[20px] font-bold text-primary bg-surface-container-low hover:bg-surface-container disabled:text-outline disabled:cursor-not-allowed">
+      <span aria-hidden>{dir < 0 ? '−' : '+'}</span><span className="sr-only">{dir < 0 ? '50 mL less' : '50 mL more'}</span>
+    </button>
+  );
+}
+
 export const ioToForm = (io?: IntakeOutput): IoForm => ({
   direction: io?.direction ?? '', category: io?.category ?? '', volume: io ? String(io.volume_ml) : '',
   method: io?.method ?? '', start: io?.start_time ? toLocalInput(io.start_time) : '', end: io?.end_time ? toLocalInput(io.end_time) : '', orderId: io?.order_id ?? '',
@@ -52,7 +63,11 @@ export function IoEditor({ initial, ivOrders, ...rest }: Common<Omit<IntakeOutpu
           {f.direction && <Choice name="What kind?" value={f.category} options={f.direction === 'in' ? IO_IN : IO_OUT} onChange={(v) => set({ category: v })} error={e.category} />}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
             <Field id="vol" label="Amount (mL)" error={e.volume}>
-              <input id="vol" inputMode="numeric" value={f.volume} onChange={(ev) => set({ volume: ev.target.value })} aria-invalid={!!e.volume} className={`${fieldCls(e.volume)} font-code-tabular text-[20px] font-semibold`} />
+              <div className={`flex items-center h-12 rounded-lg border overflow-hidden bg-surface-container-lowest focus-within:ring-2 focus-within:ring-secondary ${e.volume ? 'border-error' : 'border-card-border'}`}>
+                <Step dir={-1} value={f.volume} onStep={(v) => set({ volume: v })} />
+                <input id="vol" inputMode="numeric" value={f.volume} onChange={(ev) => set({ volume: ev.target.value })} aria-invalid={!!e.volume} className="flex-1 min-w-0 h-full bg-transparent px-2 text-center outline-none font-code-tabular text-[20px] font-semibold text-primary" />
+                <Step dir={1} value={f.volume} onStep={(v) => set({ volume: v })} />
+              </div>
             </Field>
             <Field id="method" label="How measured (optional)" error={e.method}>
               <select id="method" value={f.method} onChange={(ev) => set({ method: ev.target.value })} className={fieldCls(e.method)}>

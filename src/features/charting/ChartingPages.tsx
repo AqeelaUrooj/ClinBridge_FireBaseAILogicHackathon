@@ -1,17 +1,17 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createEntry, listPatientEntries } from '../../db/repos/entries';
-import type { IntakeOutput, LabEvent } from '../../db/schema';
+import type { LabEvent } from '../../db/schema';
 import { isNurse, useApp, useSession } from '../../state/app';
-import { ioTotals, labLabel } from '../../lib/charting';
-import { dayLabel, hm } from '../../lib/time';
+import { labLabel } from '../../lib/charting';
+import { hm } from '../../lib/time';
 import { Badge, Breadcrumbs, ButtonLink, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
 import { EntryRow } from '../entries/entryView';
-import { IoEditor, LabEditor, NoteEditor, ioToForm, labToForm, noteToForm } from './editors';
+import { LabEditor, NoteEditor, labToForm, noteToForm } from './editors';
 
-function useTyped(patientId: string, type: 'intake_output' | 'note' | 'lab_event') {
+function useTyped(patientId: string, type: 'note' | 'lab_event') {
   const { db } = useApp();
   return useLiveQuery(async () => (await listPatientEntries(db, patientId)).filter((x) => x.entry.type === type), [db, patientId, type]);
 }
@@ -23,69 +23,6 @@ function Saved() {
 }
 
 const NurseOnly = () => <EmptyState icon="block" text="Only nurses can add records." />;
-
-/* ------------------------------ Fluids ------------------------------ */
-
-export function IoPage() {
-  const { patient } = useCurrentPatient();
-  const { clock } = useApp();
-  const items = useTyped(patient.id, 'intake_output');
-  const base = `/patients/${patient.id}`;
-  const today = clock.nowIso().slice(0, 10);
-  const todays = (items ?? []).filter((x) => x.entry.status === 'confirmed' && x.entry.care_time.slice(0, 10) === today).map((x) => x.child as IntakeOutput);
-  const t = ioTotals(todays);
-  return (
-    <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Fluids' }]} />
-      <Saved />
-      <div className="flex flex-wrap items-center justify-between gap-space-sm">
-        <h1 className="font-headline-lg text-headline-lg text-primary">Fluids (in and out)</h1>
-        <div className="flex flex-wrap gap-space-sm">
-          <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}><Icon name="print" />Paper vitals &amp; I/O sheet</ButtonLink>
-          <ButtonLink to={`${base}/io/record`}><Icon name="add" />Add fluid</ButtonLink>
-        </div>
-      </div>
-      <div>
-        <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Totals for {dayLabel(clock.nowIso())} (from 00:00, confirmed only)</span>
-        <div className="grid grid-cols-3 gap-space-md mt-space-sm">
-          {[['In', t.totalIn], ['Out', t.totalOut], ['Balance (in − out)', t.balance]].map(([k, v]) => (
-            <div key={k} className="rounded-xl border border-card-border bg-surface-container-lowest p-space-md">
-              <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">{k}</span>
-              <span className="block font-code-tabular text-[26px] font-bold text-primary">{v} <span className="text-body-sm font-normal text-secondary">mL</span></span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">All fluid records</h2>
-        {!items ? <p role="status">Loading…</p> : items.length ? items.map((x) => <EntryRow key={x.entry.id} item={x} />) : <EmptyState text="No fluids recorded" />}
-      </Card>
-    </>
-  );
-}
-
-export function RecordIo() {
-  const { patient, encounter } = useCurrentPatient();
-  const { db, clock, deviceId } = useApp();
-  const { user } = useSession();
-  const navigate = useNavigate();
-  const ivOrders = useLiveQuery(async () => (encounter ? (await db.active_order.where('encounter_id').equals(encounter.id).toArray()).filter((o) => o.type === 'iv') : []), [db, encounter?.id]);
-  const base = `/patients/${patient.id}`;
-  if (!isNurse(user)) return <NurseOnly />;
-  if (!ivOrders) return <p role="status">Loading…</p>;
-  return (
-    <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Fluids', to: `${base}/io` }, { label: 'Add' }]} />
-      <h1 className="font-headline-lg text-headline-lg text-primary">Add fluid</h1>
-      <IoEditor initial={ioToForm()} ivOrders={ivOrders} minCareTime={encounter?.admit_time} saveLabel="Save"
-        onCancel={() => navigate(`${base}/io`)}
-        onSubmit={async ({ values, careTime }) => {
-          const e = await createEntry(db, clock, { userId: user!.id, deviceId }, { type: 'intake_output', patientId: patient.id, careTime, values });
-          navigate(`${base}/io`, { state: { saved: e.id } });
-        }} />
-    </>
-  );
-}
 
 /* ------------------------------ Notes ------------------------------ */
 

@@ -13,7 +13,8 @@ import { EntryLayout, EntryDetail, EntryHistory, CorrectEntry } from './features
 import { MarPage } from './features/meds/MarPage';
 import { RecordMed, OrdersPage } from './features/meds/MedsPages';
 import { BodyMapPage } from './features/body/BodyMapPage';
-import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
+import { NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
+import { IoPage, RecordIo } from './features/charting/IoPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
 import { CapturePage, ConfirmDraftPage } from './features/capture/CapturePages';
 import { AdminLayout, ReadinessPage, DowntimePage, SnapshotPage, StaffPage, DevicesPage, AuditPage, SettingsPage, SetupPage, BackupPage } from './features/admin/AdminPages';
