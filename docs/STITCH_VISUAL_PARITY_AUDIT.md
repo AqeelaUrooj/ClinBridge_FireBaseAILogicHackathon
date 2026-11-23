@@ -60,7 +60,7 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Batch 4 |
 | 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Small fix, batch 4 |
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
-| 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (open, not merged). After #27, the body map page in #26 must drop its own print header |
+| 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (merged, `main` is `bfea237`). The body map page in #26 now uses the shared header |
 | 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
 
 ## 6. Screen by screen
