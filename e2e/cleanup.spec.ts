@@ -26,7 +26,7 @@ test('cleanup: six checks, fresh backup downloaded, typed confirmation, only the
 
   await page.getByRole('button', { name: /Kim Ellis/ }).click();
   for (const d of '2468') await page.getByRole('button', { name: d, exact: true }).click();
-  await page.getByRole('link', { name: 'Backup' }).click();
+  await page.getByRole('link', { name: 'Backup', exact: true }).click();
   await expect(page.getByText('1 unencrypted safety copy of these records on this laptop.')).toBeVisible();
   await page.getByLabel('Backup passphrase for the fresh backup').fill('quartz orchard bicycle eleven');
   const dl = page.waitForEvent('download');
