@@ -28,6 +28,9 @@ export function stepValue(k: VitalKey, current: string | undefined, dir: 1 | -1)
   return n < lo || n > hi ? null : String(n);
 }
 
+/** Columns follow the space the form really has, so a number never loses digits in a narrow pane. At most three. */
+const GRID = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(15rem,30%)),1fr))] gap-space-md';
+
 const MAIN: VitalKey[] = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'spo2', 'temp_c', 'resp_rate'];
 const MORE: VitalKey[] = ['pain_0_10', 'glucose_mgdl', 'o2_flow_lpm'];
 
@@ -161,13 +164,13 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
         {errors.form && <p role="alert" className="self-end text-error font-body-md">{errors.form}</p>}
       </div>
       <SectionLabel>Main</SectionLabel>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-space-md">
+      <div className={GRID}>
         {MAIN.map((k) => <Field key={k} k={k} form={form} setForm={setForm} error={errors[k]} />)}
       </div>
       {showMore ? (
         <>
           <SectionLabel>More</SectionLabel>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-space-md">
+          <div className={GRID}>
             {MORE.map((k) => <Field key={k} k={k} form={form} setForm={setForm} error={errors[k]} />)}
             <div className="flex flex-col gap-1">
               <label htmlFor="o2dev" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Oxygen given by</label>

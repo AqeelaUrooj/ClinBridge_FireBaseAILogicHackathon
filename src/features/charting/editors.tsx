@@ -61,7 +61,7 @@ export function IoEditor({ initial, ivOrders, ...rest }: Common<Omit<IntakeOutpu
         <>
           <Choice name="In or out?" value={f.direction} options={[{ v: 'in', label: 'In (patient took in)' }, { v: 'out', label: 'Out (patient passed out)' }]} onChange={(v) => set({ direction: v as 'in' | 'out', category: '' })} error={e.direction} />
           {f.direction && <Choice name="What kind?" value={f.category} options={f.direction === 'in' ? IO_IN : IO_OUT} onChange={(v) => set({ category: v })} error={e.category} />}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(13rem,30%)),1fr))] gap-space-md">
             <Field id="vol" label="Amount (mL)" error={e.volume}>
               <div className={`flex items-center h-12 rounded-lg border overflow-hidden bg-surface-container-lowest focus-within:ring-2 focus-within:ring-secondary ${e.volume ? 'border-error' : 'border-card-border'}`}>
                 <Step dir={-1} value={f.volume} onStep={(v) => set({ volume: v })} />
