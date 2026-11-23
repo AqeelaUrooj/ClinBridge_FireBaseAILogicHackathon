@@ -1,6 +1,13 @@
 # P-01 — Body map regions: 21 vs 24
 
-Status: **first functional model chosen: UI/UX 21 regions** (owner decision, 20 Nov 2026). Built at `/patients/:id/body`. **Not final**: region ids are drafts until the final model is approved.
+Status: **24 regions implemented at `/patients/:id/body`** under D-76. The sections below record the original comparison and the 21-region implementation history.
+
+## D-76 implementation
+
+- The original 21 IDs are preserved. `NECK` appears on the front, and `BACK_OF_NECK` and `PERINEUM` appear on the back. Each area is available in the existing body-area picker, which opens the matching view when needed.
+- The original Theme 2 silhouette is used. The neck targets are confined to the exposed neck. The perineum target occupies the lower midline between the buttocks on the rear illustration. Its label refers to the perineum only.
+- The six medication-site mappings still resolve to the same regions. Region selection is display state. Dexie remains at schema version 2 with 19 tables, and this change requires no migration.
+- Clinical observation markers and `note.body_site` remain part of the separate P-03 proposal.
 
 ## Where each list comes from
 

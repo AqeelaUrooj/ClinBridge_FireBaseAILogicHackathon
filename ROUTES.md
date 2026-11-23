@@ -50,7 +50,7 @@ Built = works. No route is a placeholder any more; an unknown address shows an h
 | `/patients/:id/labs` | Patient labs | Built (new route) |
 | `/patients/:id/labs/record` | Record lab event / critical result | Built (new route) |
 | `/patients/:id/capture` | Photo of paper: form type → photo (saved first) → quality hints → type values → save or draft | Built |
-| `/patients/:id/body` | Body map: new Theme 2 vector figures, 21 regions, Front/Back/Both, list picker, markers | Built |
+| `/patients/:id/body` | Body map: Theme 2 vector figures, 24 regions, Front/Back/Both, list picker, markers | Built |
 | `/patients/:id/handoff` | Patient handover history | Built |
 | `/patients/:id/handoff/new` | New handover (S, B, A, open items, linked confirmed records) → review → save | Built |
 | `/patients/:id/handoff/:hid` | View + browser print | Built |

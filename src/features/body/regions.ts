@@ -1,9 +1,8 @@
 import type { Pt, ShapeKey } from './anatomy';
 
 /**
- * Body map regions: FIRST FUNCTIONAL MODEL, not final.
- * The 21 regions listed in the UI/UX document (owner decision, 20 Nov 2026). Ids are UNCHANGED from the
- * previous version and are drafts: not stored in the database yet (note.body_site waits, P-03).
+ * D-76 adds three regions to the original 21. Region ids are used for display and selection
+ * and are not persisted (note.body_site waits, P-03).
  *
  * Left/right are the PATIENT'S anatomical left/right:
  *   front view → the patient's left is on the viewer's RIGHT (x > 120)
@@ -78,8 +77,15 @@ function limb(part: string, label: string, front: LimbKey | null, back: LimbKey 
 
 const CHEST_ABDOMEN_LINE: Pt[] = [[164, 180], [142, 185.5], [120, 188], [98, 185.5], [76, 180]];
 
+// The exposed neck lies between the bottom of the head and the top of the torso.
+const NECK_ZONE: Zone = { clip: ['neck'], band: box(106, 81, 134, 93), anchor: [120, 87] };
+
+// Share a boundary with the lower inner buttocks so the two targets never overlap.
+const PERINEUM_EDGE: Pt[] = [[128, 317.2], [128, 301], [120, 296], [112, 301], [112, 317.2]];
+
 export const REGIONS: Region[] = [
   { id: 'HEAD', label: 'Head', side: null, primary: 'front', zones: { front: { clip: ['head', 'earSR', 'earSL'], band: box(80, 10, 160, 84), anchor: [120, 50] }, back: { clip: ['head', 'earSR', 'earSL'], band: box(80, 10, 160, 84), anchor: [120, 50] } } },
+  { id: 'NECK', label: 'Neck', side: null, primary: 'front', zones: { front: NECK_ZONE } },
   { id: 'CHEST', label: 'Chest', side: null, primary: 'front', zones: { front: { clip: ['torso'], band: [[60, 90], [180, 90], ...CHEST_ABDOMEN_LINE], anchor: [120, 135] } } },
   // Front view: the patient's right half of the abdomen is on the viewer's left.
   { id: 'ABDOMEN_RIGHT', label: 'Abdomen, right side', side: 'right', primary: 'front', zones: { front: { clip: ['torso'], band: [[120, 188], [98, 185.5], [60, 178], [60, 268], [120, 268]], anchor: [100, 226] } } },
@@ -90,9 +96,11 @@ export const REGIONS: Region[] = [
   ...limb('THIGH', 'thigh', 'THIGH_FRONT', 'THIGH_BACK', 'front'),
   ...limb('LOWER_LEG', 'lower leg', 'LOWER_LEG_FRONT', 'LOWER_LEG_BACK', 'front'),
   ...limb('FOOT', 'foot', 'FOOT', null, 'front'),
+  { id: 'BACK_OF_NECK', label: 'Back of neck', side: null, primary: 'back', zones: { back: NECK_ZONE } },
   { id: 'UPPER_BACK', label: 'Upper back', side: null, primary: 'back', zones: { back: { clip: ['torso'], band: [[60, 90], [180, 90], [180, 192], [162, 192], [120, 198], [78, 192], [60, 192]], anchor: [120, 150] } } },
   { id: 'LOWER_BACK', label: 'Lower back', side: null, primary: 'back', zones: { back: { clip: ['torso'], band: [[60, 192], [78, 192], [120, 198], [162, 192], [180, 192], [180, 258], [161, 258], [120, 264], [79, 258], [60, 258]], anchor: [120, 228] } } },
-  { id: 'BUTTOCKS', label: 'Buttocks', side: null, primary: 'back', zones: { back: { clip: ['torso', 'legSR', 'legSL'], band: [[60, 258], [79, 258], [120, 264], [161, 258], [180, 258], [180, 312], [120, 318], [60, 312]], anchor: [120, 290] } } },
+  { id: 'BUTTOCKS', label: 'Buttocks', side: null, primary: 'back', zones: { back: { clip: ['torso', 'legSR', 'legSL'], band: [[60, 258], [79, 258], [120, 264], [161, 258], [180, 258], [180, 312], ...PERINEUM_EDGE, [60, 312]], anchor: [120, 290] } } },
+  { id: 'PERINEUM', label: 'Perineum', side: null, primary: 'back', zones: { back: { clip: ['torso'], band: PERINEUM_EDGE, anchor: [120, 303] } } },
   ...limb('HEEL', 'heel', null, 'HEEL', 'back'),
 ];
 

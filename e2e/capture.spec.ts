@@ -58,7 +58,7 @@ test('dark photo gives a hint but never blocks', async ({ page }) => {
   await page.getByLabel('Note').fill('Copied from paper note.');
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByText('Copied from paper note.')).toBeVisible();
+  await expect(page.getByRole('definition').filter({ hasText: 'Copied from paper note.' })).toBeVisible();
 });
 
 test('practice draft with a stored proposal is labelled as simulated, not live AI', async ({ page }) => {
