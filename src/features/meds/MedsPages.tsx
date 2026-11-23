@@ -9,7 +9,7 @@ import {
 } from '../../lib/meds';
 import { formatDose } from '../../lib/dose';
 import { dateTimeLabel, hm } from '../../lib/time';
-import { Badge, Breadcrumbs, ButtonLink, Card, EmptyState, Icon } from '../../components/ui';
+import { Badge, Breadcrumbs, EmptyState, Icon } from '../../components/ui';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName, isNoKnownAllergy } from '../patient/patientData';
 import { latestMeasures } from '../ward/wardData';
@@ -117,36 +117,6 @@ export function RecordMed() {
           navigate(`${base}/meds`, { state: { saved: e.id } });
         }}
       />
-    </>
-  );
-}
-
-export function OrdersPage() {
-  const { patient, encounter } = useCurrentPatient();
-  const data = useMedData(encounter?.id, patient.id);
-  const base = `/patients/${patient.id}`;
-  const TYPES: Record<string, string> = { med: 'Medicines', iv: 'IV fluids', nursing: 'Nursing', lab: 'Lab tests', diet: 'Diet', imaging: 'Scans' };
-  const groups = new Map<string, ActiveOrder[]>();
-  for (const o of data?.orders ?? []) groups.set(o.type, [...(groups.get(o.type) ?? []), o]);
-  return (
-    <>
-      <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: base }, { label: 'Orders' }]} />
-      <h1 className="font-headline-lg text-headline-lg text-primary">Orders</h1>
-      <p className="font-body-sm text-secondary -mt-space-sm">From the patient list taken before the outage. Read only.</p>
-      {!data ? <p role="status">Loading…</p> : groups.size === 0 ? <EmptyState text="No orders" /> : [...groups].map(([t, list]) => (
-        <Card key={t}>
-          <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">{TYPES[t] ?? t}</h2>
-          <ul className="flex flex-col">
-            {list.map((o) => (
-              <li key={o.id} className="flex items-center gap-space-md min-h-12 border-b border-card-border last:border-0">
-                <span className="flex-1">{o.text}</span>
-                {isHighAlert(o.drug_name) && <Badge tone="red" icon="warning">High-alert</Badge>}
-                {isMedOrder(o) && <ButtonLink variant="ghost" to={`${base}/meds/${o.id}`}>Open</ButtonLink>}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ))}
     </>
   );
 }
