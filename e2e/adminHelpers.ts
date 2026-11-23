@@ -14,6 +14,7 @@ export async function openAdmin(page: Page, path: string, who = /Kim Ellis/) {
 }
 /** Nothing scrolls sideways, leaves the page or is cut off. */
 export async function expectFits(page: Page, width: number) {
+  await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
   const r = await page.evaluate(() => {
     const W = document.documentElement.clientWidth;
     const seen = Array.from(document.querySelectorAll('main button, main a, main dd, main li, main select, main input, main p, main h2, main h3, main th, main td')).filter((e) => e.getBoundingClientRect().width > 1);
