@@ -12,8 +12,8 @@ test('handover: write from confirmed records, review, save, view history, print 
   await page.getByTestId('patient-pt-09').click();
   await page.getByRole('button', { name: 'Yes, open' }).click();
   await page.getByRole('link', { name: 'View details' }).click();
-  await page.getByRole('main').getByRole('link', { name: 'Handover' }).click();
-  await expect(page.getByText('No handovers yet').or(page.getByText('Night to day'))).toBeVisible();
+  await page.getByRole('main').getByRole('link', { name: 'Handover', exact: true }).click();
+  await expect(page.getByText('No handovers yet').or(page.getByText('Night to day')).first()).toBeVisible();
   await page.getByRole('link', { name: 'New handover' }).click();
   await page.getByLabel('Situation').fill('Chest infection, oxygen needs stable.');
   await page.getByRole('button', { name: 'Insert patient facts' }).click();
@@ -42,7 +42,7 @@ test('handover: Review is blocked until Situation, Background and Assessment are
   await page.getByTestId('patient-pt-01').click();
   await page.getByRole('button', { name: 'Yes, open' }).click();
   await page.getByRole('link', { name: 'View details' }).click();
-  await page.getByRole('main').getByRole('link', { name: 'Handover' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Handover', exact: true }).click();
   await page.getByRole('link', { name: 'New handover' }).click();
   await page.getByRole('button', { name: 'Review' }).click();
   await expect(page.getByText('Write the situation')).toBeVisible();

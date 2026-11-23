@@ -22,7 +22,7 @@ test('MAR: tabs, search, hour strip, dose difference, order panel', async ({ pag
   await page.setViewportSize({ width: 1440, height: 900 });
   await open(page, '/patients/pt-01/meds');
   await expect(page.getByRole('heading', { level: 1, name: /Medicines/ })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Patient pages' }).getByRole('link')).toHaveCount(7);
+  await expect(page.getByRole('navigation', { name: 'Patient pages' }).getByRole('link')).toHaveCount(8);
 
   // 50 mg recorded against a 5 mg order is said in words, with the way to the record.
   await expect(order(page, 'ord-01').getByRole('note')).toContainText('Recorded 50 mg · order says 5 mg');

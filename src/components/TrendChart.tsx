@@ -8,7 +8,8 @@ import { hm, dayLabel } from '../lib/time';
  * - The values are also listed in a table, so nothing depends on reading the chart or on colour.
  * No thresholds, target bands or scores are drawn.
  */
-export function TrendChart({ series, label, unit, testId }: { series: TrendSeries; label: string; unit: string; testId?: string }) {
+/** `table={false}` only where the page already lists every value in a table of its own. */
+export function TrendChart({ series, label, unit, testId, table = true }: { series: TrendSeries; label: string; unit: string; testId?: string; table?: boolean }) {
   const all = [...series.baseline, ...series.confirmed, ...series.drafts];
   if (!all.length) return <p className="font-body-sm text-secondary" data-testid={testId}>No {label} readings saved for this patient yet.</p>;
   const W = 300, H = 96, PX = 14, PT = 16, PB = 18;
@@ -25,7 +26,7 @@ export function TrendChart({ series, label, unit, testId }: { series: TrendSerie
   const tag = (p: (typeof rows)[number]) => (p.status === 'draft' ? ' (draft, not confirmed)' : p.status === 'baseline' ? ' (hospital list before the outage)' : '');
   const desc = `${label} readings: ${rows.map((p) => `${p.value}${unit} at ${when(p.time)}${tag(p)}`).join('; ')}.`;
   return (
-    <figure className="flex flex-col gap-2" data-testid={testId}>
+    <figure className={`flex flex-col gap-2 ${table ? '' : '[&>div]:hidden'}`} data-testid={testId}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-[96px]" role="img" aria-label={desc}>
         <line x1={PX} x2={W - PX} y1={H - PB} y2={H - PB} stroke="#C5C6CD" strokeWidth="1" />
         {series.confirmed.length > 1 && (
