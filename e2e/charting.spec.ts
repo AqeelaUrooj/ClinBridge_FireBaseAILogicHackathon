@@ -69,5 +69,6 @@ test('labs: critical result warns if read-back missing, then shows on ward labs'
   await expect(page.getByText('Saved on this laptop.')).toBeVisible();
   await page.getByRole('link', { name: 'More' }).click();
   await page.getByRole('link', { name: 'Ward labs' }).click();
-  await expect(page.getByText(/aPTT \(clotting time\) · 121 s/)).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Critical result: aPTT (clotting time)' })).toContainText('121 s');
+  await expect(page.getByRole('list', { name: 'Lab records' }).getByRole('listitem').first()).toContainText('121 s');
 });
