@@ -125,7 +125,7 @@ test('app works offline after first load: sign in, illustrations, body map, save
   await openSam(page);
   await page.getByRole('link', { name: 'View details' }).click();
   await expect(page.getByText('Pulse 81')).toBeVisible();
-  await page.getByRole('main').getByRole('link', { name: 'Body map' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Body map', exact: true }).click();
   await expect(page.locator('svg[data-view] [data-region="HEAD"]').first()).toBeVisible();
   await context.setOffline(false);
 });

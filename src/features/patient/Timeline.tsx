@@ -1,21 +1,24 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { listPatientEntries, type EntryWithChild } from '../../db/repos/entries';
 import { verifyChain } from '../../db/audit';
 import { isNurse, useApp, useSession } from '../../state/app';
-import { dateTimeLabel, hm } from '../../lib/time';
+import { hm } from '../../lib/time';
 import {
   HISTORY_FILTERS, careTeam, filterHistory, historyCounts, integritySummary, isRetiredStatus, recordedSequence,
   type HistoryFilter, type HistoryOrder,
 } from '../../lib/history';
-import { Badge, Breadcrumbs, ButtonLink, Card, EmptyState, Icon } from '../../components/ui';
-import { EntryValues } from '../entries/EntryPages';
-import { SourceBadge, StatusBadge, TYPE_ICON, TYPE_LABEL, entrySummary } from '../entries/entryView';
+import { Breadcrumbs, ButtonLink, Card, EmptyState, Icon } from '../../components/ui';
+import { TYPE_ICON, TYPE_LABEL, entrySummary } from '../entries/entryView';
+import { ActionRow, BaselineCard, HistoryCard } from './HistoryCard';
+import { PatientTabs } from './PatientTabs';
 import { useCurrentPatient } from './PatientLayout';
 import { fullName } from './patientData';
 import { TrendChart } from '../../components/TrendChart';
 import { SPO2_LOINC, vitalSeries, withBaseline } from '../../lib/vitalTrend';
+
+const BASELINE = 'hospital-list';
+const PLAIN = 'inline-flex items-center gap-1 min-h-11 px-3 rounded-lg border border-card-border bg-surface-container-lowest font-body-md text-body-md font-semibold text-primary hover:bg-surface-container-low';
 
 /**
  * Patient history (Stitch "Patient History & Clinical Timeline", minimal with expandable cards).
@@ -27,7 +30,9 @@ export function Timeline() {
   const { db, event, clock } = useApp();
   const { user } = useSession();
   const entries = useLiveQuery(() => listPatientEntries(db, patient.id), [db, patient.id]);
-  const names = useLiveQuery(async () => new Map((await db.practitioner.toArray()).map((p) => [p.id, p.name])), [db]) ?? new Map<string, string>();
+  const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
+  const names = useMemo(() => new Map((staff ?? []).map((p) => [p.id, p.name])), [staff]);
+  const work = useLiveQuery(async () => new Map((await db.worklist_item.where('patient_id').equals(patient.id).toArray()).map((w) => [w.entry_id, w])), [db, patient.id]);
   const baseline = useLiveQuery(async () => (await db.snapshot_result.where('patient_id').equals(patient.id).toArray()).sort((a, b) => b.time.localeCompare(a.time)), [db, patient.id]);
   const chain = useLiveQuery(async () => verifyChain(await db.audit_log.orderBy('seq').toArray()), [db]);
   const spo2 = useMemo(() => withBaseline(vitalSeries(entries ?? [], patient.id, 'spo2'), baseline ?? [], patient.id, SPO2_LOINC), [entries, baseline, patient.id]);
@@ -49,6 +54,8 @@ export function Timeline() {
   const team = careTeam(all);
   const sequence = recordedSequence(all);
   const base = `/patients/${patient.id}`;
+  const nurse = isNurse(user);
+  const showBaseline = filter === 'all' && !search && !!baseline && baseline.length > 0;
   const toggle = (id: string) => setOpen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (
@@ -70,174 +77,139 @@ export function Timeline() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
-        <div className="xl:col-span-8 flex flex-col gap-space-md">
-          <Card className="flex flex-col gap-space-sm print:hidden" aria-label="History filters">
-            <div className="flex flex-wrap gap-1" role="group" aria-label="Record type">
-              {HISTORY_FILTERS.map((f) => (
-                <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}
-                  className={`min-h-9 px-3 rounded font-body-md font-semibold border ${filter === f.key ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container-lowest text-on-surface-variant border-card-border hover:bg-surface-container-low'}`}>
-                  {f.label}{entries !== undefined && <> <span className="font-code-tabular">({counts[f.key]})</span></>}
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-space-sm">
-              <label className="flex-1 min-w-[220px] flex items-center gap-2 h-10 rounded-lg border border-card-border px-space-sm bg-surface-container-lowest">
-                <Icon name="search" className="text-secondary" />
-                <span className="sr-only">Search history</span>
-                <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search history (drug, value, nurse…)" className="flex-1 bg-transparent outline-none font-body-md" />
-              </label>
-              <div className="flex rounded-lg border border-card-border overflow-hidden" role="group" aria-label="Order">
-                {(['newest', 'oldest'] as HistoryOrder[]).map((o) => (
-                  <button key={o} type="button" aria-pressed={order === o} onClick={() => setOrder(o)}
-                    className={`h-10 px-3 font-body-md font-semibold ${order === o ? 'bg-primary text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-low'}`}>
-                    {o === 'newest' ? 'Newest first' : 'Oldest first'}
-                  </button>
-                ))}
-              </div>
-              <button type="button" className="h-10 px-3 rounded-lg border border-card-border font-body-md font-semibold text-primary hover:bg-surface-container-low"
-                onClick={() => setOpen(new Set(visible.map((x) => x.entry.id)))}>Expand all</button>
-              <button type="button" className="h-10 px-3 rounded-lg border border-card-border font-body-md font-semibold text-primary hover:bg-surface-container-low"
-                onClick={() => setOpen(new Set())}>Collapse all</button>
-            </div>
-            {retiredCount > 0 && (
-              <label className="flex items-center gap-2 font-body-md text-on-surface-variant">
-                <input type="checkbox" checked={showRetired} onChange={(e) => setShowRetired(e.target.checked)} className="w-5 h-5" />
-                Show old versions and mistakes ({retiredCount}), crossed out
-              </label>
-            )}
-          </Card>
+      <div className="print:hidden"><PatientTabs patientId={patient.id} /></div>
 
+      <section aria-label="History filters" className="bg-surface-container-lowest rounded-xl border border-card-border p-space-sm shadow-sm flex flex-wrap items-center gap-space-sm print:hidden">
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Record type">
+          {HISTORY_FILTERS.map((f) => (
+            <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}
+              className={`min-h-11 px-3 rounded-lg font-body-md text-body-md font-semibold ${filter === f.key ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'}`}>
+              {f.label}{entries !== undefined && <> <span className="font-code-tabular">({counts[f.key]})</span></>}
+            </button>
+          ))}
+        </div>
+        <span className="flex flex-wrap gap-1">
+          <button type="button" className={PLAIN} onClick={() => setOpen(new Set([...visible.map((x) => x.entry.id), BASELINE]))}><Icon name="unfold_more" className="text-[18px]" />Expand all</button>
+          <button type="button" className={PLAIN} onClick={() => setOpen(new Set())}><Icon name="unfold_less" className="text-[18px]" />Collapse all</button>
+        </span>
+        <span className="flex flex-wrap flex-1 items-center justify-end gap-space-sm">
+          <label className="flex-1 min-w-[min(100%,15rem)] max-w-md flex items-center gap-2 h-11 rounded-lg border border-card-border px-space-sm bg-surface-container-lowest">
+            <Icon name="search" className="text-secondary" />
+            <span className="sr-only">Search history</span>
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search history" className="flex-1 min-w-0 bg-transparent outline-none font-body-md text-body-md" />
+          </label>
+          <span className="flex rounded-lg bg-surface-container-low overflow-hidden" role="group" aria-label="Order">
+            {(['newest', 'oldest'] as HistoryOrder[]).map((o) => (
+              <button key={o} type="button" aria-pressed={order === o} onClick={() => setOrder(o)}
+                className={`h-11 px-3 font-body-md text-body-md font-semibold ${order === o ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}>
+                {o === 'newest' ? 'Newest first' : 'Oldest first'}
+              </button>
+            ))}
+          </span>
+        </span>
+        {retiredCount > 0 && (
+          <label className="basis-full flex items-center gap-2 min-h-9 font-body-md text-body-md text-on-surface-variant">
+            <input type="checkbox" checked={showRetired} onChange={(e) => setShowRetired(e.target.checked)} className="w-5 h-5" />
+            Show old versions and mistakes ({retiredCount}), crossed out
+          </label>
+        )}
+      </section>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-space-md items-start">
+        <div className="xl:col-span-8 min-w-0 flex flex-col gap-space-sm">
+          <div className="flex flex-wrap items-center justify-between gap-x-space-md gap-y-1">
+            <h2 className="font-label-uppercase text-label-uppercase text-secondary uppercase flex items-center gap-2"><span aria-hidden className="w-2.5 h-2.5 rounded-full bg-primary" />Records on this laptop, by time of care</h2>
+            {entries !== undefined && <p className="font-body-sm text-body-sm text-secondary">{integrity.confirmed} confirmed · {integrity.pendingConfirmation} to check</p>}
+          </div>
           {entries === undefined ? <p role="status">Loading…</p> : visible.length === 0 ? (
             <EmptyState text={all.length === 0 ? 'Nothing recorded yet' : 'No records match these filters'} />
           ) : (
             <ol className="flex flex-col gap-space-sm" aria-label="Records">
-              {visible.map((x) => {
-                const { entry } = x;
-                const isOpen = open.has(entry.id);
-                const retired = isRetiredStatus(entry.status);
-                const lateBy = Math.round((Date.parse(entry.entry_time) - Date.parse(entry.care_time)) / 60_000);
-                return (
-                  <li key={entry.id} className={`break-inside-avoid bg-surface-container-lowest rounded-xl border ${entry.status === 'draft' ? 'border-downtime-amber-border' : 'border-card-border'}`} data-testid={`history-${entry.id}`}>
-                    <button type="button" aria-expanded={isOpen} aria-controls={`body-${entry.id}`} onClick={() => toggle(entry.id)}
-                      className="w-full grid grid-cols-[auto_minmax(0,1fr)_auto] sm:flex items-center gap-2 sm:gap-space-md min-h-[60px] px-space-md py-space-sm text-left hover:bg-surface-container-low rounded-xl">
-                      <span className="w-12 shrink-0 font-code-tabular text-[13px] font-bold text-primary">{hm(entry.care_time)}</span>
-                      <span className="w-9 h-9 rounded-lg bg-surface-container-low hidden sm:grid place-items-center text-secondary shrink-0"><Icon name={TYPE_ICON[entry.type]} className="text-[20px]" /></span>
-                      <span className="flex-1 min-w-0">
-                        <span className={`block [overflow-wrap:anywhere] font-body-lg text-body-lg ${retired ? 'line-through text-outline' : 'text-on-surface'}`}>{entrySummary(x)}</span>
-                        <span className="block font-body-sm text-body-sm text-secondary">{TYPE_LABEL[entry.type]} · {names.get(entry.performer_id) ?? entry.performer_id}{entry.raw_input_kind === 'photo' ? ' · from paper photo' : ''}</span>
-                        {/* Narrow screens: the badges sit under the summary so the row never runs off the screen. */}
-                        <span className="flex sm:hidden flex-wrap gap-1 mt-1"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></span>
-                      </span>
-                      <span className="hidden sm:flex items-center gap-space-md shrink-0"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></span>
-                      <Icon name={isOpen ? 'expand_less' : 'expand_more'} className="text-outline shrink-0" />
-                    </button>
-                    {isOpen && (
-                      <div id={`body-${entry.id}`} className="px-space-md pb-space-md flex flex-col gap-space-sm">
-                        <EntryValues item={x} names={names} />
-                        <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-1 font-body-md">
-                          <dt className="text-secondary">Measured / given</dt><dd className="font-code-tabular">{dateTimeLabel(entry.care_time)}</dd>
-                          <dt className="text-secondary">Typed in</dt><dd className="font-code-tabular">{dateTimeLabel(entry.entry_time)}{lateBy >= 5 ? ` (${lateBy} min later)` : ''}</dd>
-                          <dt className="text-secondary">Laptop · number</dt><dd className="font-code-tabular">{entry.device_id} · #{entry.counter}</dd>
-                          {entry.change_reason && <><dt className="text-secondary">{entry.status === 'entered-in-error' ? 'Mistake reason' : 'Fix reason'}</dt><dd>{entry.change_reason}</dd></>}
-                        </dl>
-                        <div className="flex flex-wrap gap-space-sm print:hidden">
-                          <ButtonLink variant="secondary" to={`/entries/${entry.id}`}><Icon name="open_in_new" />Open details</ButtonLink>
-                          {entry.status === 'draft' && isNurse(user) && <ButtonLink to={`/capture/${entry.id}/confirm`}><Icon name="fact_check" />Check and confirm</ButtonLink>}
-                          {entry.status === 'confirmed' && isNurse(user) && <ButtonLink variant="secondary" to={`/entries/${entry.id}/correct`}><Icon name="edit" />Fix</ButtonLink>}
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+              {visible.map((x) => <HistoryCard key={x.entry.id} item={x} open={open.has(x.entry.id)} onToggle={() => toggle(x.entry.id)} names={names} work={work?.get(x.entry.id)} base={base} nurse={nurse} />)}
             </ol>
           )}
-
-          {filter === 'all' && !search && baseline && baseline.length > 0 && (
-            <Card aria-label="Hospital patient list before the outage">
-              <h2 className="font-headline-sm text-headline-sm text-primary">Hospital patient list (before the outage)</h2>
-              <p className="font-body-sm text-secondary mb-space-sm">Read only. Copied from the hospital system when the patient list was taken; not entered on this laptop.</p>
-              <ul className="flex flex-col">
-                {baseline.map((r) => (
-                  <li key={r.id} className="flex items-center gap-space-md min-h-[44px] border-b border-card-border last:border-0 px-space-sm">
-                    <span className="w-28 font-code-tabular text-[13px] text-secondary">{dateTimeLabel(r.time).replace(/, \d+ \w+ \d+$/, '')}</span>
-                    <span className="flex-1">{r.name}</span>
-                    <span className="font-code-tabular font-semibold">{r.value_num ?? r.value_text ?? '—'} {r.unit ?? ''}</span>
-                    {r.abnormal_flag && r.abnormal_flag !== 'normal' && <Badge tone={r.abnormal_flag === 'critical' ? 'red' : 'amber'}>{r.abnormal_flag}</Badge>}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
+          {showBaseline && <BaselineCard results={baseline} open={open.has(BASELINE)} onToggle={() => toggle(BASELINE)} />}
         </div>
 
-        <div className="xl:col-span-4 flex flex-col gap-space-md">
-          <Card className="flex flex-col gap-space-sm" aria-label="Oxygen level (SpO₂) trend">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="font-headline-sm text-headline-sm text-primary">Oxygen level (SpO₂)</h2>
-              <ButtonLink variant="secondary" className="print:hidden" to={`/patients/${patient.id}/vitals`}>Vitals</ButtonLink>
+        <aside className="xl:col-span-4 min-w-0 flex flex-col gap-space-md" aria-label="Charting integrity">
+          <section className="rounded-xl bg-primary-container text-white p-space-md shadow-sm flex flex-col gap-space-sm print:bg-white print:text-black print:border print:border-black">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-headline-sm text-headline-sm flex items-center gap-2"><Icon name="verified_user" />Charting integrity</h2>
+              <span className={`px-2 py-0.5 rounded font-label-badge text-label-badge font-bold ${!chain ? 'bg-white/15' : chain.ok ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-error text-on-error'}`}>{!chain ? 'Checking…' : chain.ok ? 'Log intact' : 'Log broken'}</span>
             </div>
-            {entries === undefined ? <p role="status" className="text-secondary">Loading…</p> : (
-              <>
-                {spo2.latest && (
-                  <dl className="grid grid-cols-[1fr_auto] gap-y-0.5 font-body-md" data-testid="spo2-summary">
-                    <dt>Latest confirmed</dt><dd className="font-code-tabular font-semibold">{spo2.latest.value}% <span className="font-normal text-secondary">at {hm(spo2.latest.time)}</span></dd>
-                    {spo2.lowest && spo2.confirmed.length > 1 && <><dt>Lowest confirmed</dt><dd className="font-code-tabular font-semibold">{spo2.lowest.value}% <span className="font-normal text-secondary">at {hm(spo2.lowest.time)}</span></dd></>}
-                    {spo2.lowest && spo2.confirmed.length > 1 && spo2.latest.value !== spo2.lowest.value && <><dt>Latest vs lowest</dt><dd className="font-code-tabular font-semibold">{spo2.latest.value > spo2.lowest.value ? '+' : ''}{spo2.latest.value - spo2.lowest.value} points</dd></>}
-                  </dl>
-                )}
-                <TrendChart series={spo2} label="SpO₂" unit="%" testId="spo2-trend" />
-                <p className="font-body-sm text-secondary">Line: confirmed vital-sign records on this laptop (old versions and mistakes left out). Square: the hospital patient list before the outage. No target line or score is shown.</p>
-              </>
-            )}
-          </Card>
-        <aside className="flex flex-col gap-space-md" aria-label="Charting integrity">
-          <Card className="flex flex-col gap-space-sm">
-            <h2 className="font-headline-sm text-headline-sm text-primary">Charting integrity</h2>
-            <dl className="grid grid-cols-[1fr_auto] gap-y-1 font-body-md">
-              <dt>Confirmed records</dt><dd className="font-code-tabular font-semibold">{integrity.confirmed}</dd>
-              <dt>Confirmation pending (drafts)</dt><dd className={`font-code-tabular font-semibold ${integrity.pendingConfirmation ? 'text-[#7a5410]' : ''}`}>{integrity.pendingConfirmation}</dd>
+            <dl className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-1 font-body-md text-body-md">
+              <dt>Confirmed records</dt><dd className="font-code-tabular font-bold">{integrity.confirmed}</dd>
+              <dt>Confirmation pending (drafts)</dt><dd className="font-code-tabular font-bold">{integrity.pendingConfirmation}</dd>
               <dt>Fixed (old versions kept)</dt><dd className="font-code-tabular">{integrity.oldVersions}</dd>
               <dt>Marked as mistake</dt><dd className="font-code-tabular">{integrity.mistakes}</dd>
               <dt>Typed from a paper photo</dt><dd className="font-code-tabular">{integrity.fromPhoto}</dd>
               <dt>Started from an AI or simulated proposal</dt><dd className="font-code-tabular">{integrity.aiProposed}</dd>
             </dl>
-            <p className={`font-body-md flex items-center gap-1 ${chain ? (chain.ok ? 'text-sync-green' : 'text-error font-semibold') : 'text-secondary'}`}>
-              <Icon name={chain ? (chain.ok ? 'verified' : 'gpp_bad') : 'hourglass_empty'} />
-              {chain ? (chain.ok ? `Change log intact: ${chain.verified} of ${chain.total} rows verified` : `Change log broken at row ${chain.brokenAtSeq}`) : 'Checking change log…'}
-            </p>
-            <p className="font-body-sm text-secondary" data-testid="integrity-note">Each record shows the staff member it is attributed to and when it was typed in, as stored with the record. The change-log check shows only that the log's hash chain is unbroken; it does not show who was at the bedside. ClinBridge has no bedside-verification or doctor-countersignature step, so neither is shown.</p>
             {sequence.length > 0 && (
               <div>
-                <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Recorded sequence</span>
+                <h3 className="font-label-uppercase text-label-uppercase uppercase opacity-80">Recorded sequence</h3>
                 <ol className="mt-1 flex flex-wrap gap-1">
-                  {sequence.map((s) => <li key={s.id}><Badge icon={TYPE_ICON[s.type]}><span className="font-code-tabular">{hm(s.time)}</span></Badge></li>)}
+                  {sequence.map((s) => <li key={s.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/15 font-code-tabular text-[12px] font-semibold print:border print:border-black"><Icon name={TYPE_ICON[s.type]} className="text-[14px]" />{hm(s.time)}</li>)}
                 </ol>
               </div>
             )}
+            <p className="font-body-md text-body-md flex items-center gap-1 font-semibold">
+              <Icon name={chain ? (chain.ok ? 'verified' : 'gpp_bad') : 'hourglass_empty'} />
+              {chain ? (chain.ok ? `Change log intact: ${chain.verified} of ${chain.total} rows verified` : `Change log broken at row ${chain.brokenAtSeq}`) : 'Checking change log…'}
+            </p>
+            <p className="font-body-sm text-body-sm opacity-90" data-testid="integrity-note">Each record shows the staff member it is attributed to and when it was typed in, as stored with the record. The change-log check shows only that the log's hash chain is unbroken; it does not show who was at the bedside. ClinBridge has no bedside-verification or doctor-countersignature step, so neither is shown.</p>
+          </section>
+
+          <Card className="flex flex-col gap-space-sm shadow-sm print:hidden" aria-label="History actions">
+            <h2 className="font-label-uppercase text-label-uppercase text-secondary uppercase">Actions</h2>
+            {nurse && <ActionRow dark to={`${base}/notes/new`} icon="post_add" label="Add a note (any past time)" />}
+            {nurse && <ActionRow to={`${base}/capture`} icon="photo_camera" label="Photo of paper" />}
+            <button type="button" onClick={() => window.print()} className="flex items-center gap-space-sm min-h-11 px-space-md rounded-lg bg-surface-container-low text-primary hover:bg-surface-container font-body-md text-body-md font-semibold text-left">
+              <Icon name="print" /><span className="flex-1">Print history</span><span className="font-body-sm text-body-sm font-normal text-secondary">or save as PDF</span>
+            </button>
           </Card>
-          <Card className="flex flex-col gap-space-sm">
-            <h2 className="font-headline-sm text-headline-sm text-primary">Care team (current records)</h2>
+
+          <Card className="flex flex-col gap-space-sm shadow-sm" aria-label="Care team">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-label-uppercase text-label-uppercase text-secondary uppercase">Care team (current records)</h2>
+              {team.length > 0 && <span className="font-body-sm text-body-sm text-secondary">{team.length} {team.length === 1 ? 'person' : 'people'}</span>}
+            </div>
             {team.length === 0 ? <p className="text-secondary font-body-md">No one has recorded anything yet.</p> : (
-              <ul className="flex flex-col gap-1">
-                {team.map((t) => (
-                  <li key={t.performerId} className="flex items-center justify-between font-body-md">
-                    <span>{names.get(t.performerId) ?? t.performerId}</span>
-                    <span className="font-code-tabular text-secondary">{t.entries} record{t.entries === 1 ? '' : 's'}</span>
-                  </li>
-                ))}
+              <ul className="flex flex-col gap-1.5">
+                {team.map((t) => {
+                  const p = staff?.find((x) => x.id === t.performerId);
+                  return (
+                    <li key={t.performerId} className="flex items-center gap-space-sm rounded-lg bg-surface-container-low p-2">
+                      <span aria-hidden className="w-10 h-10 shrink-0 rounded-lg bg-primary-container text-white grid place-items-center font-bold">{p?.initials ?? '?'}</span>
+                      <span className="flex-1 min-w-0"><span className="block font-body-md text-body-md font-semibold text-primary">{p?.name ?? t.performerId}</span><span className="block font-body-sm text-body-sm text-secondary">{p?.role ?? ''}</span></span>
+                      <span className="px-2 py-0.5 rounded bg-surface-container font-label-badge text-label-badge text-on-surface-variant">{t.entries} record{t.entries === 1 ? '' : 's'}</span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Card>
-          <Card className="flex flex-col gap-space-sm print:hidden">
-            <h2 className="font-headline-sm text-headline-sm text-primary">Actions</h2>
-            {isNurse(user) && <ButtonLink to={`${base}/notes/new`}><Icon name="edit_note" />Add a note (any past time)</ButtonLink>}
-            <button type="button" onClick={() => window.print()} className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-lg font-body-md font-semibold border border-outline-variant text-primary hover:bg-surface-container-low"><Icon name="print" />Print history</button>
-            <Link to={`${base}/capture`} className="font-body-md text-secondary underline">Photo of paper</Link>
+
+          <Card className="flex flex-col gap-space-sm shadow-sm" aria-label="Oxygen level (SpO₂) trend">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-label-uppercase text-label-uppercase text-secondary uppercase">Oxygen level (SpO₂)</h2>
+              <ButtonLink variant="secondary" className="print:hidden" to={`${base}/vitals`}>Vitals</ButtonLink>
+            </div>
+            {entries === undefined ? <p role="status" className="text-secondary">Loading…</p> : (
+              <>
+                {spo2.latest && (
+                  <dl className="flex flex-wrap items-end gap-x-space-md gap-y-1 font-body-md text-body-md" data-testid="spo2-summary">
+                    <div><dt className="font-body-sm text-body-sm text-secondary">Latest confirmed</dt><dd className="font-code-tabular font-bold text-primary"><span className="text-[32px] leading-none">{spo2.latest.value}%</span> <span className="font-normal text-body-md text-secondary">at {hm(spo2.latest.time)}</span></dd></div>
+                    {spo2.lowest && spo2.confirmed.length > 1 && <div><dt className="font-body-sm text-body-sm text-secondary">Lowest confirmed</dt><dd className="font-code-tabular font-semibold">{spo2.lowest.value}% <span className="font-normal text-secondary">at {hm(spo2.lowest.time)}</span></dd></div>}
+                    {spo2.lowest && spo2.confirmed.length > 1 && spo2.latest.value !== spo2.lowest.value && <div><dt className="font-body-sm text-body-sm text-secondary">Latest vs lowest</dt><dd className="font-code-tabular font-semibold">{spo2.latest.value > spo2.lowest.value ? '+' : ''}{spo2.latest.value - spo2.lowest.value} points</dd></div>}
+                  </dl>
+                )}
+                <TrendChart series={spo2} label="SpO₂" unit="%" testId="spo2-trend" />
+                <p className="font-body-sm text-body-sm text-secondary">Line: confirmed vital-sign records on this laptop (old versions and mistakes left out). Square: the hospital patient list before the outage. No target line or score is shown.</p>
+              </>
+            )}
           </Card>
         </aside>
-        </div>
       </div>
     </>
   );
