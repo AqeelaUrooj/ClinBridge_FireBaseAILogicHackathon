@@ -10,7 +10,8 @@ import { PatientSummary } from './features/patient/PatientSummary';
 import { Timeline } from './features/patient/Timeline';
 import { VitalsPage, RecordVitals } from './features/vitals/VitalsPages';
 import { EntryLayout, EntryDetail, EntryHistory, CorrectEntry } from './features/entries/EntryPages';
-import { MedsPage, OrderPage, RecordMed, OrdersPage } from './features/meds/MedsPages';
+import { MarPage } from './features/meds/MarPage';
+import { RecordMed, OrdersPage } from './features/meds/MedsPages';
 import { BodyMapPage } from './features/body/BodyMapPage';
 import { IoPage, RecordIo, NotesPage, RecordNote, PatientLabsPage, RecordLab, WardLabsPage } from './features/charting/ChartingPages';
 import { PatientHandoffPage, NewHandoffPage, HandoffViewPage, WardHandoverPage } from './features/handoff/HandoffPages';
@@ -92,8 +93,8 @@ export function App() {
             <Route path="timeline" element={<Timeline />} />
             <Route path="vitals" element={<VitalsPage />} />
             <Route path="vitals/record" element={<RecordVitals />} />
-            <Route path="meds" element={<MedsPage />} />
-            <Route path="meds/:order" element={<OrderPage />} />
+            <Route path="meds" element={<MarPage />} />
+            <Route path="meds/:order" element={<MarPage />} />
             <Route path="meds/:order/record" element={<RecordMed />} />
             <Route path="io" element={<IoPage />} />
             <Route path="io/record" element={<RecordIo />} />

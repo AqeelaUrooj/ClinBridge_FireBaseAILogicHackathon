@@ -22,7 +22,8 @@ test('high-alert insulin needs a second nurse PIN before saving', async ({ page 
   await page.getByRole('button', { name: 'Review' }).click();
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
 
-  await page.getByRole('button', { name: 'Second nurse check' }).click();
+  // The second-nurse panel is on the page itself (Stitch layout), not in a dialog.
+  await expect(page.getByRole('region', { name: 'Independent verification' })).toContainText('Co-sign required');
   await expect(page.getByRole('button', { name: /Daniel Okafor/ })).toHaveCount(0); // cannot check own dose
   await page.getByRole('button', { name: /Jordan Park/ }).click();
   for (const d of '1111') await page.getByRole('button', { name: d, exact: true }).click();
