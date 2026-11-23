@@ -107,13 +107,16 @@ for (const width of [1440, 1280, 1024, 768, 390, 360]) {
   test(`${width}px: sign-in and lock fit; nothing is cut off`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await open(page);
-    const measure = () => page.evaluate(() => {
+    const measure = async () => {
+    await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
+    return page.evaluate(() => {
       const W = document.documentElement.clientWidth;
       const seen = Array.from(document.querySelectorAll('main button, main p, main h1, main span, main summary')).filter((e) => e.getBoundingClientRect().width > 1);
       const out = seen.filter((e) => { const b = e.getBoundingClientRect(); return b.right > W + 1 || b.left < -1; }).map((e) => e.textContent?.slice(0, 30));
       const cut = seen.filter((e) => (e as HTMLElement).scrollWidth > (e as HTMLElement).clientWidth + 1 && getComputedStyle(e).display !== 'inline').map((e) => e.textContent?.slice(0, 30));
       return { scroll: document.documentElement.scrollWidth > W, out, cut };
     });
+    };
     expect(await measure(), `names at ${width}`).toEqual({ scroll: false, out: [], cut: [] });
     await page.getByRole('button', { name: /Daniel Okafor/ }).click();
     expect(await measure(), `PIN at ${width}`).toEqual({ scroll: false, out: [], cut: [] });

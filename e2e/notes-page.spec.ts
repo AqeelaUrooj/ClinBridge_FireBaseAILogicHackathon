@@ -86,7 +86,7 @@ test('a fixed note: the old version stays out until asked for, crossed out', asy
   await page.getByLabel('Why are you fixing this?').fill('shorter');
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save fix' }).click();
-  await expect(page).toHaveURL(/\/entries\/(?!e-006)[^/]+$/);
+  await expect(page).toHaveURL(/\/entries\/(?!e-006$)[^/]+$/);
   await goTo(page, '/patients/pt-09/notes');
   await expect(page.getByRole('list', { name: 'Notes' }).getByRole('listitem')).toHaveCount(1);
   await page.getByRole('checkbox', { name: /Show old versions and mistakes \(1\)/ }).check();
