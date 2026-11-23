@@ -46,19 +46,22 @@ The task text says v3; the attached archive is v4. v4 contains everything in v3 
 |---|---|---|---|---|
 | `main` at `d08635dc` | 0 | 7 | 26 | 0 |
 | With the two batch 1 pull requests (not merged) | 0 | 11 | 22 | 0 |
+| With batch 1 and batch 2 (#24, #25, #26; not merged) | 0 | 13 | 20 | 0 |
 
-Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs.
+Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer.
 
 ## 5. Problems found while comparing (not only looks)
 
 | # | Problem | State |
 |---|---|---|
 | 1 | Sam Rivera's amLODIPine is recorded as 50 mg against a 5 mg order, and the kept paper line reads 5.0 mg. The app showed only "09:00 Given". The design shows a warning. | Shown on ward, summary and medication record in batch 1 |
-| 2 | Vitals page: when the newest record holds only blood sugar, all the latest tiles show "—" (Lena Ortiz), although older values exist. | Fixed on the ward board and summary; vitals page in batch 2 |
+| 2 | Vitals page: when the newest record holds only blood sugar, all the latest tiles show "—" (Lena Ortiz), although older values exist. | Fixed on the ward board and summary in batch 1, and on the vitals page in batch 2 (#24) |
 | 3 | The wrong-PIN lockout of the second-nurse check was cleared by closing the dialog. | Survives closing and Go back in batch 1. Leaving the page still clears it; the same is true for sign-in. Owner decision in section 8 |
 | 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Batch 4 |
 | 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Small fix, batch 4 |
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
+| 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Not fixed yet; the body map print in #26 uses a header that does repeat |
+| 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
 
 ## 6. Screen by screen
 
@@ -268,7 +271,7 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Owner: confirm `_1` and the photo rights.
 - Priority P3 (keep the photo layout).
 
-## 7. Batch 1: what still differs from Stitch
+## 7. Batches 1 and 2: what still differs from Stitch
 
 | Page | Remaining differences and why |
 |---|---|
@@ -277,13 +280,17 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 | Medication record | Order facts ClinBridge does not hold are left out (indication, daily maximum, bag volume, pump); no handwriting picture in the evidence card, only a link to the record; no AI tally; eMAR station box left out; hour strip follows the real clock. |
 | Two-nurse | Step 1 is the patient check, not a wristband scan; PIN keypad instead of a masked box with "RFID Tap"; checks are plain text because ClinBridge stores the PIN check, not ticks; waste and volume tiles say "Not recorded here"; no block id or broadcast. |
 
+| Vitals (batch 2) | No NEWS2, mean pressure, target bands, "normal" wording, next check time, cuff position, rhythm, GCS or per-row verified mark. The form is a page, not a pop-up. |
+| Intake and output (batch 2) | No target, amount left of a limit, urine rate, preset amounts or pitcher picture. "Flag alert" is off with its reason. No weight box in the vitals form (the column exists; owner decision). Totals from 00:00, because there is no shift. |
+| Body map (batch 2) | No next-site advice, rotation, line details, phlebitis or Braden calculation, skin and pain pins, or site photos (P-03). Theme 2 figure. |
+
 Phone layouts: the archive has no phone pictures, so these follow the desktop order in one column.
 
 ## 8. Control inventory
 
 Repeated on most screens and judged once: sidebar links **1**; Quick Lock **1** (header Lock); "Ward Board / Add / Capture…" names **2** (ClinBridge names); Device & Mesh link **2** (Laptops); Settings, Snapshot, Compare, Gate, Recovery links **1** for the roles that may open them.
 
-States marked † are true only with the batch 1 pull requests.
+States marked † are true only with the batch 1 pull requests, and ‡ only with the batch 2 pull requests.
 
 | Screen | 1 Implemented | 2 Equivalent | 3 Safe to implement | 4 Deferred | 5 Not applicable |
 |---|---|---|---|---|---|
@@ -294,9 +301,9 @@ States marked † are true only with the batch 1 pull requests.
 | 5 History | tabs, Expand / Collapse All, search, newest / oldest, Add past-dated note, Print sheet, expand rows | View MAR Log → Medicines; Append Addendum → Fix; Export PDF → print | Inspect slip inset, sign-off log | View Telephony Log | — |
 | 6 MAR | patient tabs†, All / Scheduled / PRN / Infusions / Stopped tabs†, search†, View Proof → View record†, Verify Dose → Check dose†, Record PRN†, Record New Administration†, Print MAR† | Check Line / Rate → New rate†; paper log tile → record link†; eMAR refresh (always live); Flagged for Worklist → worklist (admin) | — | Record Non-MAR Med (off, with reason)†, Flag Time Conflict (off, with reason)† | Accept 5 mg (AI must not change a record) |
 | 7 Two-nurse | pick nurse, PIN, Cancel† | Confirm Dual Sign-off → Save dose record; three ticks → printed check list† | — | witnessed waste, volumes | RFID Tap, mesh staging |
-| 8 Vitals | Record, Print, Summary / History / MAR links | Save to ledger → Save | tabs, charts, table, steppers, View timeline, Export via print | NEWS2, GCS tab, View Scale, rhythm | Verified mark per row |
-| 9 I/O | Add intake, Add output, Print, Cancel, Save | Recalculate (always live) | tabs, steppers, ledgers, chart | preset volumes, Flag Alert | — |
-| 10 Body map | Front, Back, Both, site rows | tabs via menu; Export sheet via print | layer chips with counts, Reset, Print | Snap New Site, Add Line, Log Flush, Save Site, skin and pain pins (P-03) | — |
+| 8 Vitals | Record, Print, patient tabs‡, column tabs‡, chart switch‡, old versions‡, steppers‡, View timeline‡, Open row‡ | Save to ledger → Save; Export PDF → print | — | NEWS2, GCS tab, View Scale, rhythm | Verified mark per row |
+| 9 I/O | Add intake, Add output‡, Print, Cancel, Save, tabs‡, steppers‡, ledger rows‡, chart hours‡, notes / labs / history links‡ | Recalculate (always live) | — | preset volumes, Flag Alert | — |
+| 10 Body map | Front, Back, Both, site rows, tabs‡, layer switches‡, Reset‡, Print‡, Handover‡ | Export sheet → Print‡; Snap site → Photo of paper | — | Snap New Site, Add Line, Log Flush, Save Site, skin and pain pins (P-03) | — |
 | 11 Capture | Retake, photo beside the form, edit fields, Save | Flag for worklist → Save as a draft; Discard → Change form type; confirm tick → confirm page | zoom, rotate, per-field edit rows | confidence | — |
 | 12 Notes | New note, reset, sign (PIN user) | Attach photo → Photo of paper | tabs, expand, composer beside list, print | templates (4), risk scores, dual sign, verbal orders | Re-stock |
 | 13 Orders | Open order | Prepare Dose → Open; Print → paper MAR; Link order → record page | tabs, filter, allergy card | Report allergy | Pharmacy pager, Broadcast |
@@ -324,8 +331,8 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 ## 9. Next batches (each a small pull request)
 
 1. **Batch 1 (open for review):** ward board and summary; medication record and two-nurse check.
-2. **Batch 2:** vitals flowsheet (with problem 2), intake and output, body map.
-3. **Batch 3:** paper capture, history and SBAR handover, recovery worklist.
+2. **Batch 2 (open for review, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
+3. **Batch 3:** print identity on History and Handover (problem 7) first; paper capture, history and SBAR handover, recovery worklist.
 4. **Batch 4:** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
 
@@ -334,4 +341,5 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 - Which landing reference (`_1` is assumed) and the rights to the landing photos.
 - Should the wrong-PIN lockout be kept per person until the minute is over, even after leaving the page? It is a security-policy change, so it was not made.
 - Still open from before: note templates, print logging, barcodes, site logging (P-03).
+- A weight box in the vitals form (the database column already exists).
 - System Admin sidebar order stays deferred, as asked.
