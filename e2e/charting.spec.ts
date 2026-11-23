@@ -37,7 +37,8 @@ test('notes: write a note, then fix it with a reason', async ({ page }) => {
   await page.getByLabel('Note').fill('Breathing easier, speaking full sentences.');
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
-  await page.getByRole('link', { name: /Breathing easier/ }).click();
+  await page.getByRole('button', { name: /Breathing easier/ }).click();
+  await page.getByRole('link', { name: 'Open details' }).click();
   await page.getByRole('link', { name: 'Fix' }).click();
   await page.getByLabel('Note').fill('Breathing easier, speaking full sentences. Oxygen 2 L/min.');
   await page.getByLabel('Why are you fixing this?').fill('added oxygen flow');
