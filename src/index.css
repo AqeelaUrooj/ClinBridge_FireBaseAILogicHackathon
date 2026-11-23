@@ -44,12 +44,10 @@
 .bm-key-injection { background: #1C2536; border-color: #1C2536; }
 .bm-key-iv { background: #4A6078; border-color: #4A6078; }
 
-/* Print (browser print only). Black on white; patient identifiers repeat on every page. */
+/* Print (browser print only). Black on white. Patient identifiers on every page: PatientPrint.tsx and the paper forms' table header. */
 @media print {
   @page { margin: 22mm 14mm 18mm; }
   html, body { background: #fff !important; color: #000; }
-  .print-running-header { position: fixed; top: -14mm; left: 0; right: 0; font-size: 10pt; border-bottom: 1px solid #000; padding-bottom: 2mm; }
-  .print-running-footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 8.5pt; border-top: 1px solid #000; padding-top: 1.5mm; }
   a { color: #000; text-decoration: none; }
   /* Paper downtime forms: each patient's sheet starts on a new page; the id strip (table header) repeats on every page. */
   .print-break { break-before: page; }
