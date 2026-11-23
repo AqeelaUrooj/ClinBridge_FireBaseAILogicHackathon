@@ -6,7 +6,7 @@ import { expectFits, openAdmin } from './adminHelpers';
  * Device vs Cloud drill (Stitch "Device vs cloud comparison"). Fictional Practice data only. The on-device answer in
  * these tests is a MOCK of the Chrome Prompt API, never a real model; no cloud request is made.
  */
-test.use({ serviceWorkers: 'block' });
+test.use({ serviceWorkers: 'block', baseURL: 'http://localhost:4174' }); // the build with FAKE Firebase values, as in ai.spec.ts
 // Sam Rivera 04:00 holds 136/82, 76, 16, 97, 36.7, 0, Alert. The mock changes breathing, leaves out pain and adds blood sugar.
 const MOCK = '{"bp_systolic":136,"bp_diastolic":82,"heart_rate":76,"resp_rate":61,"temp_c":36.7,"spo2":97,"glucose_mgdl":110,"consciousness":"Alert"}';
 async function mock(page: Page) {
