@@ -14,9 +14,9 @@ async function open(page: Page, patientId: string) {
 test('fluids: add intake, totals update', async ({ page }) => {
   await open(page, 'pt-08'); // Rosa Santos, synthetic
   await page.getByRole('link', { name: /Fluids/ }).first().click();
-  const card = (label: string) => page.locator('div.rounded-xl', { has: page.getByText(label, { exact: true }) });
-  await expect(card('In')).toHaveText(/In\s*240\s*mL/);
-  await expect(card('Balance (in − out)')).toHaveText(/-530\s*mL/); // 240 in, 770 out (350 + 420)
+  const balance = page.getByRole('region', { name: 'Fluid balance today' });
+  await expect(balance).toContainText('In: 240 mL');
+  await expect(balance).toContainText('−530 mL'); // 240 in, 770 out (350 + 420)
   await page.getByRole('link', { name: 'Add fluid' }).click();
   await page.getByRole('button', { name: /^In/ }).click();
   await page.getByRole('button', { name: 'By mouth' }).click();
@@ -24,9 +24,9 @@ test('fluids: add intake, totals update', async ({ page }) => {
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Saved on this laptop.')).toBeVisible();
-  await expect(card('In')).toHaveText(/In\s*440\s*mL/);
-  await expect(card('Out')).toHaveText(/Out\s*770\s*mL/);
-  await expect(card('Balance (in − out)')).toHaveText(/-330\s*mL/); // 440 − 770
+  await expect(balance).toContainText('In: 440 mL');
+  await expect(balance).toContainText('Out: 770 mL');
+  await expect(balance).toContainText('−330 mL'); // 440 − 770
 });
 
 test('notes: write a note, then fix it with a reason', async ({ page }) => {
