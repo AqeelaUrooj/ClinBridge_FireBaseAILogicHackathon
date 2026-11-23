@@ -131,3 +131,18 @@ Tap areas are a separate transparent layer drawn on top; each is keyboard reacha
   - Head and limb regions can be picked from **either** view (same id: "Left forearm" includes the back of the forearm). Markers for them show in the front view only.
   - Feet are picked in the front view and heels in the back view (from behind, the foot shows its heel).
 - Still not covered by the 21 regions (same as before): neck, groin/perineum, hips/front of pelvis. The artwork shows them, but they cannot be selected.
+
+## Touch comparison on narrow screens
+
+Both view now stacks the front and back figures when the figure panel cannot fit two 280 px columns. Front and Back remain available individually. On a wide panel Both presents the views side by side.
+
+The table gives the width × height of the clickable silhouette in CSS pixels. In Chromium, each pixel center in the SVG path's bounding box was checked with `document.elementFromPoint` after centering the target in the viewport. These are bounding dimensions of the clipped shape, rounded to the sample grid.
+
+| Viewport | Each neck before | Each neck after | Perineum before | Perineum after |
+|---|---|---|---|---|
+| 360 px | 13 × 8 | 28 × 15 | 9 × 7 | 20 × 15 |
+| 390 px | 14 × 9 | 30 × 17 | 10 × 7 | 22 × 16 |
+| 768 px | 21 × 12 | 30 × 17 | 15 × 11 | 22 × 16 |
+| 1440 px | 31 × 17 | 31 × 17 | 23 × 17 | 23 × 17 |
+
+Before the change, a simulated center tap on the perineum at 390 px left the previous region selected. After the change, center taps selected all three regions at all four widths. At 2× simulated pinch zoom the picker selected the back of the neck. The anatomical targets are still small, and the picker offers a larger alternative. Physical-phone usability remains unverified.
