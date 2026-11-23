@@ -58,6 +58,12 @@ export const dayLabel = (iso?: string | null): string =>
 
 export const dateTimeLabel = (iso?: string | null): string => (iso ? `${hm(iso)}, ${dayLabel(iso)}` : '');
 
+/** Plain time between two moments, e.g. "9 h 40 min". */
+export function sinceText(fromIso: string, nowIso: string): string {
+  const min = Math.max(0, Math.round((Date.parse(nowIso) - Date.parse(fromIso)) / 60_000));
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`;
+}
+
 export function ageOn(birthDate: string, atIso: string): number {
   const by = Number(birthDate.slice(0, 4)), bm = Number(birthDate.slice(5, 7)), bd = Number(birthDate.slice(8, 10));
   const y = Number(atIso.slice(0, 4)), m = Number(atIso.slice(5, 7)), d = Number(atIso.slice(8, 10));
