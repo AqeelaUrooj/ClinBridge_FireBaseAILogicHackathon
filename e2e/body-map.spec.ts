@@ -13,7 +13,7 @@ async function openVerifiedBodyMap(page: Page, patientId: string) {
   await page.getByTestId(`patient-${patientId}`).click();
   await page.getByRole('button', { name: 'Yes, open' }).click();
   await page.getByRole('link', { name: 'View details' }).click();
-  await page.getByRole('main').getByRole('link', { name: 'Body map' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'Body map', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Body map' })).toBeVisible();
 }
 
@@ -151,7 +151,7 @@ test.describe('body map', () => {
     await expect(page.locator('[data-has-admin]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Yes, open' }).click();
     await page.getByRole('link', { name: 'View details' }).click();
-    await page.getByRole('main').getByRole('link', { name: 'Body map' }).click();
+    await page.getByRole('main').getByRole('link', { name: 'Body map', exact: true }).click();
     await expect(page.locator('[data-region="ABDOMEN_LEFT"][data-has-admin="true"]')).toHaveCount(0);
     await expect(page.locator('svg[data-view="front"] [data-region="LEFT_FOREARM"]')).toHaveAttribute('data-has-admin', 'true');
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
