@@ -62,5 +62,20 @@ export function medicationSites(patientId: string, records: readonly EntryWithCh
   return { marked, unmapped, administrations };
 }
 
+export type Layer = MappedSite['kind'];
+
+/** What the figure draws when layers are switched off. The records themselves are not changed. */
+export function showLayers({ marked, administrations }: Pick<ReturnType<typeof medicationSites>, 'marked' | 'administrations'>, hidden: ReadonlySet<Layer>) {
+  if (!hidden.size) return { marked, administrations };
+  const kept = new Map<string, RegionAdministrations>();
+  for (const [id, summary] of administrations) {
+    const records = summary.records.filter((r) => !hidden.has(r.kind));
+    if (!records.length) continue;
+    const latest = records[0]!;
+    kept.set(id, { records, ...(careTimestamp(latest) !== -Infinity ? { mostRecentCareTime: latest.item.entry.care_time } : {}) });
+  }
+  return { marked: marked.filter((m) => !hidden.has(m.kind)), administrations: kept };
+}
+
 export const administrationCountLabel = (count: number) =>
   `${count} documented administration${count === 1 ? '' : 's'}`;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EntryWithChild } from '../../db/repos/entries';
 import type { Entry, MedAdmin } from '../../db/schema';
-import { medicationSites } from './medicationSites';
+import { medicationSites, showLayers } from './medicationSites';
 
 function record(entryOverrides: Partial<Entry> = {}, medicationOverrides: Partial<MedAdmin> = {}): EntryWithChild {
   const entry: Entry = {
@@ -81,6 +81,24 @@ describe('documented medication sites', () => {
     const sites = derive(record({}, { site }));
     expect(sites.administrations.size).toBe(0);
     expect(sites.unmapped).toEqual([]);
+  });
+
+  it('layers change only what the figure draws, never the records', () => {
+    const sites = derive(record({ id: 'line' }), record({ id: 'shot' }, { site: 'Abdomen, left side', route: 'SC' }));
+    expect(showLayers(sites, new Set())).toEqual({ marked: sites.marked, administrations: sites.administrations });
+    const noShots = showLayers(sites, new Set(['injection']));
+    expect(noShots.marked.map((m) => m.item.entry.id)).toEqual(['line']);
+    expect([...noShots.administrations.keys()]).toEqual(['LEFT_FOREARM']);
+    expect(showLayers(sites, new Set(['injection', 'iv'])).administrations.size).toBe(0);
+    expect(sites.marked).toHaveLength(2);
+    expect(sites.administrations.size).toBe(2);
+  });
+
+  it('keeps the other kind when one area holds both', () => {
+    const sites = derive(record({ id: 'line', care_time: '2026-11-14T09:00:00+00:00' }, { site: 'Abdomen, left side', route: 'IV' }), record({ id: 'shot' }, { site: 'Abdomen, left side', route: 'SC' }));
+    const kept = showLayers(sites, new Set(['iv'])).administrations.get('ABDOMEN_LEFT');
+    expect(kept?.records.map(({ item }) => item.entry.id)).toEqual(['shot']);
+    expect(kept?.mostRecentCareTime).toBe('2026-11-14T08:00:00+00:00');
   });
 
   it('lists unmapped sites without guessing a region', () => {
