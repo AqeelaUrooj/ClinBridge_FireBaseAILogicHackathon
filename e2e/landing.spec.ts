@@ -4,6 +4,8 @@ for (const width of [1440, 1024, 768, 390, 360]) {
   test(`public landing navigation, privacy and layout at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    const external: string[] = [];
+    page.on('request', request => { if (new URL(request.url()).origin !== 'http://localhost:4173') external.push(request.url()); });
     await page.goto('/landing');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('When the EHR goes down');
     for (const id of ['overview', 'workflow', 'features', 'hybrid-ai', 'recovery', 'faq']) {
@@ -36,6 +38,13 @@ for (const width of [1440, 1024, 768, 390, 360]) {
     await page.getByRole('button', { name: 'Paper forms' }).click();
     await expect(page.getByAltText(/paper-form selector/)).toBeVisible();
     await page.getByRole('button', { name: 'Bedside charting' }).click();
+    await expect(page.locator('.lp-metrics > li')).toHaveCount(4);
+    await expect(page.locator('.lp-steps > li')).toHaveCount(3);
+    await expect(page.getByRole('img', { name: /Illustrative front view/ })).toBeVisible();
+    await expect.poll(() => page.locator('.landing img').evaluateAll(imgs =>
+      imgs.every(img => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0),
+    )).toBe(true);
+    expect(external).toEqual([]);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: info.outputPath('screens', `landing-${width}.png`), fullPage: true });
     const footer = page.getByRole('contentinfo');
@@ -59,7 +68,9 @@ test('installed public page reloads offline without opening a vault', async ({ p
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  expect(await page.locator('.lp-preview-body > img').evaluate(el => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect.poll(() => page.locator('.lp-photo img').evaluateAll(imgs =>
+    imgs.length === 4 && imgs.every(img => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0),
+  )).toBe(true);
   expect(await page.evaluate(() => indexedDB.databases())).toEqual([]);
 });
 
