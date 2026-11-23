@@ -290,3 +290,7 @@ Browser (`admin-recovery.spec.ts`):
 | **capture (3)** | Photo saved first ("Unchanged since saved") → typed pulse → draft → check and confirm beside the photo → confirmed with source photo; dark photo hint does not block; practice proposal labelled as simulated, missing photo file stated |
 
 Not tested yet: screen reader pass, tablet sizes, Firefox/Safari, real Gemini Nano (not available in this environment).
+
+## Collapsed history readability
+
+At 390 px a saved Practice metoprolol tartrate 250 mg administration used 237 px of text in an 89 px single-line summary. The regression follows its correction to 25 mg, shows the old version and checks both summaries fit at 390 and 1440 px. It also checks keyboard expansion, status badges and page overflow. The phone row gives the text more space and all record summaries wrap, including notes, fluids, labs and vitals. Screenshots are under `screens/history-doses-*.png` in the browser-test artifacts.

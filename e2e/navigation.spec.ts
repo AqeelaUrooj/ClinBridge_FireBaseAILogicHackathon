@@ -170,3 +170,25 @@ test('wide screen: the menu is always shown and there is no menu button', async 
   await expect(menu(page)).toBeVisible();
   await expect(page.getByRole('button', { name: /Open menu|Close menu/ })).toBeHidden();
 });
+
+test('phone history fits saved clinical summaries, including a held dose and draft', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, /Daniel Okafor/);
+  for (const { patient, entries } of [
+    { patient: 'pt-03', entries: ['e-003', 'e-013', 'e-027', 'e-031'] }, // vitals, lab, note, held medicine without a given dose
+    { patient: 'pt-07', entries: ['e-009', 'e-049'] }, // fluids, draft medicine
+  ]) {
+    await page.getByTestId(`patient-${patient}`).click();
+    await page.getByRole('button', { name: 'Yes, open' }).click();
+    await page.getByRole('link', { name: 'View details' }).click();
+    for (const id of entries) {
+      const row = page.getByTestId(`history-${id}`).getByRole('button');
+      await expect(row).toHaveAttribute('aria-expanded', 'false');
+      const text = row.locator('span.font-body-lg');
+      expect(await text.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    }
+    if (patient === 'pt-03') await expect(page.getByTestId('history-e-031')).toContainText('furosemide · Held');
+    else await expect(page.getByTestId('history-e-049')).toContainText('Check this');
+    await page.getByRole('main').getByRole('link', { name: 'My patients' }).click();
+  }
+});
