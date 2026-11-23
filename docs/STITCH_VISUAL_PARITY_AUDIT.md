@@ -48,8 +48,9 @@ The task text says v3; the attached archive is v4. v4 contains everything in v3 
 | With batch 1 (#21, #22; merged 23 November) | 0 | 11 | 22 | 0 |
 | With batch 1 and batch 2 (#24, #25, #26; merged 23 November) | 0 | 13 | 20 | 0 |
 | With batch 3 as well (#29, #30, #32, #33; merged 23 November, `main` at `c4db9b5`) | 0 | 16 | 17 | 0 |
+| With batch 4 as well (#35 to #39; open, not merged) | 0 | 21 | 12 | 0 |
 
-Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer.
+Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer. Batch 4 (open) moves notes, orders, labs, entry detail and the change log from C to B.
 
 ## 5. Problems found while comparing (not only looks)
 
@@ -58,8 +59,8 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 1 | Sam Rivera's amLODIPine is recorded as 50 mg against a 5 mg order, and the kept paper line reads 5.0 mg. The app showed only "09:00 Given". The design shows a warning. | Shown on ward, summary and medication record in batch 1 |
 | 2 | Vitals page: when the newest record holds only blood sugar, all the latest tiles show "—" (Lena Ortiz), although older values exist. | Fixed on the ward board and summary in batch 1, and on the vitals page in batch 2 (#24) |
 | 3 | The wrong-PIN lockout of the second-nurse check was cleared by closing the dialog. | Survives closing and Go back in batch 1. Leaving the page still clears it; the same is true for sign-in. Owner decision in section 10 |
-| 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Batch 4 |
-| 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Small fix, batch 4 |
+| 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Fixed in #39 (open) |
+| 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Fixed in #39 (open): this laptop's own name, only while the records are open |
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
 | 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (merged, `main` is `bfea237`). The body map page in #26 now uses the shared header |
 | 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
@@ -69,6 +70,9 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 12 | A handover printed a linked record that was fixed or marked as a mistake later with its old value and no mark. | Fixed in #32 (merged) |
 | 13 | Recovery worklist: the tenfold amLODIPine record said only "the rules no longer find a problem". A fixed record was called a possible duplicate of its own old version. On a phone the time and kind of record were hidden. | Fixed in #33 (merged). The rules themselves are unchanged |
 | 14 | The oxygen table on the history page was cut off on paper. | Fixed in #30 (merged) |
+| 15 | Long notes were cut with "…" in the notes list, also on paper. | Fixed in #35 (open) |
+| 16 | On a phone the ward lab list cut the patient name and the test; the change log scrolled sideways at 390 px. | Fixed in #36 and #39 (open) |
+| 17 | Admins saw New note and Record lab buttons that led to a refusal. | Fixed in #35 and #36 (open) |
 
 ## 6. Screen by screen
 
@@ -157,13 +161,13 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: confidence figures; a real AI reading stays off during System Down.
 - Priority P2.
 
-### 12. Notes: C
+### 12. Notes: C on main, B with batch 4 (#35)
 - Ref `nursing_notes_clinical_communication_minimal_with_expandable_cards` · App `/patients/:id/notes` · Similarity low
 - Missing: category tabs with counts, expandable cards, expand all, side composer, print.
 - Approval / hardware: Morse and Braden scores, titration, verbal orders, templates (owner decision open), timers, second signature on a note.
 - Priority P3.
 
-### 13. Orders and allergies: C
+### 13. Orders and allergies: C on main, B with batch 4 (#37)
 - Ref `patient_orders_allergies_peter_novak` · App `/patients/:id/orders` · Similarity low
 - Missing: allergy card, tabs with counts, search, order cards with actions, print.
 - Approval / hardware: new allergy report (read-only patient list), pharmacy pager, allergy broadcast.
@@ -175,13 +179,13 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: custody sign-off and counter-signature, badge tap.
 - Priority P2.
 
-### 15. Entry detail and correction: C
+### 15. Entry detail and correction: C on main, B with batch 4 (#38)
 - Ref `entry_detail_versioned_correction_audit_mei_chen` · App `/entries/:id`, `/history`, `/correct` · Similarity low
 - Missing: old, change and new in three columns, amendment chain card, print.
 - Approval / hardware: "Approve Amendment" by a second person, clarification request.
 - Priority P3.
 
-### 16. Ward labs: C
+### 16. Ward labs: C on main, B with batch 4 (#36)
 - Ref `ward_laboratory_tracking_critical_results_4_west` · App `/labs` · Similarity low
 - Missing: header actions, tabs with counts, critical banner with steps, search, table.
 - Approval / hardware: protocol actions, ECG view, titration log.
@@ -223,7 +227,7 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 - Approval / hardware: temporary PIN, 2-hour recovery PIN, badge numbers, mesh broadcast.
 - Priority P3.
 
-### 23. Change log: C
+### 23. Change log: C on main, B with batch 4 (#39)
 - Ref `cryptographic_audit_log_merkle_chain_inspector_ward_4_west` · App `/admin/audit` · Similarity low
 - Missing: stat tiles, search, tabs with counts, names instead of ids, row inspector, paging.
 - Approval / hardware: signed certificate; "Merkle tree" is not what ClinBridge uses (it is a hash chain).
@@ -294,6 +298,11 @@ Fields: **Ref** Stitch folder · **App** route and component · **Similarity** �
 | History (batch 3) | No event names such as "Acute desaturation", NEWS2, "bedside verified", countersign status, badge or pager numbers, doctor in the care team, telephony log. "Unusual" is the draft mark of the vitals page. |
 | SBAR handover (batch 3) | No transfer of care, counter-signature PIN, badge or attestation tick: the card says so and opens the paper sheet. Tick boxes for open items only on paper. No NEWS2, targets or monitor pictures. |
 | Recovery worklist (batch 3) | No second reviewer PIN, recommended value, maximum dose, dispensing data, Code Blue text or automatic reason. No record opens by itself. |
+| Notes (batch 4) | No risk words, score parts, templates, timers, second signature or verbal-order records. Scores as the nurse wrote them. |
+| Orders (batch 4) | No allergy report or broadcast, pharmacy pager, lockout, maximum dose, indications or countdown. Read only. |
+| Labs (batch 4) | No ranges on new results, escalation, ECG, tube colours, LOINC, courier or fridge tiles. The hospital list keeps its own printed range. |
+| Entry detail (batch 4) | No countersignature, approval, root cause, FLAGGED / NORMAL labels or certificate. |
+| Change log (batch 4) | A hash chain on one laptop, not a Merkle tree; no signed certificate, tamper simulation, TPM or other laptops. |
 
 Phone layouts: the archive has no phone pictures, so these follow the desktop order in one column.
 
@@ -301,7 +310,7 @@ Phone layouts: the archive has no phone pictures, so these follow the desktop or
 
 Repeated on most screens and judged once: sidebar links **1**; Quick Lock **1** (header Lock); "Ward Board / Add / Capture…" names **2** (ClinBridge names); Device & Mesh link **2** (Laptops); Settings, Snapshot, Compare, Gate, Recovery links **1** for the roles that may open them.
 
-States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § with batch 3 (merged 23 November).
+States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § with batch 3 (merged 23 November); ¶ comes with batch 4 (open).
 
 | Screen | 1 Implemented | 2 Equivalent | 3 Safe to implement | 4 Deferred | 5 Not applicable |
 |---|---|---|---|---|---|
@@ -316,18 +325,18 @@ States marked † came with batch 1 and ‡ with batch 2 (both merged 23 Novembe
 | 9 I/O | Add intake, Add output‡, Print, Cancel, Save, tabs‡, steppers‡, ledger rows‡, chart hours‡, notes / labs / history links‡ | Recalculate (always live) | — | preset volumes, Flag Alert | — |
 | 10 Body map | Front, Back, Both, site rows, tabs‡, layer switches‡, Reset‡, Print‡, Handover‡ | Export sheet → Print‡; Snap site → Photo of paper | — | Snap New Site, Add Line, Log Flush, Save Site, skin and pain pins (P-03) | — |
 | 11 Capture | Retake, photo beside the form, edit fields, Save, zoom§, rotate§, per-field edit§, confirm tick§ | Flag for worklist → Keep as a draft§; Discard → Change form type§ | — | confidence | — |
-| 12 Notes | New note, reset, sign (PIN user) | Attach photo → Photo of paper | tabs, expand, composer beside list, print | templates (4), risk scores, dual sign, verbal orders | Re-stock |
-| 13 Orders | Open order | Prepare Dose → Open; Print → paper MAR; Link order → record page | tabs, filter, allergy card | Report allergy | Pharmacy pager, Broadcast |
+| 12 Notes | New note, reset (Clear)¶, sign (PIN user), tabs¶, expand¶, composer beside list¶, print¶ | Attach photo → Photo of paper¶ | — | templates (4), risk scores, dual sign, verbal orders | Re-stock |
+| 13 Orders | Open order, tabs¶, search¶, allergy card¶, print¶ | Prepare Dose → record page¶; Link order → record page; verbal order form → paper form¶ | — | Report allergy | Pharmacy pager, Broadcast |
 | 14 SBAR | New handover, Print, patient tabs§, four cards§, vitals table§, linked records§, Return to ward§ | Export PDF → print; checklist → open items and printed tick boxes§ | — | Sign & transfer, counter-sign, PIN | Tap Badge |
-| 15 Entry | History, All versions, Back, Fix | Print → print history | three-column compare | Approve Amendment, Request Clarification | Medico-legal certificate |
-| 16 Labs | open result | Record Phoned Result and Log Draw → Record lab on the patient's lab page | tabs, filter, table, print list | Review Protocol, Titration Log | View ECG |
+| 15 Entry | History, All versions, Back, Fix, three-column compare¶, print¶ | — | — | Approve Amendment, Request Clarification | Medico-legal certificate |
+| 16 Labs | open result, tabs¶, search¶, ledger¶, print list¶, record for a patient¶ | Log Draw and Check Status → Record result¶; Flowsheet¶ | — | Review Protocol, Titration Log | View ECG |
 | 17 Compare | pick sample, Run device, Run cloud (both off until allowed) | Reset | Export JSON of a real run | Run Benchmark | Simulate drop, Simulate throttle, bounding boxes |
 | 18 Readiness | tabs to change log and backup | Run diagnostic (checks run on open) | tile layout, Print test sheet | — | Force clock, node JSON |
 | 19 Settings | section values (read only) | — | tabs, help text | all edits, Save, auto-lock, precision, roles | Key ceremony, Sovereign policy |
 | 20 Snapshot | Import file (Real records) | Run checksum (on import) | search, table, inspect, refresh | — | Rollback, distribute to carts, simulate buttons, acuity |
 | 21 Devices | laptop list | Lock station → Lock | self-test card | — | Mesh ping, pair, deauthorize, PCAP, peer logs |
 | 22 Staff | Add (with role), New PIN, Switch on / off | Audit logs → change log | search, filter, print, privileges view | Edit access of existing staff, temporary PIN, shift hours, recovery PIN | Broadcast, COW ping |
-| 23 Change log | action filter, verify on open | Tabs → filter | search, tabs, names, inspector | Export certificate | Merkle tree, simulate tamper |
+| 23 Change log | action filter, verify (Check again¶), search¶, tabs¶, names¶, inspector¶, print¶ | — | — | Export certificate | Merkle tree, simulate tamper |
 | 24 Downtime | Start, End, gate | Force backup → Backup; Print MAR backup → spooler; run checksum → verify | timeline, history table, runbook print | sub-events | Broadcast, mesh alert, simulate resumption |
 | 25 Setup | steps on Real records (not viewed) | — | — | key slot choices | Helpdesk, peripherals |
 | 26 Gate | four checks, authorise | PIN keypad → PIN field; preview worklist → Recovery link in the menu | own layout, confirm dialog | re-run probe | SIM FAIL |
@@ -344,7 +353,7 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 1. **Batch 1 (merged):** ward board and summary; medication record and two-nurse check.
 2. **Batch 2 (merged, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
 3. **Batch 3 (merged: fixes #28 and #31, then #29, #30, #32, #33):** paper capture, history and SBAR handover, recovery worklist.
-4. **Batch 4:** change log, labs, orders, entry detail, notes layout.
+4. **Batch 4 (open: #35, #36, #37, #38, #39):** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
 
 ## 10. Decisions needed from the owner
