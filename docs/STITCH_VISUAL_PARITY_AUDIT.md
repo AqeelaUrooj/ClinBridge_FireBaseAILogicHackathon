@@ -44,9 +44,9 @@ The task text says v3; the attached archive is v4. v4 contains everything in v3 
 
 | | A | B | C | D |
 |---|---|---|---|---|
-| `main` at `d08635dc` | 0 | 7 | 26 | 0 |
-| With the two batch 1 pull requests (not merged) | 0 | 11 | 22 | 0 |
-| With batch 1 and batch 2 (#24, #25, #26; not merged) | 0 | 13 | 20 | 0 |
+| `main` at `d08635dc` (when the audit was made) | 0 | 7 | 26 | 0 |
+| With batch 1 (#21, #22; merged 23 November) | 0 | 11 | 22 | 0 |
+| With batch 1 and batch 2 (#24, #25, #26; merged 23 November) | 0 | 13 | 20 | 0 |
 
 Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer.
 
@@ -56,7 +56,7 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 |---|---|---|
 | 1 | Sam Rivera's amLODIPine is recorded as 50 mg against a 5 mg order, and the kept paper line reads 5.0 mg. The app showed only "09:00 Given". The design shows a warning. | Shown on ward, summary and medication record in batch 1 |
 | 2 | Vitals page: when the newest record holds only blood sugar, all the latest tiles show "—" (Lena Ortiz), although older values exist. | Fixed on the ward board and summary in batch 1, and on the vitals page in batch 2 (#24) |
-| 3 | The wrong-PIN lockout of the second-nurse check was cleared by closing the dialog. | Survives closing and Go back in batch 1. Leaving the page still clears it; the same is true for sign-in. Owner decision in section 8 |
+| 3 | The wrong-PIN lockout of the second-nurse check was cleared by closing the dialog. | Survives closing and Go back in batch 1. Leaving the page still clears it; the same is true for sign-in. Owner decision in section 10 |
 | 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Batch 4 |
 | 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Small fix, batch 4 |
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
@@ -290,7 +290,7 @@ Phone layouts: the archive has no phone pictures, so these follow the desktop or
 
 Repeated on most screens and judged once: sidebar links **1**; Quick Lock **1** (header Lock); "Ward Board / Add / Capture…" names **2** (ClinBridge names); Device & Mesh link **2** (Laptops); Settings, Snapshot, Compare, Gate, Recovery links **1** for the roles that may open them.
 
-States marked † are true only with the batch 1 pull requests, and ‡ only with the batch 2 pull requests.
+States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November).
 
 | Screen | 1 Implemented | 2 Equivalent | 3 Safe to implement | 4 Deferred | 5 Not applicable |
 |---|---|---|---|---|---|
@@ -330,8 +330,8 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 
 ## 9. Next batches (each a small pull request)
 
-1. **Batch 1 (open for review):** ward board and summary; medication record and two-nurse check.
-2. **Batch 2 (open for review, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
+1. **Batch 1 (merged):** ward board and summary; medication record and two-nurse check.
+2. **Batch 2 (merged, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
 3. **Batch 3:** paper capture, history and SBAR handover, recovery worklist.
 4. **Batch 4:** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
