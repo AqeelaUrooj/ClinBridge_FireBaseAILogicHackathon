@@ -12,6 +12,7 @@ type Common<V> = {
   initialCareTime?: string;
   minCareTime?: string;
   requireChangeReason?: boolean;
+  sourceCheck?: boolean;
   saveLabel: string;
   onSubmit: (s: { values: V; careTime: string; changeReason?: string }) => Promise<void>;
   onCancel: () => void;
@@ -82,7 +83,7 @@ export function IoEditor({ initial, ivOrders, ...rest }: Common<Omit<IntakeOutpu
               </Field>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(15rem,30%)),1fr))] gap-space-md">
             <Field id="pstart" label="Period start (optional)"><input id="pstart" type="datetime-local" value={f.start} onChange={(ev) => set({ start: ev.target.value })} className={`${fieldCls()} font-code-tabular`} /></Field>
             <Field id="pend" label="Period end (optional)" error={e.end}><input id="pend" type="datetime-local" value={f.end} onChange={(ev) => set({ end: ev.target.value })} aria-invalid={!!e.end} className={`${fieldCls(e.end)} font-code-tabular`} /></Field>
           </div>

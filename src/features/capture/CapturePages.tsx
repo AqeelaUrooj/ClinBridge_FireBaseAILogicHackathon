@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { confirmDraft, createEntry, listPatientEntries } from '../../db/repos/entries';
@@ -8,7 +8,7 @@ import type { ActiveOrder, EntryType, IntakeOutput, MedAdmin, Note, PhotoCheck, 
 import { isNurse, useApp, useSession } from '../../state/app';
 import { assessQuality, readPixels, type Quality } from '../../lib/photoQuality';
 import { currentRate, isMedOrder, medFormFromOrder, orderGroup, type MedEvent } from '../../lib/meds';
-import { Breadcrumbs, Button, ButtonLink, Card, EmptyState, Icon } from '../../components/ui';
+import { Badge, Breadcrumbs, Button, ButtonLink, Dialog, EmptyState, Icon } from '../../components/ui';
 import { MedIllustration, type MedicalAsset } from '../../components/MedIllustration';
 import { useCurrentPatient } from '../patient/PatientLayout';
 import { fullName } from '../patient/patientData';
@@ -19,6 +19,7 @@ import { useCurrentEntry } from '../entries/EntryPages';
 import { OnDeviceProposalCard } from '../ai/AiPages';
 import { proposalToForm, type AiRaw, type VitalsProposal } from '../../lib/ai/service';
 import { aiMeta, proposalRecord } from '../../lib/ai/proposal';
+import { keepDraftSource } from './draftSource';
 
 type FormKind = 'vital_sign' | 'med_admin' | 'intake_output' | 'note';
 const KINDS: { v: FormKind; label: string; art: MedicalAsset; check: PhotoCheck['form_type'] }[] = [
@@ -40,6 +41,43 @@ function useOrders() {
 
 const medEvents = (o: ActiveOrder): MedEvent[] => (orderGroup(o) === 'infusion' ? ['rate_changed', 'administered', 'held'] : ['administered', 'held', 'refused']);
 
+/* ------------------------------ Shared frame ------------------------------ */
+
+function Pane({ label, icon, title, sub, aside, children }: { label: string; icon: string; title: string; sub: string; aside?: ReactNode; children: ReactNode }) {
+  return (
+    <section aria-label={label} className="min-w-0 bg-surface-container-lowest rounded-xl border border-card-border p-space-md shadow-sm flex flex-col gap-space-md">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2"><Icon name={icon} />{title}</h2>
+          <p className="font-body-sm text-body-sm text-secondary">{sub}</p>
+        </div>
+        {aside}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** The grey line under a pane title: plain facts about where this is kept. */
+function Strip({ icon, children }: { icon: string; children: ReactNode }) {
+  return <p className="rounded-lg bg-surface-container-low px-space-sm py-2 font-body-sm text-body-sm text-on-surface-variant flex flex-wrap items-center gap-x-2 gap-y-1"><Icon name={icon} className="text-[18px]" />{children}</p>;
+}
+
+/** Bar at the bottom of the capture screens: what else can be done, and where the record goes. */
+function EndBar({ patientName, children }: { patientName: string; children: ReactNode }) {
+  return (
+    <div className="bg-surface-container-lowest rounded-xl border border-card-border p-space-md shadow-sm flex flex-wrap items-center justify-between gap-space-md">
+      <div className="flex flex-wrap items-center gap-space-sm">{children}</div>
+      <p className="font-body-sm text-body-sm text-secondary">
+        <span className="block font-label-uppercase text-label-uppercase uppercase">Goes to</span>
+        <span className="font-semibold text-primary">{patientName}’s history, on this laptop</span>
+      </p>
+    </div>
+  );
+}
+
+const PANES = 'grid grid-cols-1 lg:grid-cols-2 gap-space-md items-start';
+
 /* ------------------------------ New capture ------------------------------ */
 
 export function CapturePage() {
@@ -57,6 +95,8 @@ export function CapturePage() {
   const [orderId, setOrderId] = useState('');
   // On-device AI proposal (optional). When used, the record is always saved as a draft to confirm beside the photo.
   const [ai, setAi] = useState<{ proposal: VitalsProposal; raw: AiRaw; at: string } | null>(null);
+  const [aiDropped, setAiDropped] = useState(false);
+  const [changeKind, setChangeKind] = useState(false);
   const base = `/patients/${patient.id}`;
   if (!isNurse(user)) return <EmptyState icon="block" text="Only nurses can add records." />;
   const k = KINDS.find((x) => x.v === kind);
@@ -67,6 +107,8 @@ export function CapturePage() {
     try {
       const saved = await savePhoto(db, clock, { userId: user!.id, deviceId }, patient.id, f); // saved first, before anything else
       setPhoto(saved);
+      // A proposal belongs to the photo it was read from: a new photo drops it, so it can never be saved with another photo.
+      setAiDropped(!!ai); setAi(null);
       try { const { px, shortSide } = await readPixels(f); setQuality(assessQuality(px, shortSide)); }
       catch { setQuality({ problem: 'none', hints: ['Could not check the photo quality. Look at it closely.'], brightness: 0, sharpness: 0, shortSide: 0 }); }
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not save the photo.'); }
@@ -81,7 +123,7 @@ export function CapturePage() {
     });
     navigate(`/entries/${e.id}`, { replace: true });
   };
-  const common = { minCareTime: encounter?.admit_time, saveLabel: asDraft ? 'Save as draft' : 'Save', onCancel: () => navigate(base) };
+  const common = { minCareTime: encounter?.admit_time, saveLabel: asDraft ? 'Save as draft' : 'Save', sourceCheck: !asDraft && !ai, onCancel: () => navigate(base) };
   const order = ord?.orders.find((o) => o.id === orderId);
 
   return (
@@ -90,80 +132,111 @@ export function CapturePage() {
       <h1 className="font-headline-lg text-headline-lg text-primary flex items-center gap-3"><MedIllustration name="workflows/paper-photo" size={36} />Photo of paper</h1>
       <p className="font-body-sm text-secondary -mt-space-sm">Works with no network and no AI. You type the values from the photo; the photo is kept as the source.</p>
 
-      {!kind && (
-        <Card>
-          <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">1. What kind of paper form?</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-space-md">
-            {KINDS.map((x) => (
-              <button key={x.v} onClick={() => setKind(x.v)} className="min-h-24 rounded-xl border border-card-border bg-surface-container-lowest hover:border-secondary flex flex-col items-center justify-center gap-2 p-space-md">
-                <MedIllustration name={x.art} size={40} />
-                <span className="font-headline-sm text-headline-sm text-primary">{x.label}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
-      )}
+      <div className={PANES}>
+        <Pane label="Paper photo" icon="description" title="Paper form" sub={photo ? 'The photo is kept as the source of the record.' : 'Take one photo of the whole form.'}
+          aside={photo ? <Badge tone="green" icon="check_circle">Photo saved on this laptop</Badge> : undefined}>
+          {!photo && (
+            <div className="rounded-lg bg-surface-container-low p-space-lg grid place-items-center">
+              <div className="w-full max-w-sm bg-surface-container-lowest rounded-lg border border-card-border shadow-sm px-space-lg pb-space-lg flex flex-col items-center gap-space-md text-center">
+                <span aria-hidden className="w-20 h-5 -mt-2 rounded bg-outline-variant grid place-items-center"><span className="w-10 h-1.5 rounded bg-surface-container-lowest" /></span>
+                <MedIllustration name="workflows/paper-photo" size={72} />
+                <p className="font-body-md text-on-surface-variant">Lay the form flat, in good light, with all four corners in the picture. The photo is saved here before anything is typed.</p>
+                <label className="inline-flex items-center gap-2 min-h-12 px-space-lg rounded-lg bg-primary text-on-primary font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-secondary">
+                  <Icon name="photo_camera" />{busy ? 'Saving…' : 'Take or choose photo'}
+                  <input type="file" accept="image/*" capture="environment" className="sr-only" data-testid="photo-input" disabled={busy} onChange={(e) => void onFile(e.target.files?.[0])} />
+                </label>
+                {error && <p role="alert" className="text-error">{error}</p>}
+              </div>
+            </div>
+          )}
+          {photo && (
+            <>
+              {quality && (quality.hints.length > 0 ? (
+                <div role="status" className="rounded-lg border border-downtime-amber-border bg-downtime-amber-bg p-space-sm">
+                  <ul className="list-disc pl-5 font-body-md">{quality.hints.map((h) => <li key={h}>{h}</li>)}</ul>
+                  <p className="font-body-sm text-secondary mt-1">You can retake, or carry on if you can read it. Your choice is recorded.</p>
+                </div>
+              ) : <Strip icon="check_circle"><strong className="text-primary">Photo looks clear</strong> Light and sharpness were checked on this laptop.</Strip>)}
+              <PhotoView refId={photo.ref} actions={(
+                <label className="inline-flex items-center gap-1 min-h-11 px-3 rounded-lg bg-clinical-red-bg text-clinical-red font-body-sm text-body-sm font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-secondary">
+                  <Icon name="photo_camera" className="text-[18px]" />{busy ? 'Saving…' : 'Retake (keeps this one too)'}
+                  <input type="file" accept="image/*" capture="environment" className="sr-only" data-testid="retake-input" disabled={busy} onChange={(e) => void onFile(e.target.files?.[0])} />
+                </label>
+              )} />
+              {error && <p role="alert" className="text-error">{error}</p>}
+            </>
+          )}
+        </Pane>
 
-      {kind && !photo && (
-        <Card className="flex flex-col gap-space-md">
-          <h2 className="font-headline-sm text-headline-sm text-primary">2. Take or choose a photo · {k!.label}</h2>
-          <label className="self-start inline-flex items-center gap-2 min-h-12 px-space-lg rounded-lg bg-primary-container text-on-primary font-semibold cursor-pointer">
-            <Icon name="photo_camera" />{busy ? 'Saving…' : 'Take or choose photo'}
-            <input type="file" accept="image/*" capture="environment" className="sr-only" data-testid="photo-input" disabled={busy} onChange={(e) => void onFile(e.target.files?.[0])} />
-          </label>
-          {error && <p role="alert" className="text-error">{error}</p>}
-          <Button variant="ghost" className="self-start" onClick={() => setKind(null)}>Change form type</Button>
-        </Card>
-      )}
+        <Pane label="Type and check" icon="fact_check" title="Type and check the record" sub="Type the values from the form, then check each one against the photo."
+          aside={<Badge tone="navy" icon="wifi_off">Works with no network</Badge>}>
+          <Strip icon="lock"><strong className="text-primary">Kept on this laptop</strong> {ai ? 'Started from the on-device AI proposal. You check every value.' : 'Values are typed by you.'}</Strip>
+          {!kind ? (
+            <div className="flex flex-col gap-space-sm">
+              <h3 className="font-body-lg font-semibold text-primary">What kind of paper form is it?</h3>
+              <div className="grid grid-cols-2 gap-space-sm">
+                {KINDS.map((x) => (
+                  <button key={x.v} type="button" onClick={() => setKind(x.v)} className="min-h-24 rounded-xl border border-card-border bg-surface-container-lowest hover:border-secondary hover:bg-surface-container-low flex flex-col items-center justify-center gap-2 p-space-sm">
+                    <MedIllustration name={x.art} size={40} />
+                    <span className="font-body-md font-semibold text-primary">{x.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-card-border px-space-sm py-1">
+              <span className="flex items-center gap-2 font-body-md font-semibold text-primary"><MedIllustration name={k!.art} size={28} />{k!.label}</span>
+              <Button variant="ghost" onClick={() => (photo ? setChangeKind(true) : setKind(null))}>Change form type</Button>
+            </p>
+          )}
+          {kind && !photo && <p className="rounded-lg border border-dashed border-card-border p-space-md font-body-md text-secondary">Take the photo first. Then the boxes for the {k!.label.toLowerCase()} open here, beside the photo.</p>}
+          {kind && photo && (
+            <>
+              {kind === 'vital_sign' && !ai && <OnDeviceProposalCard key={photo.ref} photoRef={photo.ref} onUse={(proposal, raw) => { setAiDropped(false); setAi({ proposal, raw, at: clock.nowIso() }); }} />}
+              {aiDropped && <p role="status" className="rounded-lg border border-downtime-amber-border bg-downtime-amber-bg p-space-sm font-body-md">You took a new photo. The proposal came from the earlier photo, so it was removed and the boxes are empty again.</p>}
+              {ai && <p role="status" className="rounded-lg border border-card-border bg-surface-container-low p-space-sm font-body-md"><Icon name="memory" /> The boxes below start with the on-device AI proposal. Check every value against the photo. It will be saved as a <strong>draft</strong> and confirmed on the next screen.</p>}
+              {kind === 'vital_sign' && <VitalsEditor key={ai ? 'ai' : aiDropped ? 'manual-again' : 'manual'} {...common} {...(ai ? { initial: proposalToForm(ai.proposal), proposal: proposalRecord(ai.proposal, ai.raw, ai.at), saveLabel: 'Save as draft' } : {})} onSubmit={({ values, careTime }) => save('vital_sign', { ...values, weight_kg: null, raw_text: null } as never, careTime)} />}
+              {kind === 'intake_output' && ord && <IoEditor {...common} initial={ioToForm()} ivOrders={ord.ivOrders} onSubmit={({ values, careTime }) => save('intake_output', values as never, careTime)} />}
+              {kind === 'note' && <NoteEditor {...common} initial={noteToForm()} onSubmit={({ values, careTime }) => save('note', values as never, careTime)} />}
+              {kind === 'med_admin' && ord && (
+                <>
+                  <label className="flex flex-col gap-1">
+                    <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Which order is on the paper?</span>
+                    <select value={orderId} onChange={(e) => setOrderId(e.target.value)} className="h-12 w-full rounded-lg border border-card-border px-space-md bg-surface-container-lowest" aria-label="Medicine order">
+                      <option value="">Pick an order…</option>
+                      {ord.orders.map((o) => <option key={o.id} value={o.id}>{o.text}</option>)}
+                    </select>
+                  </label>
+                  {order && (
+                    <MedEditor key={order.id} {...common} order={order} initial={medFormFromOrder(order, 'administered')} events={medEvents(order)}
+                      priorRate={currentRate(order, ord.meds).rate}
+                      onSubmit={({ values, careTime }) => save('med_admin', values as never, careTime)} />
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </Pane>
+      </div>
 
       {kind && photo && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-space-lg items-start">
-          <Card className="flex flex-col gap-space-sm xl:sticky xl:top-[calc(var(--header-h)+16px)]">
-            <h2 className="font-headline-sm text-headline-sm text-primary flex items-center gap-2"><Icon name="check_circle" className="text-sync-green" filled />Photo saved on this laptop</h2>
-            <PhotoView refId={photo.ref} />
-            {quality && quality.hints.length > 0 && (
-              <div role="status" className="rounded-lg border border-downtime-amber-border bg-downtime-amber-bg p-space-sm">
-                <ul className="list-disc pl-5 font-body-md">{quality.hints.map((h) => <li key={h}>{h}</li>)}</ul>
-                <p className="font-body-sm text-secondary mt-1">You can retake, or carry on if you can read it. Your choice is recorded.</p>
-              </div>
-            )}
-            {quality && quality.hints.length === 0 && <p className="font-body-sm text-sync-green">Photo looks clear.</p>}
-            <label className="self-start inline-flex items-center gap-2 min-h-11 px-space-md rounded-lg border border-card-border cursor-pointer font-body-md">
-              <Icon name="photo_camera" />Retake (keeps this one too)
-              <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => void onFile(e.target.files?.[0])} />
+        <EndBar patientName={fullName(patient)}>
+          {ai ? <Badge tone="amber" icon="fact_check">Will be saved as a draft</Badge> : (
+            <label className="flex items-center gap-2 min-h-11 font-body-md cursor-pointer">
+              <input type="checkbox" className="w-5 h-5" checked={asDraft} onChange={(e) => setAsDraft(e.target.checked)} />Save as a draft to check later (shows in Alerts)
             </label>
-          </Card>
-          <div className="flex flex-col gap-space-md">
-            <h2 className="font-headline-sm text-headline-sm text-primary">3. Type what the paper says</h2>
-            {kind === 'vital_sign' && !ai && <OnDeviceProposalCard photoRef={photo.ref} onUse={(proposal, raw) => setAi({ proposal, raw, at: clock.nowIso() })} />}
-            {ai ? (
-              <p role="status" className="rounded-lg border border-card-border bg-surface-container-low p-space-sm font-body-md"><Icon name="memory" /> The form below starts with the on-device AI proposal. Check every value against the photo. It will be saved as a <strong>draft</strong> and confirmed on the next screen.</p>
-            ) : (
-              <label className="flex items-center gap-2 min-h-11 font-body-md cursor-pointer">
-                <input type="checkbox" className="w-5 h-5" checked={asDraft} onChange={(e) => setAsDraft(e.target.checked)} />Save as a draft to check later (shows in Alerts)
-              </label>
-            )}
-            {kind === 'vital_sign' && <VitalsEditor key={ai ? 'ai' : 'manual'} {...common} {...(ai ? { initial: proposalToForm(ai.proposal), saveLabel: 'Save as draft' } : {})} onSubmit={({ values, careTime }) => save('vital_sign', { ...values, weight_kg: null, raw_text: null } as never, careTime)} />}
-            {kind === 'intake_output' && ord && <IoEditor {...common} initial={ioToForm()} ivOrders={ord.ivOrders} onSubmit={({ values, careTime }) => save('intake_output', values as never, careTime)} />}
-            {kind === 'note' && <NoteEditor {...common} initial={noteToForm()} onSubmit={({ values, careTime }) => save('note', values as never, careTime)} />}
-            {kind === 'med_admin' && ord && (
-              <>
-                <label className="flex flex-col gap-1">
-                  <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Which order is on the paper?</span>
-                  <select value={orderId} onChange={(e) => setOrderId(e.target.value)} className="h-12 rounded-lg border border-card-border px-space-md bg-surface-container-lowest" aria-label="Medicine order">
-                    <option value="">Pick an order…</option>
-                    {ord.orders.map((o) => <option key={o.id} value={o.id}>{o.text}</option>)}
-                  </select>
-                </label>
-                {order && (
-                  <MedEditor key={order.id} {...common} order={order} initial={medFormFromOrder(order, 'administered')} events={medEvents(order)}
-                    priorRate={currentRate(order, ord.meds).rate}
-                    onSubmit={({ values, careTime }) => save('med_admin', values as never, careTime)} />
-                )}
-              </>
-            )}
+          )}
+        </EndBar>
+      )}
+
+      {changeKind && (
+        <Dialog title="Change the form type?" onClose={() => setChangeKind(false)}>
+          <p className="font-body-md text-on-surface-variant">The values typed on this screen are cleared. The photo stays.</p>
+          <div className="flex gap-space-sm">
+            <Button className="flex-1" onClick={() => { setKind(null); setAi(null); setAiDropped(false); setOrderId(''); setChangeKind(false); }}>Change type</Button>
+            <Button variant="secondary" className="flex-1" onClick={() => setChangeKind(false)}>Go back</Button>
           </div>
-        </div>
+        </Dialog>
       )}
     </>
   );
@@ -181,19 +254,25 @@ export function ConfirmDraftPage() {
   if (entry.status !== 'draft') return <EmptyState icon="task_alt" text="This record is not a draft." action={<ButtonLink variant="secondary" to={`/entries/${entry.id}`}>Open record</ButtonLink>} />;
   if (!isNurse(user)) return <EmptyState icon="block" text="Only nurses can confirm records." />;
   const done = async (values: never, careTime: string) => {
-    await confirmDraft(db, clock, { userId: user!.id, deviceId }, entry.id, entry.type, values, careTime);
+    await confirmDraft(db, clock, { userId: user!.id, deviceId }, entry.id, entry.type, keepDraftSource(entry.type, values, child) as never, careTime);
     navigate(`/entries/${entry.id}`, { replace: true });
   };
-  const common = { initialCareTime: entry.care_time, minCareTime: encounter?.admit_time, saveLabel: 'Confirm', onCancel: () => navigate(`/entries/${entry.id}`) };
+  const common = { initialCareTime: entry.care_time, minCareTime: encounter?.admit_time, saveLabel: 'Confirm', sourceCheck: entry.raw_input_kind === 'photo', onCancel: () => navigate(`/entries/${entry.id}`) };
   const med = child as MedAdmin | undefined;
   const order = med?.order_id ? ord?.orders.find((o) => o.id === med.order_id) : undefined;
   return (
     <>
       <Breadcrumbs items={[{ label: 'My patients', to: '/ward' }, { label: fullName(patient), to: `/patients/${patient.id}` }, { label: 'Check draft' }]} />
       <h1 className="font-headline-lg text-headline-lg text-primary">Check and confirm</h1>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-space-lg items-start">
-        <Card className="flex flex-col gap-space-sm">
-          <h2 className="font-headline-sm text-headline-sm text-primary">Source</h2>
+      <div className={PANES}>
+        <Pane label="Paper photo" icon="description" title={entry.raw_input_kind === 'photo' ? 'Paper form' : 'Source'} sub={entry.raw_input_kind === 'photo' ? 'Compare every value with the paper.' : 'This draft was typed, not read from paper.'}
+          aside={<Badge tone="amber" icon="fact_check">Draft</Badge>}>
+          {entry.photo_check && (
+            <Strip icon={entry.photo_check.readable ? 'check_circle' : 'warning'}>
+              <strong className="text-primary">{entry.photo_check.readable ? 'Photo check when taken: no problem found' : `Photo check when taken: ${entry.photo_check.problem.replace('_', ' ')}`}</strong>
+              {entry.photo_check.overridden ? 'The nurse chose to carry on.' : ''}
+            </Strip>
+          )}
           {entry.raw_input_kind === 'photo' ? <PhotoView refId={entry.raw_input_ref} /> : <p className="text-secondary">Typed entry.</p>}
           {entry.ai_proposal && (
             <div className="rounded-lg bg-surface-container-low p-space-sm font-body-sm">
@@ -203,9 +282,11 @@ export function ConfirmDraftPage() {
                 : <p className="text-secondary">From the practice data set (simulated, not a model answer). Check every value against the paper.</p>}
             </div>
           )}
-        </Card>
-        <div className="flex flex-col gap-space-md">
-          {entry.type === 'vital_sign' && <VitalsEditor {...common} initial={vitalsToForm(child as VitalSign | undefined)} onSubmit={({ values, careTime }) => done({ ...values, weight_kg: null, raw_text: null } as never, careTime)} />}
+        </Pane>
+        <Pane label="Type and check" icon="fact_check" title="Check the record" sub="Fix any value that does not match. Nothing is confirmed until you press Confirm."
+          aside={<Badge tone="navy" icon="wifi_off">Works with no network</Badge>}>
+          <Strip icon="lock"><strong className="text-primary">Kept on this laptop</strong> {entry.ai_proposal ? 'Values started from the stored proposal.' : 'Values were typed by the nurse.'}</Strip>
+          {entry.type === 'vital_sign' && <VitalsEditor {...common} startAtReview proposal={entry.ai_proposal as Record<string, unknown> | null | undefined} initial={vitalsToForm(child as VitalSign | undefined)} onSubmit={({ values, careTime }) => done({ ...values, weight_kg: null, raw_text: null } as never, careTime)} />}
           {entry.type === 'intake_output' && ord && <IoEditor {...common} initial={ioToForm(child as IntakeOutput)} ivOrders={ord.ivOrders} onSubmit={({ values, careTime }) => done(values as never, careTime)} />}
           {entry.type === 'note' && <NoteEditor {...common} initial={noteToForm(child as Note)} onSubmit={({ values, careTime }) => done(values as never, careTime)} />}
           {entry.type === 'med_admin' && ord && (order
@@ -213,8 +294,11 @@ export function ConfirmDraftPage() {
                 onSubmit={({ values, careTime }) => done(values as never, careTime)} />
             : <EmptyState icon="help" text="This draft has no matching order in the patient list, so it cannot be confirmed here." />)}
           {entry.type === 'lab_event' && <EmptyState icon="help" text="Lab drafts are confirmed from the lab page." />}
-        </div>
+        </Pane>
       </div>
+      <EndBar patientName={fullName(patient)}>
+        <ButtonLink variant="secondary" to={`/entries/${entry.id}`}><Icon name="schedule" />Keep as a draft (stays in Alerts)</ButtonLink>
+      </EndBar>
     </>
   );
 }

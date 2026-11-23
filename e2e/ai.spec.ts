@@ -73,6 +73,22 @@ test('System down + on-device proposal (MOCK model): draft, nurse confirms besid
   expect(external, `external requests: ${external.join(', ')}`).toEqual([]);
 });
 
+test('a proposal belongs to its photo: a retake removes it (MOCK model)', async ({ page }) => {
+  await mockPromptApi(page, 'available');
+  await signIn(page, /Daniel Okafor/);
+  await openCapture(page);
+  await page.getByTestId('photo-input').setInputFiles({ name: 'form.png', mimeType: 'image/png', buffer: await tinyPng(page) });
+  await page.getByRole('button', { name: 'Propose values from the photo' }).click();
+  await page.getByRole('button', { name: 'Put these values in the form' }).click();
+  await expect(page.getByLabel('Pulse')).toHaveValue('88');
+  await expect(page.getByText(/Will be saved as a draft$/)).toBeVisible();
+  await page.getByTestId('retake-input').setInputFiles({ name: 'again.png', mimeType: 'image/png', buffer: await tinyPng(page) });
+  await expect(page.getByText(/The proposal came from the earlier photo/)).toBeVisible();
+  await expect(page.getByLabel('Pulse')).toHaveValue('');
+  await expect(page.getByText(/Will be saved as a draft$/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Propose values from the photo' })).toBeVisible();
+});
+
 test('no on-device AI in the browser: clear message, nothing sent, manual entry still saves', async ({ page }) => {
   const external = recordExternalRequests(page);
   await signIn(page, /Daniel Okafor/);
@@ -82,6 +98,7 @@ test('no on-device AI in the browser: clear message, nothing sent, manual entry 
   await expect(page.getByRole('alert').filter({ hasText: /no on-device AI|can.t run|not downloaded|not set up|did not answer/ })).toBeVisible();
   await page.getByLabel('Pulse').fill('79');
   await page.getByRole('button', { name: 'Review' }).click();
+  await page.getByLabel('I checked every value against the paper.').check();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page).toHaveURL(/\/entries\//); // saved, confirmed, manual path unchanged
   await expect(page.getByText('Confirmed').first()).toBeVisible();

@@ -2,6 +2,7 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { useApp } from '../../state/app';
 import { dateTimeLabel, fromLocalInput, toLocalInput } from '../../lib/time';
 import { Button, Card, Icon } from '../../components/ui';
+import { SourceCheck } from '../capture/SourceCheck';
 
 /**
  * Shared "fill → check → save" form used by fluids, notes and labs (vitals and medicines have their own).
@@ -22,7 +23,7 @@ export function Field({ id, label, error, children }: { id: string; label: strin
   );
 }
 
-export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderReview, timeLabel = 'Time', initialCareTime, minCareTime, requireChangeReason, saveLabel, onSubmit, onCancel }: {
+export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderReview, timeLabel = 'Time', initialCareTime, minCareTime, requireChangeReason, sourceCheck, saveLabel, onSubmit, onCancel }: {
   initial: F;
   validate: (f: F) => Checked<V>;
   renderFill: (f: F, set: (patch: Partial<F>) => void, errors: Record<string, string | undefined>) => ReactNode;
@@ -31,6 +32,8 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
   initialCareTime?: string;
   minCareTime?: string;
   requireChangeReason?: boolean;
+  /** Ask for the "I checked every value against the paper" tick before saving. */
+  sourceCheck?: boolean;
   saveLabel: string;
   onSubmit: (s: { values: V; careTime: string; changeReason?: string }) => Promise<void>;
   onCancel: () => void;
@@ -42,6 +45,7 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
   const [step, setStep] = useState<'fill' | 'review'>('fill');
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [ticked, setTicked] = useState(false);
+  const [sourceChecked, setSourceChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const careIso = fromLocalInput(care, clock.offsetMinutes);
@@ -55,7 +59,7 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
     else if (minCareTime && Date.parse(careIso) < Date.parse(minCareTime)) e.care = 'Time is before this patient was admitted';
     if (requireChangeReason && !changeReason.trim()) e.changeReason = 'Say why you are fixing this';
     setErrors(e);
-    if (Object.keys(e).length === 0) { setTicked(false); setStep('review'); }
+    if (Object.keys(e).length === 0) { setTicked(false); setSourceChecked(false); setStep('review'); }
   }
 
   async function save() {
@@ -87,9 +91,10 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
             </label>
           </div>
         )}
+        {sourceCheck && <SourceCheck checked={sourceChecked} onChange={setSourceChecked} />}
         {saveError && <p role="alert" className="text-error flex items-center gap-1"><Icon name="error" />{saveError}</p>}
         <div className="flex gap-space-sm">
-          <Button onClick={save} disabled={saving || (warnings.length > 0 && !ticked)}><Icon name="save" />{saving ? 'Saving…' : saveLabel}</Button>
+          <Button onClick={save} disabled={saving || (warnings.length > 0 && !ticked) || (sourceCheck && !sourceChecked)}><Icon name="save" />{saving ? 'Saving…' : saveLabel}</Button>
           <Button variant="secondary" onClick={() => setStep('fill')} disabled={saving}>Go back</Button>
         </div>
       </Card>
@@ -98,7 +103,7 @@ export function TwoStepEditor<F, V>({ initial, validate, renderFill, renderRevie
 
   return (
     <Card className="flex flex-col gap-space-md">
-      <div className="md:w-1/3">
+      <div className="w-full max-w-72">
         <Field id="care" label={timeLabel} error={errors.care}>
           <input id="care" type="datetime-local" value={care} onChange={(e) => setCare(e.target.value)} aria-invalid={!!errors.care} className={`${fieldCls(errors.care)} font-code-tabular`} />
         </Field>

@@ -9,6 +9,7 @@ import { formatDose } from '../../lib/dose';
 import { dateTimeLabel, fromLocalInput, hm, toLocalInput } from '../../lib/time';
 import { Button, Card, Dialog, Icon, SectionLabel } from '../../components/ui';
 import { PinPad } from '../auth/PinPad';
+import { SourceCheck } from '../capture/SourceCheck';
 import { usePinCheck } from '../auth/SignIn';
 import { ChangeLogFooter, DrugCard, PreparationCard, StepBar, type MedWide } from './MedRecordLayout';
 
@@ -95,7 +96,7 @@ function SecondNurseChecks() {
 
 const field = (err?: string) => `h-12 rounded-lg border px-space-md bg-surface-container-lowest ${err ? 'border-error' : 'border-card-border'}`;
 
-export function MedEditor({ order, initial, events, priorRate, recentSites = [], wide, initialCareTime, scheduledTime, minCareTime, requireChangeReason, saveLabel, onSubmit, onCancel }: {
+export function MedEditor({ order, initial, events, priorRate, recentSites = [], wide, initialCareTime, scheduledTime, minCareTime, requireChangeReason, sourceCheck, saveLabel, onSubmit, onCancel }: {
   order: ActiveOrder;
   initial: MedForm;
   events: MedEvent[];
@@ -108,6 +109,8 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
   scheduledTime?: string | null;
   minCareTime?: string;
   requireChangeReason?: boolean;
+  /** Ask for the "I checked every value against the paper" tick before saving. */
+  sourceCheck?: boolean;
   saveLabel: string;
   onSubmit: (s: MedSubmit) => Promise<void>;
   onCancel: () => void;
@@ -119,6 +122,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
   const [step, setStep] = useState<'fill' | 'review'>('fill');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [ticked, setTicked] = useState(false);
+  const [sourceChecked, setSourceChecked] = useState(false);
   const [checker, setChecker] = useState<Practitioner | null>(null);
   const [askCheck, setAskCheck] = useState(false);
   const second = useSecondCheck((p) => { setChecker(p); setAskCheck(false); });
@@ -135,7 +139,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
     else if (minCareTime && Date.parse(careIso) < Date.parse(minCareTime)) e.care = 'Time is before this patient was admitted';
     if (requireChangeReason && !changeReason.trim()) e.changeReason = 'Say why you are fixing this';
     setErrors(e);
-    if (Object.keys(e).length === 0) { setTicked(false); setChecker(null); second.setWho(null); second.check.setPin(''); setStep('review'); }
+    if (Object.keys(e).length === 0) { setTicked(false); setSourceChecked(false); setChecker(null); second.setWho(null); second.check.setPin(''); setStep('review'); }
   }
 
   async function save() {
@@ -152,8 +156,8 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
   }
 
   const doseText = v.values.infusion_rate != null ? `${formatDose(v.values.infusion_rate)} ${v.values.infusion_rate_unit ?? ''}` : v.values.dose_given != null ? `${formatDose(v.values.dose_given)} ${v.values.dose_given_unit ?? ''}` : '';
-  const rowCls = wide ? 'grid grid-cols-1 sm:grid-cols-2 gap-space-md' : 'grid grid-cols-1 md:grid-cols-3 gap-space-md';
-  const canSave = !saving && (v.warnings.length === 0 || ticked) && (!v.needsSecondCheck || !!checker);
+  const rowCls = wide ? 'grid grid-cols-1 sm:grid-cols-2 gap-space-md' : 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,max(12rem,30%)),1fr))] gap-space-md';
+  const canSave = !saving && (v.warnings.length === 0 || ticked) && (!v.needsSecondCheck || !!checker) && (!sourceCheck || sourceChecked);
 
   if (step === 'review') {
     const val = v.values;
@@ -184,6 +188,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
     );
     const buttons = (
       <>
+        {sourceCheck && <SourceCheck checked={sourceChecked} onChange={setSourceChecked} />}
         {saveError && <p role="alert" className="text-error flex items-center gap-1"><Icon name="error" />{saveError}</p>}
         <div className={wide ? 'flex flex-col gap-2' : 'flex gap-space-sm'}>
           <Button onClick={save} disabled={!canSave}><Icon name={wide ? 'how_to_reg' : 'save'} />{saving ? 'Saving…' : saveLabel}</Button>
@@ -290,7 +295,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
             </div>
           </div>
           {['IV', 'SC', 'IM'].includes(form.route) && (
-            <div className={wide ? 'flex flex-col gap-1' : 'flex flex-col gap-1 md:w-1/2'}>
+            <div className={wide ? 'flex flex-col gap-1' : 'flex flex-col gap-1 w-full max-w-md'}>
               <label htmlFor="site" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Site (optional)</label>
               <input id="site" list="site-words" value={form.site} onChange={set('site')} className={field()} placeholder="e.g. Abdomen, left side" />
               <datalist id="site-words">{SITE_WORDS.map((s) => <option key={s} value={s} />)}</datalist>
