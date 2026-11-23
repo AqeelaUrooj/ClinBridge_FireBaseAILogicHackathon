@@ -120,11 +120,11 @@ export function Timeline() {
                 return (
                   <li key={entry.id} className={`bg-surface-container-lowest rounded-xl border ${entry.status === 'draft' ? 'border-downtime-amber-border' : 'border-card-border'}`} data-testid={`history-${entry.id}`}>
                     <button type="button" aria-expanded={isOpen} aria-controls={`body-${entry.id}`} onClick={() => toggle(entry.id)}
-                      className="w-full flex items-center gap-space-md min-h-[60px] px-space-md py-space-sm text-left hover:bg-surface-container-low rounded-xl">
+                      className="w-full grid grid-cols-[auto_minmax(0,1fr)_auto] sm:flex items-center gap-2 sm:gap-space-md min-h-[60px] px-space-md py-space-sm text-left hover:bg-surface-container-low rounded-xl">
                       <span className="w-12 shrink-0 font-code-tabular text-[13px] font-bold text-primary">{hm(entry.care_time)}</span>
-                      <span className="w-9 h-9 rounded-lg bg-surface-container-low grid place-items-center text-secondary shrink-0"><Icon name={TYPE_ICON[entry.type]} className="text-[20px]" /></span>
+                      <span className="w-9 h-9 rounded-lg bg-surface-container-low hidden sm:grid place-items-center text-secondary shrink-0"><Icon name={TYPE_ICON[entry.type]} className="text-[20px]" /></span>
                       <span className="flex-1 min-w-0">
-                        <span className={`block truncate font-body-lg text-body-lg ${retired ? 'line-through text-outline' : 'text-on-surface'}`}>{entrySummary(x)}</span>
+                        <span className={`block [overflow-wrap:anywhere] font-body-lg text-body-lg ${retired ? 'line-through text-outline' : 'text-on-surface'}`}>{entrySummary(x)}</span>
                         <span className="block font-body-sm text-body-sm text-secondary">{TYPE_LABEL[entry.type]} · {names.get(entry.performer_id) ?? entry.performer_id}{entry.raw_input_kind === 'photo' ? ' · from paper photo' : ''}</span>
                         {/* Narrow screens: the badges sit under the summary so the row never runs off the screen. */}
                         <span className="flex sm:hidden flex-wrap gap-1 mt-1"><SourceBadge entry={entry} /><StatusBadge entry={entry} /></span>

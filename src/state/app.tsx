@@ -57,6 +57,10 @@ const PRACTICE_DEVICE = 'dev-01';   // the practice story runs on laptop DT-4W-0
 
 function readDataset(): Dataset {
   try {
+    if (window.location.pathname === '/sign-in' && new URLSearchParams(window.location.search).get('demo') === 'practice') {
+      localStorage.setItem(DATASET_KEY, 'practice');
+      return 'practice';
+    }
     return localStorage.getItem(DATASET_KEY) === 'live' ? 'live' : 'practice';
   } catch {
     return 'practice';

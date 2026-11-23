@@ -1,6 +1,6 @@
 # ZIP requirements, traceability and database mapping
 
-> Updated by PR #14. The full 33-screen matrix, deferred features and body-map assessment are in `docs/V3_ZIP_COMPLETION_REPORT.md`.
+> The [current 33-screen comparison](V3_ZIP_COMPLETION_REPORT.md#current-comparison-for-the-public-landing-page-change) records UI and workflow status, differences, approval needs and coverage for merged main and the public landing-page branch. The original PR #14 inventory below preserves the historical baseline.
 
 Source: `stitch_downtimekit_nursing_documentation_system_v3.zip` (owner's Downloads, 22 Nov 2026).
 Extracted read-only outside the repo; nothing from it was copied into the app, and none of its scripts were run.
