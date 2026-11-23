@@ -66,7 +66,7 @@ for (const width of [1440, 1280, 1024, 768, 390, 360]) {
   test(`${width}px: print page and packet page fit; nothing is cut off`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     const measure = async () => {
-      await page.evaluate(() => Promise.all([...document.fonts].map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
+      await page.evaluate(() => Promise.all(Array.from(document.fonts as unknown as Iterable<FontFace>).map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
       const r = await page.evaluate(() => {
         const W = document.documentElement.clientWidth;
         const seen = Array.from(document.querySelectorAll('main button, main a, main dd, main label, main p')).filter((e) => e.getBoundingClientRect().width > 1 && !e.closest('.print-preview') && !e.closest('.overflow-x-auto'));
