@@ -40,14 +40,14 @@ export function TrendChart({ series, label, unit, testId }: { series: TrendSerie
         <text x={PX} y={10} fontSize="9" fill="#5A6E85" fontFamily="Inter">{hi}{unit}</text>
         {hi !== lo && <text x={W - PX} y={10} fontSize="9" fill="#5A6E85" fontFamily="Inter" textAnchor="end">low {lo}{unit}</text>}
       </svg>
-      <figcaption className="font-body-sm text-secondary flex flex-wrap gap-x-3">
+      <figcaption className="font-body-sm text-body-sm text-secondary flex flex-wrap gap-x-3">
         <span><span aria-hidden>●</span> confirmed</span>
         {series.drafts.length > 0 && <span><span aria-hidden>○</span> draft (not confirmed, not part of the line)</span>}
         {series.baseline.length > 0 && <span><span aria-hidden>■</span> hospital list before the outage</span>}
         {series.missing > 0 && <span>{series.missing} vital-sign record{series.missing === 1 ? '' : 's'} without {label}</span>}
       </figcaption>
-      <div className="max-h-40 overflow-y-auto border border-card-border rounded">
-        <table className="w-full font-body-sm text-left">
+      <div className="max-h-56 overflow-y-auto print:max-h-none print:overflow-visible border border-card-border rounded">
+        <table className="w-full font-body-sm text-body-sm text-left">
           <caption className="sr-only">{label} values by measurement time</caption>
           <thead className="bg-surface-container-low text-secondary"><tr><th scope="col" className="px-2 py-1 font-semibold">Measured</th><th scope="col" className="px-2 py-1 font-semibold">{label}</th><th scope="col" className="px-2 py-1 font-semibold">Status</th></tr></thead>
           <tbody>
