@@ -48,9 +48,9 @@ The task text says v3; the attached archive is v4. v4 contains everything in v3 
 | With batch 1 (#21, #22; merged 23 November) | 0 | 11 | 22 | 0 |
 | With batch 1 and batch 2 (#24, #25, #26; merged 23 November) | 0 | 13 | 20 | 0 |
 | With batch 3 as well (#29, #30, #32, #33; merged 23 November, `main` at `c4db9b5`) | 0 | 16 | 17 | 0 |
-| With batch 4 as well (#35 to #39; open, not merged) | 0 | 21 | 12 | 0 |
+| With batch 4 as well (#35 to #39; merged 24 November, `main` at `8e14aff`) | 0 | 21 | 12 | 0 |
 
-Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer. Batch 4 (open) moves notes, orders, labs, entry detail and the change log from C to B.
+Batch 1 moves the ward board, patient summary, medication record and two-nurse page from C to B. They are not called A: section 7 lists what still differs. Batch 2 moves vitals and intake/output from C to B; the body map stays B and comes closer. Batch 3 moves paper capture, SBAR handover and the recovery worklist from C to B; the history stays B and comes closer. Batch 4 moves notes, orders, labs, entry detail and the change log from C to B.
 
 ## 5. Problems found while comparing (not only looks)
 
@@ -59,8 +59,8 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 1 | Sam Rivera's amLODIPine is recorded as 50 mg against a 5 mg order, and the kept paper line reads 5.0 mg. The app showed only "09:00 Given". The design shows a warning. | Shown on ward, summary and medication record in batch 1 |
 | 2 | Vitals page: when the newest record holds only blood sugar, all the latest tiles show "—" (Lena Ortiz), although older values exist. | Fixed on the ward board and summary in batch 1, and on the vitals page in batch 2 (#24) |
 | 3 | The wrong-PIN lockout of the second-nurse check was cleared by closing the dialog. | Survives closing and Go back in batch 1. Leaving the page still clears it; the same is true for sign-in. Owner decision in section 10 |
-| 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Fixed in #39 (open) |
-| 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Fixed in #39 (open): this laptop's own name, only while the records are open |
+| 4 | The change log is a plain 5,430 px table and shows user ids, not names. | Fixed in #39 (merged) |
+| 5 | The header prints `DT-4W-01` as fixed text. In Real records it would be wrong. | Fixed in #39 (merged): this laptop's own name, only while the records are open |
 | 6 | The photos in `src/features/landing/assets` are not listed in `NOTICE`. | Owner to confirm the rights |
 | 7 | Printed History has no MRN on any page and no patient name on page 2. Printed Handover has no name or MRN on page 2, because its fixed print header does not repeat. Checked with real PDFs on 23 November. | **Patient-identity risk on paper.** Root cause: the banner is hidden on paper on every patient screen. Fixed for all of them in #27 (merged, `main` is `bfea237`). The body map page in #26 now uses the shared header |
 | 8 | "Record vitals" had no role check on its own page (the other record pages had one). | Fixed in batch 2 (#24) |
@@ -70,9 +70,9 @@ Batch 1 moves the ward board, patient summary, medication record and two-nurse p
 | 12 | A handover printed a linked record that was fixed or marked as a mistake later with its old value and no mark. | Fixed in #32 (merged) |
 | 13 | Recovery worklist: the tenfold amLODIPine record said only "the rules no longer find a problem". A fixed record was called a possible duplicate of its own old version. On a phone the time and kind of record were hidden. | Fixed in #33 (merged). The rules themselves are unchanged |
 | 14 | The oxygen table on the history page was cut off on paper. | Fixed in #30 (merged) |
-| 15 | Long notes were cut with "…" in the notes list, also on paper. | Fixed in #35 (open) |
-| 16 | On a phone the ward lab list cut the patient name and the test; the change log scrolled sideways at 390 px. | Fixed in #36 and #39 (open) |
-| 17 | Admins saw New note and Record lab buttons that led to a refusal. | Fixed in #35 and #36 (open) |
+| 15 | Long notes were cut with "…" in the notes list, also on paper. | Fixed in #35 (merged) |
+| 16 | On a phone the ward lab list cut the patient name and the test; the change log scrolled sideways at 390 px. | Fixed in #36 and #39 (merged) |
+| 17 | Admins saw New note and Record lab buttons that led to a refusal. | Fixed in #35 and #36 (merged) |
 
 ## 6. Screen by screen
 
@@ -310,7 +310,7 @@ Phone layouts: the archive has no phone pictures, so these follow the desktop or
 
 Repeated on most screens and judged once: sidebar links **1**; Quick Lock **1** (header Lock); "Ward Board / Add / Capture…" names **2** (ClinBridge names); Device & Mesh link **2** (Laptops); Settings, Snapshot, Compare, Gate, Recovery links **1** for the roles that may open them.
 
-States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § with batch 3 (merged 23 November); ¶ comes with batch 4 (open).
+States marked † came with batch 1 and ‡ with batch 2 (both merged 23 November); § with batch 3 (merged 23 November); ¶ with batch 4 (merged 24 November).
 
 | Screen | 1 Implemented | 2 Equivalent | 3 Safe to implement | 4 Deferred | 5 Not applicable |
 |---|---|---|---|---|---|
@@ -353,7 +353,7 @@ Class 3 is the work that can start without a new decision. Class 4 needs an owne
 1. **Batch 1 (merged):** ward board and summary; medication record and two-nurse check.
 2. **Batch 2 (merged, #24, #25, #26):** vitals flowsheet (with problem 2), intake and output, body map.
 3. **Batch 3 (merged: fixes #28 and #31, then #29, #30, #32, #33):** paper capture, history and SBAR handover, recovery worklist.
-4. **Batch 4 (open: #35, #36, #37, #38, #39):** change log, labs, orders, entry detail, notes layout.
+4. **Batch 4 (merged, #35, #36, #37, #38, #39):** change log, labs, orders, entry detail, notes layout.
 5. **Batch 5:** sign-in, lock, downtime, gate, readiness, staff, snapshot, FHIR page, print page frames, landing.
 
 ## 10. Decisions needed from the owner
