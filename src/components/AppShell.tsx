@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type Ref, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { isAdmin, useApp, useSession } from '../state/app';
@@ -7,7 +7,7 @@ import { hm } from '../lib/time';
 import { PHASE_LABEL } from '../lib/phase';
 
 /** Header: always visible, shows mode, snapshot age, laptop and the signed-in person (Stitch status rail). */
-export function ModeBanner({ onMenu, menuOpen }: { onMenu?: () => void; menuOpen?: boolean } = {}) {
+export function ModeBanner({ onMenu, menuOpen, menuRef }: { menuRef?: Ref<HTMLButtonElement>; onMenu?: () => void; menuOpen?: boolean } = {}) {
   const { phase, event, snapshot, clock, dataset, db, vault } = useApp();
   const { user, lock } = useSession();
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export function ModeBanner({ onMenu, menuOpen }: { onMenu?: () => void; menuOpen
     <header className="fixed top-0 left-0 right-0 z-50 text-on-primary select-none">
       <div className="h-11 bg-primary-container px-space-md flex items-center justify-between gap-space-md">
         {onMenu && (
-          <button onClick={onMenu} className="md:hidden min-h-9 px-2 rounded bg-white/10 hover:bg-white/20 flex items-center gap-1 font-body-sm font-semibold shrink-0"
+          <button ref={menuRef} onClick={onMenu} className="md:hidden min-h-9 px-2 rounded bg-white/10 hover:bg-white/20 flex items-center gap-1 font-body-sm font-semibold shrink-0"
             aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={!!menuOpen} aria-controls="main-menu">
             <Icon name={menuOpen ? 'close' : 'menu'} className="text-[18px]" />Menu
           </button>
@@ -174,19 +174,23 @@ export function AppShell() {
   const { dataset } = useApp();
   const headerH = dataset === 'practice' ? '68px' : '44px';
   // Narrow screens (< 768 px): the menu hides behind a header button and opens over the page.
+  const menuRef = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
   useEffect(() => {
     if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && menuRef.current?.getClientRects().length) {
+        setMenuOpen(false);
+        menuRef.current.focus();
+      } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [menuOpen]);
   return (
     <div style={{ ['--header-h' as string]: headerH }}>
       <div className="print:hidden">
-        <ModeBanner onMenu={() => setMenuOpen((o) => !o)} menuOpen={menuOpen} />
+        <ModeBanner menuRef={menuRef} onMenu={() => setMenuOpen((o) => !o)} menuOpen={menuOpen} />
         {menuOpen && <div className="md:hidden fixed inset-0 z-30 bg-black/30" style={{ top: 'var(--header-h)' }} onClick={() => setMenuOpen(false)} aria-hidden />}
         <Sidebar open={menuOpen} />
       </div>

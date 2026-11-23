@@ -30,3 +30,7 @@ Rules in the app:
 - All files are bundled and precached by the service worker; a browser test checks they load with the network off.
 
 Licence note: the reference sheet was supplied by the project owner as an AI-generated image for this project. On 22 Nov 2026 the owner confirmed that she generated it herself with an AI tool whose terms allow use and redistribution of the output, with no copyrighted images as input, and that the Stitch design export (colour tokens, `art/*.svg`) is her own work made in her own Google account. Both are distributed under the project's Apache-2.0 licence (`NOTICE`).
+
+## Landing-page photography
+
+The bedside workstation, tablet, and shift-handover photographs in `src/features/landing/assets` are original OpenAI ImageGen illustrations of fictional people and settings. The work used the project-owned Stitch layout as a composition reference, and the bundled JPEGs have no third-party photo dependency. The dashboard is static React markup with illustrative Practice values and the project's existing anatomy artwork. The gallery uses cropped screenshots from fictional Practice workflows.
