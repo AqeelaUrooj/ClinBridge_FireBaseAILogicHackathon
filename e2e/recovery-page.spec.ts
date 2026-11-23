@@ -95,7 +95,7 @@ test('a wrong record goes to the normal fix, and the fix is what the worklist sh
   await page.getByLabel('Why are you fixing this?').fill('decimal point missed on the paper');
   await page.getByRole('button', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Save fix' }).click();
-  await expect(page).toHaveURL(/\/entries\/(?!e-029)[^/]+$/);
+  await expect(page).toHaveURL(/\/entries\/(?!e-029$)[^/]+$/);
   await expect(page.getByText('decimal point missed on the paper')).toBeVisible();
   await openItem(page, 'wl-029');
   await expect(page.getByText('This record was fixed. The newest version is shown.')).toBeVisible();
