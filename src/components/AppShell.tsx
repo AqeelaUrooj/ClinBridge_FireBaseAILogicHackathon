@@ -198,8 +198,8 @@ export function AppShell() {
         {menuOpen && <div className="md:hidden fixed inset-0 z-30 bg-black/30" style={{ top: 'var(--header-h)' }} onClick={() => setMenuOpen(false)} aria-hidden />}
         <Sidebar open={menuOpen} />
       </div>
-      <main id="main" className="min-h-screen bg-background md:pl-[220px] lg:pl-64 print:pl-0 print:!pt-0 print:bg-white" style={{ paddingTop: headerH }}>
-        <div className="max-w-[1240px] mx-auto px-space-md md:px-space-lg py-space-md flex flex-col gap-space-lg">
+      <main id="main" className="min-h-screen bg-background md:pl-[220px] lg:pl-64 print:pl-0 print:!pt-0 print:min-h-0 print:bg-white" style={{ paddingTop: headerH }}>
+        <div className="print:!py-0 max-w-[1240px] mx-auto px-space-md md:px-space-lg py-space-md flex flex-col gap-space-lg">
           <Outlet />
         </div>
       </main>
