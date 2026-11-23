@@ -10,6 +10,7 @@ import { dateTimeLabel, fromLocalInput, hm, toLocalInput } from '../../lib/time'
 import { Button, Card, Dialog, Icon, SectionLabel } from '../../components/ui';
 import { PinPad } from '../auth/PinPad';
 import { usePinCheck } from '../auth/SignIn';
+import { ChangeLogFooter, DrugCard, PreparationCard, StepBar, type MedWide } from './MedRecordLayout';
 
 export interface MedSubmit { values: Omit<MedAdmin, 'id' | 'entry_id'>; careTime: string; changeReason?: string }
 
@@ -22,22 +23,34 @@ export function HighAlertBar() {
   );
 }
 
-function SecondCheckDialog({ onDone, onCancel }: { onDone: (p: Practitioner) => void; onCancel: () => void }) {
+const CHECKS = [
+  ['Patient', 'Right patient: name, date of birth and MRN on the wristband.'],
+  ['Medicine and strength', 'Drug, strength and amount against the order and the container.'],
+  ['Dose and route', 'Dose, route and time in this record.'],
+] as const;
+
+/** Kept in the editor, not in the dialog or panel: closing it or going back must not clear the wrong-PIN lockout. */
+function useSecondCheck(onDone: (p: Practitioner) => void) {
+  const [who, setWho] = useState<Practitioner | null>(null);
+  return { who, setWho, check: usePinCheck(who, onDone) };
+}
+
+/** Pick a different nurse, who then enters their own PIN. Who may check comes from the active policy. */
+function SecondCheckBody({ second: { who, setWho, check } }: { second: ReturnType<typeof useSecondCheck> }) {
   const { db } = useApp();
   const { user } = useSession();
   const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
   const eligible = (staff ?? []).filter((p) => p.active && p.id !== user?.id && ACTIVE_CLINICAL_POLICY.secondChecker.roles.includes(p.role));
-  const [who, setWho] = useState<Practitioner | null>(null);
-  const check = usePinCheck(who, onDone);
   return (
-    <Dialog title="Second nurse check" onClose={onCancel}>
+    <>
       {!who ? (
         <>
-          <p className="text-on-surface-variant">A different nurse checks the drug, dose and patient, then enters their own PIN.</p>
-          <div className="grid grid-cols-2 gap-space-sm">
+          <p className="font-body-md text-body-md text-on-surface-variant">A different nurse checks the drug, dose and patient, then enters their own PIN.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
             {eligible.map((p) => (
-              <button key={p.id} onClick={() => setWho(p)} className="min-h-14 rounded-lg border border-card-border px-3 text-left hover:bg-surface-container-low">
-                <span className="block font-semibold text-primary">{p.name}</span><span className="text-body-sm text-secondary">{p.role}</span>
+              <button key={p.id} type="button" onClick={() => setWho(p)} className="min-h-14 rounded-lg border border-card-border bg-surface-container-lowest px-3 text-left hover:bg-surface-container-low flex items-center gap-2">
+                <span aria-hidden className="w-8 h-8 rounded-full bg-primary-container text-on-primary grid place-items-center font-bold text-xs shrink-0">{p.name.split(' ').map((w) => w[0]).join('').slice(0, 2)}</span>
+                <span><span className="block font-body-md text-body-md font-semibold text-primary">{p.name}</span><span className="block font-body-sm text-body-sm text-secondary">{p.role}</span></span>
               </button>
             ))}
           </div>
@@ -51,22 +64,46 @@ function SecondCheckDialog({ onDone, onCancel }: { onDone: (p: Practitioner) => 
         </>
       )}
       {ACTIVE_CLINICAL_POLICY.status !== 'institution-approved' && (
-        <p className="font-body-sm text-secondary">Who can check: {ACTIVE_CLINICAL_POLICY.secondChecker.roles.join(', ')}. Prototype setting, not approved hospital policy.</p>
+        <p className="font-body-sm text-body-sm text-secondary">Who can check: {ACTIVE_CLINICAL_POLICY.secondChecker.roles.join(', ')}. Prototype setting, not approved hospital policy.</p>
       )}
+    </>
+  );
+}
+
+function SecondCheckDialog({ second, onCancel }: { second: ReturnType<typeof useSecondCheck>; onCancel: () => void }) {
+  return (
+    <Dialog title="Second nurse check" onClose={onCancel}>
+      <SecondCheckBody second={second} />
       <Button variant="secondary" onClick={onCancel}>Cancel</Button>
     </Dialog>
   );
 }
 
+/** What the second nurse looks at. Plain text on purpose: ClinBridge records the PIN check, not separate ticks. */
+function SecondNurseChecks() {
+  return (
+    <ol aria-label="What the second nurse checks" className="flex flex-col gap-space-sm">
+      {CHECKS.map(([t, d], i) => (
+        <li key={t} className="p-space-sm rounded-lg bg-surface-container-low">
+          <span className="font-body-md text-body-md font-semibold text-on-surface block">{i + 1}. {t}</span>
+          <span className="font-body-sm text-body-sm text-on-surface-variant">{d}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 const field = (err?: string) => `h-12 rounded-lg border px-space-md bg-surface-container-lowest ${err ? 'border-error' : 'border-card-border'}`;
 
-export function MedEditor({ order, initial, events, priorRate, recentSites = [], initialCareTime, scheduledTime, minCareTime, requireChangeReason, saveLabel, onSubmit, onCancel }: {
+export function MedEditor({ order, initial, events, priorRate, recentSites = [], wide, initialCareTime, scheduledTime, minCareTime, requireChangeReason, saveLabel, onSubmit, onCancel }: {
   order: ActiveOrder;
   initial: MedForm;
   events: MedEvent[];
   priorRate: number | null;
   /** Last few sites for this order (documented: helps rotate injection sites). Display only. */
   recentSites?: { site: string; time: string }[];
+  /** Full-page layout with step bar, drug card and the second-nurse panel beside the form (record page only). */
+  wide?: MedWide;
   initialCareTime?: string;
   scheduledTime?: string | null;
   minCareTime?: string;
@@ -84,6 +121,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
   const [ticked, setTicked] = useState(false);
   const [checker, setChecker] = useState<Practitioner | null>(null);
   const [askCheck, setAskCheck] = useState(false);
+  const second = useSecondCheck((p) => { setChecker(p); setAskCheck(false); });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const v = validateMed(form, order, priorRate);
@@ -97,7 +135,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
     else if (minCareTime && Date.parse(careIso) < Date.parse(minCareTime)) e.care = 'Time is before this patient was admitted';
     if (requireChangeReason && !changeReason.trim()) e.changeReason = 'Say why you are fixing this';
     setErrors(e);
-    if (Object.keys(e).length === 0) { setTicked(false); setChecker(null); setStep('review'); }
+    if (Object.keys(e).length === 0) { setTicked(false); setChecker(null); second.setWho(null); second.check.setPin(''); setStep('review'); }
   }
 
   async function save() {
@@ -113,14 +151,14 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
     }
   }
 
+  const doseText = v.values.infusion_rate != null ? `${formatDose(v.values.infusion_rate)} ${v.values.infusion_rate_unit ?? ''}` : v.values.dose_given != null ? `${formatDose(v.values.dose_given)} ${v.values.dose_given_unit ?? ''}` : '';
+  const rowCls = wide ? 'grid grid-cols-1 sm:grid-cols-2 gap-space-md' : 'grid grid-cols-1 md:grid-cols-3 gap-space-md';
   const canSave = !saving && (v.warnings.length === 0 || ticked) && (!v.needsSecondCheck || !!checker);
 
   if (step === 'review') {
     const val = v.values;
-    return (
-      <Card className="flex flex-col gap-space-md">
-        <h2 className="font-headline-md text-headline-md text-primary">Check before saving</h2>
-        {v.needsSecondCheck && <HighAlertBar />}
+    const summary = (
+      <>
         <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-space-sm font-body-lg">
           <dt className="text-secondary">Drug</dt><dd className="font-semibold text-primary">{val.drug_name}</dd>
           <dt className="text-secondary">What happened</dt><dd className="font-semibold text-primary">{EVENT_LABEL[form.event]}</dd>
@@ -142,24 +180,73 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
             </label>
           </div>
         )}
+      </>
+    );
+    const buttons = (
+      <>
+        {saveError && <p role="alert" className="text-error flex items-center gap-1"><Icon name="error" />{saveError}</p>}
+        <div className={wide ? 'flex flex-col gap-2' : 'flex gap-space-sm'}>
+          <Button onClick={save} disabled={!canSave}><Icon name={wide ? 'how_to_reg' : 'save'} />{saving ? 'Saving…' : saveLabel}</Button>
+          <Button variant="secondary" onClick={() => setStep('fill')} disabled={saving}>Go back</Button>
+          {wide && <Button variant="ghost" onClick={onCancel} disabled={saving}>Cancel, nothing is recorded</Button>}
+        </div>
+      </>
+    );
+    if (wide) {
+      return (
+        <div className="flex flex-col gap-space-md">
+          {v.needsSecondCheck && <HighAlertBar />}
+          <StepBar current="review" second={v.needsSecondCheck} checked={!!checker} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+            <div className="lg:col-span-7 flex flex-col gap-space-md">
+              <DrugCard order={order} wide={wide}>
+                <div className="mt-space-md flex flex-col gap-space-md">
+                  <h2 className="font-headline-sm text-headline-sm text-primary">Check before saving</h2>
+                  {summary}
+                </div>
+              </DrugCard>
+              {v.needsSecondCheck && <PreparationCard recorder={wide.recorder} doseText={doseText} />}
+            </div>
+            <section aria-label={v.needsSecondCheck ? 'Independent verification' : 'Save'} className="lg:col-span-5 bg-surface-container-lowest rounded-xl border border-card-border p-space-md shadow-sm flex flex-col gap-space-md">
+              {v.needsSecondCheck ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="font-label-uppercase text-label-uppercase text-on-surface uppercase flex items-center gap-1"><Icon name="verified_user" className="text-secondary text-[20px]" />Independent verification</h2>
+                    <span className={`px-2 py-0.5 rounded font-label-badge text-label-badge font-bold ${checker ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-error-container text-on-error-container'}`}>{checker ? 'Co-signed' : 'Co-sign required'}</span>
+                  </div>
+                  <SecondNurseChecks />
+                  <div className="p-space-sm rounded-lg bg-surface-container-low flex flex-col gap-space-sm">
+                    {checker ? <p className="flex items-center gap-2 text-sync-green font-semibold"><Icon name="verified_user" filled />Checked by {checker.name}</p> : <SecondCheckBody second={second} />}
+                  </div>
+                  <p className="font-body-sm text-[12px] text-secondary">PIN only. ClinBridge has no badge or wristband reader.</p>
+                </>
+              ) : <p className="font-body-md text-body-md text-on-surface-variant">No second nurse is asked for on this record. Read it once more, then save.</p>}
+              {buttons}
+            </section>
+          </div>
+          <ChangeLogFooter wide={wide} second={v.needsSecondCheck} />
+        </div>
+      );
+    }
+    return (
+      <Card className="flex flex-col gap-space-md">
+        <h2 className="font-headline-md text-headline-md text-primary">Check before saving</h2>
+        {v.needsSecondCheck && <HighAlertBar />}
+        {summary}
         {v.needsSecondCheck && (
           checker
             ? <p className="flex items-center gap-2 text-sync-green font-semibold"><Icon name="verified_user" filled />Checked by {checker.name}</p>
             : <Button variant="danger" className="self-start" onClick={() => setAskCheck(true)}><Icon name="group" />Second nurse check</Button>
         )}
-        {saveError && <p role="alert" className="text-error flex items-center gap-1"><Icon name="error" />{saveError}</p>}
-        <div className="flex gap-space-sm">
-          <Button onClick={save} disabled={!canSave}><Icon name="save" />{saving ? 'Saving…' : saveLabel}</Button>
-          <Button variant="secondary" onClick={() => setStep('fill')} disabled={saving}>Go back</Button>
-        </div>
-        {askCheck && <SecondCheckDialog onCancel={() => setAskCheck(false)} onDone={(p) => { setChecker(p); setAskCheck(false); }} />}
+        {buttons}
+        {askCheck && <SecondCheckDialog second={second} onCancel={() => setAskCheck(false)} />}
       </Card>
     );
   }
 
-  return (
+  const formCard = (
     <Card className="flex flex-col gap-space-md">
-      {v.needsSecondCheck && <HighAlertBar />}
+      {v.needsSecondCheck && !wide && <HighAlertBar />}
       <fieldset>
         <legend className="font-label-uppercase text-label-uppercase text-secondary uppercase mb-1">What happened?</legend>
         <div className="flex flex-wrap gap-space-sm">
@@ -170,7 +257,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
         </div>
       </fieldset>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+      <div className={rowCls}>
         <div className="flex flex-col gap-1">
           <label htmlFor="care" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Time</label>
           <input id="care" type="datetime-local" value={care} onChange={(e) => setCare(e.target.value)} aria-invalid={!!errors.care} className={field(errors.care)} />
@@ -181,7 +268,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
       {form.event === 'administered' && (
         <>
           <SectionLabel>Dose</SectionLabel>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+          <div className={rowCls}>
             <div className="flex flex-col gap-1">
               <label htmlFor="dose" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Dose given</label>
               <input id="dose" inputMode="decimal" value={form.dose} onChange={set('dose')} aria-invalid={!!errors.dose} className={`${field(errors.dose)} font-code-tabular text-[20px] font-semibold`} />
@@ -203,7 +290,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
             </div>
           </div>
           {['IV', 'SC', 'IM'].includes(form.route) && (
-            <div className="flex flex-col gap-1 md:w-1/2">
+            <div className={wide ? 'flex flex-col gap-1' : 'flex flex-col gap-1 md:w-1/2'}>
               <label htmlFor="site" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Site (optional)</label>
               <input id="site" list="site-words" value={form.site} onChange={set('site')} className={field()} placeholder="e.g. Abdomen, left side" />
               <datalist id="site-words">{SITE_WORDS.map((s) => <option key={s} value={s} />)}</datalist>
@@ -217,7 +304,7 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
       )}
 
       {form.event === 'rate_changed' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+        <div className={rowCls}>
           <div className="flex flex-col gap-1">
             <span className="font-label-uppercase text-label-uppercase text-secondary uppercase">Current rate</span>
             <span className="h-12 flex items-center font-code-tabular text-[20px] text-primary">{priorRate != null ? formatDose(priorRate) : '—'}</span>
@@ -259,5 +346,27 @@ export function MedEditor({ order, initial, events, priorRate, recentSites = [],
       </div>
 
     </Card>
+  );
+  if (!wide) return formCard;
+  return (
+    <div className="flex flex-col gap-space-md">
+      {v.needsSecondCheck && <HighAlertBar />}
+      <StepBar current="fill" second={v.needsSecondCheck} checked={false} />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-md items-start">
+        <div className="lg:col-span-7"><DrugCard order={order} wide={wide} /></div>
+        <div className="lg:col-span-5 lg:row-span-2 flex flex-col gap-space-md">
+          {formCard}
+          {v.needsSecondCheck && (
+            <section aria-label="Independent verification" className="bg-surface-container-lowest rounded-xl border border-card-border p-space-md shadow-sm flex flex-col gap-space-sm">
+              <h2 className="font-label-uppercase text-label-uppercase text-on-surface uppercase flex items-center gap-1"><Icon name="verified_user" className="text-secondary text-[20px]" />Independent verification</h2>
+              <p className="font-body-sm text-body-sm text-on-surface-variant">After Review, another nurse checks this record and enters their own PIN here. Saving stays off until then.</p>
+              <SecondNurseChecks />
+            </section>
+          )}
+        </div>
+        {v.needsSecondCheck && <div className="lg:col-span-7"><PreparationCard recorder={wide.recorder} doseText={doseText} /></div>}
+      </div>
+      <ChangeLogFooter wide={wide} second={v.needsSecondCheck} />
+    </div>
   );
 }
