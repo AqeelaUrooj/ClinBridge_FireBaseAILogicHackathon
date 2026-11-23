@@ -17,25 +17,45 @@ const FIELD_ART: Partial<Record<VitalKey, MedicalAsset>> = {
   bp_systolic: 'vitals/bp-monitor', bp_diastolic: 'vitals/bp-monitor', heart_rate: 'vitals/heart', spo2: 'vitals/pulse-oximeter',
   temp_c: 'vitals/thermometer', resp_rate: 'vitals/lungs', glucose_mgdl: 'vitals/glucose-meter',
 };
+/** Step of the − and + buttons. They change a typed number only: an empty box stays empty, so no value is ever suggested. */
+const STEP: Partial<Record<VitalKey, number>> = { temp_c: 0.1, glucose_mgdl: 5, o2_flow_lpm: 0.5 };
+
+export function stepValue(k: VitalKey, current: string | undefined, dir: 1 | -1): string | null {
+  const raw = (current ?? '').trim();
+  if (!/^\d{1,4}(\.\d+)?$/.test(raw)) return null;
+  const n = Math.round((Number(raw) + dir * (STEP[k] ?? 1)) * 10) / 10;
+  const [lo, hi] = VITAL_RULES[k].scale ?? [0, 9999];
+  return n < lo || n > hi ? null : String(n);
+}
+
 const MAIN: VitalKey[] = ['bp_systolic', 'bp_diastolic', 'heart_rate', 'spo2', 'temp_c', 'resp_rate'];
 const MORE: VitalKey[] = ['pain_0_10', 'glucose_mgdl', 'o2_flow_lpm'];
 
 function Field({ k, form, setForm, error }: { k: VitalKey; form: VitalsForm; setForm: (f: VitalsForm) => void; error?: string }) {
   const r = VITAL_RULES[k];
   const id = `v-${k}`;
+  const step = (dir: 1 | -1) => { const v = stepValue(k, form[k], dir); if (v != null) setForm({ ...form, [k]: v }); };
+  const stepBtn = (dir: 1 | -1) => (
+    <button type="button" onClick={() => step(dir)} disabled={stepValue(k, form[k], dir) == null}
+      className="h-full w-11 shrink-0 grid place-items-center text-[20px] font-bold text-primary bg-surface-container-low hover:bg-surface-container disabled:text-outline disabled:cursor-not-allowed">
+      <span aria-hidden>{dir < 0 ? '−' : '+'}</span><span className="sr-only">{r.label}: {dir < 0 ? 'lower' : 'raise'}</span>
+    </button>
+  );
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="font-label-uppercase text-label-uppercase text-secondary uppercase flex items-center gap-1.5">
         {FIELD_ART[k] && <MedIllustration name={FIELD_ART[k]!} size={20} />}{r.label}
       </label>
-      <div className={`flex items-center h-12 rounded-lg border bg-surface-container-lowest focus-within:ring-2 focus-within:ring-secondary ${error ? 'border-error' : 'border-card-border'}`}>
+      <div className={`flex items-center h-12 rounded-lg border overflow-hidden bg-surface-container-lowest focus-within:ring-2 focus-within:ring-secondary ${error ? 'border-error' : 'border-card-border'}`}>
+        {stepBtn(-1)}
         <input
           id={id} inputMode={r.integer ? 'numeric' : 'decimal'} autoComplete="off"
-          className="flex-1 min-w-0 h-full bg-transparent px-space-md font-code-tabular text-[20px] font-semibold text-primary outline-none"
+          className="flex-1 min-w-0 h-full bg-transparent px-2 text-center font-code-tabular text-[20px] font-semibold text-primary outline-none"
           value={form[k] ?? ''} onChange={(e) => setForm({ ...form, [k]: e.target.value })}
           aria-invalid={!!error} aria-describedby={error ? `${id}-err` : undefined}
         />
-        <span className="px-space-md text-secondary font-body-sm">{r.unit}</span>
+        <span className="pr-2 text-secondary font-body-sm whitespace-nowrap">{r.unit}</span>
+        {stepBtn(1)}
       </div>
       {error && <span id={`${id}-err`} className="text-error font-body-sm text-body-sm flex items-center gap-1"><Icon name="error" className="text-[16px]" />{error}</span>}
     </div>
@@ -141,13 +161,13 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
         {errors.form && <p role="alert" className="self-end text-error font-body-md">{errors.form}</p>}
       </div>
       <SectionLabel>Main</SectionLabel>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-space-md">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-space-md">
         {MAIN.map((k) => <Field key={k} k={k} form={form} setForm={setForm} error={errors[k]} />)}
       </div>
       {showMore ? (
         <>
           <SectionLabel>More</SectionLabel>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-space-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-space-md">
             {MORE.map((k) => <Field key={k} k={k} form={form} setForm={setForm} error={errors[k]} />)}
             <div className="flex flex-col gap-1">
               <label htmlFor="o2dev" className="font-label-uppercase text-label-uppercase text-secondary uppercase">Oxygen given by</label>
@@ -178,6 +198,7 @@ export function VitalsEditor({ initial, initialCareTime, minCareTime, requireRea
           {errors.reason && <span className="text-error font-body-sm">{errors.reason}</span>}
         </div>
       )}
+      <p className="font-body-sm text-body-sm text-secondary">The − and + buttons change a number you typed. Nothing is filled in for you.</p>
       <div className="flex gap-space-sm">
         <Button onClick={next}>Review<Icon name="arrow_forward" /></Button>
         <Button variant="secondary" onClick={onCancel}>Cancel</Button>
