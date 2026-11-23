@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useApp, useSession } from '../../state/app';
-import { dayLabel } from '../../lib/time';
+import { dateTimeLabel, dayLabel } from '../../lib/time';
+import { isHighAlert, isMedOrder } from '../../lib/meds';
 import { Badge, Breadcrumbs, Button, ButtonLink, Card, Dialog, EmptyState, Icon } from '../../components/ui';
 import { PatientFrame } from '../patient/PatientLayout';
 import { fullName, isNoKnownAllergy, type PatientBundle } from '../patient/patientData';
@@ -29,6 +30,15 @@ function PrintNotice() {
   );
 }
 
+/** What can be said about the printing itself: the browser's dialog decides. */
+function PrintFacts({ items }: { items: [icon: string, label: string, value: string][] }) {
+  return (
+    <dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-space-sm">
+      {items.map(([icon, label, value]) => <div key={label} className="min-w-0 rounded-lg bg-surface-container-lowest border border-card-border p-space-sm"><dt className="flex items-center gap-1 font-label-uppercase text-label-uppercase uppercase text-secondary"><Icon name={icon} className="text-[18px]" />{label}</dt><dd className="font-body-md text-body-md font-semibold text-primary [overflow-wrap:anywhere]">{value}</dd></div>)}
+    </dl>
+  );
+}
+
 /* ------------------------------ One form for one patient: /print/:kind/:id ------------------------------ */
 
 function SingleForm({ kind, patientId }: { kind: FormKind; patientId: string }) {
@@ -52,9 +62,13 @@ function SingleForm({ kind, patientId }: { kind: FormKind; patientId: string }) 
           </div>
         </div>
         <PrintNotice />
-        <nav aria-label="Other paper forms for this patient" className="flex flex-wrap gap-space-sm">
-          {FORM_ORDER.filter((k) => k !== kind).map((k) => <ButtonLink key={k} variant="secondary" to={`/print/${k}/${p.id}`}><Icon name="description" />{FORMS[k].short} ({FORMS[k].code})</ButtonLink>)}
-        </nav>
+        <PrintFacts items={[['print', 'Printer', 'Chosen in the print dialog'], ['layers', 'Paper', 'Letter or A4'], ['check_circle', 'Filled in for', `Bed ${data.bundle.encounter?.bed ?? '—'}, ${fullName(p)}`], ['schedule', 'Filled in at', dateTimeLabel(ctx.nowIso)]]} />
+        <div className="flex flex-wrap items-center justify-between gap-space-sm">
+          <nav aria-label="Other paper forms for this patient" className="flex flex-wrap gap-1 rounded-lg bg-surface-container p-1">
+            {FORM_ORDER.map((k) => <Link key={k} to={`/print/${k}/${p.id}`} aria-current={k === kind ? 'page' : undefined} className={`min-h-11 px-3 rounded-lg inline-flex items-center gap-2 font-body-md text-body-md font-semibold ${k === kind ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high'}`}><Icon name={k === 'mar' ? 'medication' : k === 'vit' ? 'vital_signs' : 'assignment_return'} className="text-[20px]" />{FORMS[k].short} ({FORMS[k].code})</Link>)}
+          </nav>
+          <ButtonLink variant="secondary" to="/spooler"><Icon name="folder_copy" />Forms for more patients</ButtonLink>
+        </div>
       </div>
       <div className="print-preview mt-space-md print:mt-0">
         <FormSheet kind={kind} d={data} ctx={ctx} />
@@ -97,6 +111,12 @@ export function SpoolerPage() {
   const [forms, setForms] = useState<Set<FormKind>>(new Set(FORM_ORDER));
   const [step, setStep] = useState<Step>('select');
   const [confirming, setConfirming] = useState(false);
+  const [order, setOrder] = useState<'patient' | 'form'>('patient');
+  const meds = useLiveQuery(async () => {
+    const m = new Map<string, { n: number; high: string[] }>();
+    for (const o of (await db.active_order.toArray()).filter(isMedOrder)) { const x = m.get(o.encounter_id) ?? { n: 0, high: [] }; x.n += 1; if (o.drug_name && isHighAlert(o.drug_name) && !x.high.includes(o.drug_name)) x.high.push(o.drug_name); m.set(o.encounter_id, x); }
+    return m;
+  }, [db]);
 
   const chosen = useMemo(() => (ward ?? []).filter((b) => selected.has(b.patient.id)), [ward, selected]);
   const formList = FORM_ORDER.filter((k) => forms.has(k));
@@ -115,6 +135,9 @@ export function SpoolerPage() {
   const formCount = chosen.length * formList.length;
   const formsLabel = (n: number) => `${n} form${n === 1 ? '' : 's'}`;
   const canReview = chosen.length > 0 && formList.length > 0;
+  const medsOf = (b: PatientBundle) => (b.encounter ? meds?.get(b.encounter.id) : undefined);
+  const sheets = (packet ?? []).flatMap((d) => formList.map((k) => ({ d, k })));
+  if (order === 'form') sheets.sort((a, b) => formList.indexOf(a.k) - formList.indexOf(b.k)); // stable: patients keep their bed order
 
   return (
     <>
@@ -126,6 +149,7 @@ export function SpoolerPage() {
         </div>
         <p className="font-body-md text-on-surface-variant">Choose patients and forms, check the list, then preview and print. Each patient's forms start on a new page.</p>
         <PrintNotice />
+        <PrintFacts items={[['groups', 'Selected', `${selected.size} of ${total} patients`], ['description', 'Forms', formsLabel(formCount)], ['sort', 'Order', order === 'patient' ? 'By patient, bed order' : 'By form, bed order'], ['print', 'Printer', 'Chosen in the print dialog']]} />
         <ol className="flex flex-wrap gap-space-sm font-body-sm" aria-label="Steps">
           {(['select', 'review', 'preview'] as Step[]).map((s, i) => (
             <li key={s} aria-current={step === s ? 'step' : undefined} className={`px-2 py-1 rounded ${step === s ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}`}>
@@ -148,6 +172,11 @@ export function SpoolerPage() {
                   ))}
                 </div>
                 {formList.length === 0 && <p role="alert" className="text-clinical-red font-body-sm">Choose at least one form.</p>}
+                <div role="radiogroup" aria-label="Order of the sheets" className="flex flex-wrap items-center gap-1 pt-space-sm border-t border-card-border">
+                  <span className="font-body-md text-on-surface-variant mr-1">Order of the sheets</span>
+                  {([['patient', 'By patient'], ['form', 'By form']] as const).map(([v, label]) => <button key={v} type="button" role="radio" aria-checked={order === v} onClick={() => setOrder(v)} className={`min-h-11 px-3 rounded-lg font-body-md font-semibold ${order === v ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container'}`}>{label}</button>)}
+                  {order === 'form' && <p className="basis-full font-body-sm text-[#7a5410]">One patient's sheets are then apart. Check the name and MRN on each sheet when you sort them.</p>}
+                </div>
               </Card>
               <Card className="flex flex-col gap-space-sm" aria-label="Patients">
                 <div className="flex flex-wrap items-center justify-between gap-space-sm">
@@ -163,7 +192,7 @@ export function SpoolerPage() {
                 <div className="overflow-x-auto -mx-space-sm px-space-sm">
                 <table className="w-full font-body-md">
                   <caption className="sr-only">Patients in the patient list</caption>
-                  <thead className="text-left text-secondary font-body-sm"><tr><th className="py-1 w-10"><span className="sr-only">Select</span></th><th className="py-1">Bed</th><th className="py-1">Patient</th><th className="hidden sm:table-cell py-1">Born</th><th className="hidden sm:table-cell py-1">MRN</th><th className="hidden sm:table-cell py-1">Allergies</th></tr></thead>
+                  <thead className="text-left text-secondary font-body-sm"><tr><th className="py-1 w-10"><span className="sr-only">Select</span></th><th className="py-1">Bed</th><th className="py-1">Patient</th><th className="hidden sm:table-cell py-1">Born</th><th className="hidden sm:table-cell py-1">MRN</th><th className="hidden sm:table-cell py-1">Allergies</th><th className="hidden lg:table-cell py-1">Medicine orders</th><th className="hidden xl:table-cell py-1">In the packet</th></tr></thead>
                   <tbody>
                     {ward.map((b) => (
                       <tr key={b.patient.id} className="border-t border-card-border">
@@ -173,6 +202,8 @@ export function SpoolerPage() {
                         <td className="hidden sm:table-cell py-1 font-code-tabular">{dayLabel(b.patient.birth_date)}</td>
                         <td className="hidden sm:table-cell py-1 font-code-tabular">{b.patient.mrn}</td>
                         <td className="hidden sm:table-cell py-1">{allergyShort(b)}</td>
+                        <td className="hidden lg:table-cell py-1">{medsOf(b)?.n ?? 0}{medsOf(b)?.high.length ? <span className="block font-body-sm font-semibold text-clinical-red">High-alert list: {medsOf(b)!.high.join(', ')}</span> : null}</td>
+                        <td className="hidden xl:table-cell py-1">{selected.has(b.patient.id) ? <span className="flex gap-1">{formList.map((k) => <Badge key={k} tone="blue">{k.toUpperCase()}</Badge>)}</span> : <span className="text-secondary">—</span>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -212,7 +243,7 @@ export function SpoolerPage() {
 
         {step === 'preview' && (
           <Card className="flex flex-wrap items-center justify-between gap-space-sm" aria-label="Print the packet">
-            <p className="font-body-md"><span className="font-semibold">{chosen.length} patients · {formsLabel(formCount)}.</span> A long form can run onto a second page. Scroll to check the preview, then print.</p>
+            <p className="font-body-md"><span className="font-semibold">{chosen.length} patients · {formsLabel(formCount)}.</span> {order === 'form' ? 'Sorted by form. ' : ''}A long form can run onto a second page. Scroll to check the preview, then print.</p>
             <div className="flex flex-wrap gap-space-sm">
               <Button disabled={!packet} onClick={() => setConfirming(true)}><Icon name="print" />Print the packet</Button>
               <Button variant="secondary" onClick={() => setStep('review')}>Back</Button>
@@ -224,7 +255,7 @@ export function SpoolerPage() {
       {step === 'preview' && (
         packet == null ? <p role="status" className="text-secondary print:hidden">Preparing {formsLabel(formCount)}…</p> : (
           <div className="print-preview flex flex-col gap-space-lg mt-space-md print:mt-0 print:gap-0" data-testid="spooler-preview">
-            {packet.flatMap((d, pi) => formList.map((k, fi) => <FormSheet key={`${d.bundle.patient.id}-${k}`} kind={k} d={d} ctx={ctx} breakBefore={pi + fi > 0} />))}
+            {sheets.map(({ d, k }, i) => <FormSheet key={`${d.bundle.patient.id}-${k}`} kind={k} d={d} ctx={ctx} breakBefore={i > 0} />)}
           </div>
         )
       )}
