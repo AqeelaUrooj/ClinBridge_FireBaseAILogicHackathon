@@ -1,3 +1,4 @@
+import { judgeDemo } from '../../judgeDemo';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import charting from './assets/charting.png';
@@ -56,7 +57,7 @@ const questions = [
 ];
 
 function DemoLink() {
-  return <Link className="lp-button" to="/sign-in?demo=practice">Launch Practice Demo <span aria-hidden="true">→</span></Link>;
+  return <Link className="lp-button" to={judgeDemo ? "/sign-in" : "/sign-in?demo=practice"}>Launch Practice Demo <span aria-hidden="true">→</span></Link>;
 }
 
 function BedsidePreview() {

@@ -1,3 +1,5 @@
+import { InstallPractice } from '../../components/InstallPractice';
+import { judgeDemo } from '../../judgeDemo';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -125,6 +127,7 @@ export function SignIn() {
   return (
     <Frame>
       <div className="w-full max-w-[1180px] flex flex-col gap-space-md">
+        {judgeDemo && <InstallPractice />}
         <div className="rounded-lg bg-surface-container px-space-md py-2 flex flex-wrap items-center justify-between gap-2 font-body-sm text-body-sm text-on-surface-variant">
           <span className="flex flex-wrap items-center gap-2"><span className="px-2 py-1 rounded bg-primary text-on-primary font-label-badge text-label-badge flex items-center gap-1"><Icon name="laptop_windows" className="text-[16px]" />{laptop?.label ?? 'This laptop'}</span>{laptop?.unit && <span>{laptop.unit}</span>}</span>
           <Badge tone="green" icon="lock">Sign-in works with no network</Badge>
@@ -150,7 +153,8 @@ export function SignIn() {
               <Small icon="schedule" label="Screen lock" value={`${AUTO_LOCK_MS / 60_000} min`} note="Without use" />
               <Small icon="pin" label="Wrong PIN" value={`${MAX_TRIES} tries`} note="Then wait 1 min" />
             </div>
-            <div className="flex flex-col gap-space-sm">
+            {judgeDemo && <p className={BOX}>Practice demo. Use fictional patient information only.</p>}
+            {!judgeDemo && <div className="flex flex-col gap-space-sm">
               <span className="font-label-uppercase text-label-uppercase text-slate-muted">WHICH RECORDS</span>
               <div className="grid grid-cols-2 gap-space-sm" role="radiogroup" aria-label="Which records">
                 {(['practice', 'live'] as const).map((d) => (
@@ -161,7 +165,7 @@ export function SignIn() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>}
             <p className={`${BOX} flex items-start gap-space-sm font-body-md text-body-md text-on-surface-variant mt-auto`}><Icon name="verified_user" />Your own PIN opens your session. What you save is kept on this laptop under your name.</p>
             {bootError && <p role="alert" className="text-error font-semibold">Could not open the records: {bootError}</p>}
           </section>
@@ -174,7 +178,7 @@ export function SignIn() {
             {!ready ? (
               <p role="status" className="text-secondary">Opening records on this laptop…</p>
             ) : staff.length === 0 ? (
-              <div className="flex flex-col gap-space-sm">
+              judgeDemo ? <p role="alert">Practice staff are unavailable. Reload the demo to try again.</p> : <div className="flex flex-col gap-space-sm">
                 <p className="font-body-lg text-body-lg">This laptop is not set up for real records yet.</p>
                 <p className="text-secondary">An admin must run first-time setup and import the patient list.</p>
                 <Button variant="secondary" onClick={() => navigate('/setup')}>Open first-time setup</Button>

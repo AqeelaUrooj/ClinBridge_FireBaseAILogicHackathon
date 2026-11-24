@@ -1,3 +1,4 @@
+import { judgeDemo } from './judgeDemo';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useApp, useSession, isAdmin } from './state/app';
 import { AppShell } from './components/AppShell';
@@ -70,7 +71,7 @@ export function App() {
       <Route path="/sign-in" element={<SignIn />} />
       <Route path="/lock" element={<LockScreen />} />
       {/* Reachable before anyone exists: the page itself only works while Real records has no staff. */}
-      <Route path="/setup" element={<main className="min-h-screen bg-background p-space-md md:p-space-xl flex flex-col items-center gap-space-lg"><SetupPage /></main>} />
+      <Route path="/setup" element={judgeDemo ? <Navigate to="/sign-in" replace /> : <main className="min-h-screen bg-background p-space-md md:p-space-xl flex flex-col items-center gap-space-lg"><SetupPage /></main>} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route index element={<Home />} />

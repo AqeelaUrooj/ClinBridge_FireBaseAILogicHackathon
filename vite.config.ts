@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
@@ -17,7 +17,7 @@ export default defineConfig({
         navigateFallback: 'index.html',
       },
       manifest: {
-        name: 'ClinBridge',
+        name: mode === 'judge' ? 'ClinBridge Practice' : 'ClinBridge',
         short_name: 'ClinBridge',
         description: 'Offline nursing documentation during hospital EHR downtime',
         theme_color: '#1c2536',
@@ -26,7 +26,10 @@ export default defineConfig({
         // Staff open the installed app to chart: it starts at sign-in, as before. `id` keeps it the same installed app.
         id: '/',
         start_url: '/sign-in',
-        icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        scope: '/',
+        icons: [192, 512].map((size) => ({
+          src: `/icon-${size}.png`, sizes: `${size}x${size}`, type: 'image/png', purpose: 'any',
+        })),
       },
     }),
   ],
@@ -39,4 +42,4 @@ export default defineConfig({
     alias: { '@firebase/ai': fileURLToPath(new URL('./node_modules/@firebase/ai/dist/esm/index.esm.js', import.meta.url)) },
     server: { deps: { inline: ['firebase', /@firebase\/ai/] } },
   },
-});
+}));

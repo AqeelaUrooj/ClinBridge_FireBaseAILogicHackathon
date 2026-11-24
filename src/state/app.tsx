@@ -1,3 +1,4 @@
+import { judgeDemo } from '../judgeDemo';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getDb, requestPersistentStorage, type Dataset, type DowntimeDB } from '../db/db';
@@ -57,6 +58,7 @@ const DATASET_KEY = 'dtk.dataset'; // app preference only, never clinical data
 const PRACTICE_DEVICE = 'dev-01';   // the practice story runs on laptop DT-4W-01
 
 function readDataset(): Dataset {
+  if (judgeDemo) return 'practice';
   try {
     if (window.location.pathname === '/sign-in' && new URLSearchParams(window.location.search).get('demo') === 'practice') {
       localStorage.setItem(DATASET_KEY, 'practice');
@@ -201,6 +203,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [dataset, phaseNow, usable]);
 
   const setDataset = useCallback((d: Dataset) => {
+    if (judgeDemo) return;
     try {
       localStorage.setItem(DATASET_KEY, d);
     } catch {
