@@ -51,7 +51,7 @@ The default judge build needs no Firebase values for local Practice. Build from 
 
 1. Start with a clean Chrome profile. Open the demo root and click **Launch Practice Demo**.
 2. At `/sign-in`, wait for **Practice is ready for offline use**, then click **Install Practice Demo** or use Chrome's install menu. Confirm the installed app is named **ClinBridge Practice** and opens at `/sign-in` in a standalone window.
-3. Disconnect the network, close the window, and launch the installed app again. Choose Daniel Okafor and enter the Practice PIN shown on screen. Confirm the fictional ward opens. Reload a protected page and confirm the app returns to sign-in and permits re-entry with the Practice PIN.
-4. Try `/setup` directly and verify it returns to sign-in. Reconnect and reload. The core Practice flow uses local storage and the cached application shell.
+3. Disconnect the network, close the window, and launch the installed app again. Use the Practice passphrase button if the vault asks to unlock. Choose Daniel Okafor and enter the Practice PIN shown on screen. Confirm the fictional ward opens. Reload a protected page and confirm the app returns to sign-in and permits re-entry with the Practice PIN.
+4. Try `/setup` directly and verify it returns to sign-in after the Practice vault is unlocked. Reconnect and reload. The core Practice flow uses local storage and the cached application shell.
 
 CI checks the manifest, real PNG dimensions, Chromium installability, Practice isolation, offline direct navigation and reload. It saves landing, sign-in and offline ward screenshots in the **e2e-screens** artifact. The OS installation dialog and standalone relaunch are checked separately in desktop Chrome.

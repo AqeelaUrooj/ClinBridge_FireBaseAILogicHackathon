@@ -1,19 +1,21 @@
-import { test as base, expect, chromium } from '@playwright/test';
+import { test as base, expect, chromium, type BrowserContext } from '@playwright/test';
+import { unlockIfNeeded, unlockPractice } from './helpers';
 
-const test = base.extend({
-  context: async ({ baseURL, channel, launchOptions, viewport }, use, info) => {
-    const context = await chromium.launchPersistentContext(info.outputPath('chrome-profile'), {
+const test = base.extend<{ judgeContext: BrowserContext }>({
+  judgeContext: async ({ baseURL, channel, launchOptions, viewport }, runWithContext) => {
+    const context = await chromium.launchPersistentContext('', {
       ...launchOptions, baseURL, channel, viewport,
     });
     try {
-      await use(context);
+      await runWithContext(context);
     } finally {
       await context.close();
     }
   },
 });
 
-test('judge build is installable in the browser and opens Practice routes offline', async ({ page, context, request }, info) => {
+test('judge build is installable in the browser and opens Practice routes offline', async ({ judgeContext: context, request }, info) => {
+  const [page] = context.pages();
   const manifest = await (await request.get('/manifest.webmanifest')).json();
   expect(manifest).toMatchObject({ name: 'ClinBridge Practice', id: '/', start_url: '/sign-in', scope: '/', display: 'standalone' });
   for (const size of [192, 512]) {
@@ -25,26 +27,30 @@ test('judge build is installable in the browser and opens Practice routes offlin
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([size, size]);
   }
 
-  await page.addInitScript(() => localStorage.setItem('dtk.dataset', 'live'));
   await page.goto('/');
   const launch = page.getByRole('link', { name: 'Launch Practice Demo' }).first();
   await expect(launch).toHaveAttribute('href', '/sign-in');
+  await page.evaluate(() => localStorage.setItem('dtk.dataset', 'live'));
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)), { timeout: 15_000 }).toBe(true);
   await page.screenshot({ path: info.outputPath('screens', 'landing.png') });
   await launch.click();
   await expect(page).toHaveURL('/sign-in');
-  await expect(page.getByText('Practice is ready for offline use.')).toBeVisible();
+  await expect(page.getByText('Practice is ready for offline use.')).toBeVisible({ timeout: 15_000 });
 
   const cdp = await context.newCDPSession(page);
   await expect.poll(async () => (await cdp.send('Page.getInstallabilityErrors')).installabilityErrors).toEqual([]);
   await page.screenshot({ path: info.outputPath('screens', 'install-sign-in.png') });
   await expect(page.getByRole('radio', { name: /Real records/ })).toHaveCount(0);
   await page.goto('/setup');
+  await unlockIfNeeded(page);
   await expect(page).toHaveURL('/sign-in');
 
   await context.setOffline(true);
   await page.goto('/ward');
+  await unlockPractice(page);
   await expect(page).toHaveURL('/sign-in');
   await page.reload();
+  await unlockPractice(page);
   await page.getByRole('button', { name: /Daniel Okafor/ }).click();
   for (const digit of '2468') await page.getByRole('button', { name: digit, exact: true }).click();
   await expect(page).toHaveURL('/ward');
