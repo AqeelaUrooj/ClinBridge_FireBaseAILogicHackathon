@@ -52,7 +52,7 @@ export function ShiftSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen; se
         {obs.map((x, i) => {
           const y = 332 + i * 27, was = x.was;
           return (
-            <g key={`${x.time}${i}`}>
+            <g key={`${x.time}${i}`} data-reading={x.time}>
               <Value x={L + 8} y={y} w={56} h={27} t={clock(x.time)} size={22} /><Value x={L + 72} y={y} w={84} h={27} t={bp(x.v) || '—'} size={23} />
               {was?.heart_rate != null && was.heart_rate !== x.v.heart_rate ? <><Struck x={L + 160} y={y + 6} t={String(was.heart_rate)} size={14} /><Value x={L + 188} y={y} w={28} h={27} t={x.v.heart_rate?.toString()} size={18} /></> : <Value x={L + 166} y={y} w={48} h={27} t={x.v.heart_rate?.toString() ?? '—'} size={23} />}
               {was?.resp_rate != null && was.resp_rate !== x.v.resp_rate ? <><Struck x={L + 218} y={y + 6} t={String(was.resp_rate)} size={14} /><Value x={L + 245} y={y} w={26} h={27} t={x.v.resp_rate?.toString()} size={18} /></> : <Value x={L + 224} y={y} w={44} h={27} t={x.v.resp_rate?.toString() ?? '—'} size={23} />}
@@ -67,7 +67,7 @@ export function ShiftSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen; se
         <Box x={632} y={272} w={R - 632} h={166} s={1.2} c={G} /><Title x={646} y={296} t="Pain (0–10)" /><H x={632} y={306} w={R - 632} s={1} c={G} />
         <Small x={668} y={325} t="Time" a="middle" /><Small x={742} y={325} t="Score" a="middle" /><Small x={800} y={325} t="Location / Notes" /><V x={704} y={306} h={132} s={0.8} c={G} /><V x={780} y={306} h={132} s={0.8} c={G} />
         {[0, 1, 2, 3].map((i) => <H key={i} x={632} y={332 + i * 27} w={R - 632} s={0.7} c={G} />)}
-        {pains.map((x, i) => <g key={x.time}><Value x={644} y={332 + i * 27} w={58} h={27} t={clock(x.time)} size={22} /><Value x={718} y={332 + i * 27} w={60} h={27} t={`${x.score}/10`} size={23} /></g>)}
+        {pains.map((x, i) => <g key={x.time} data-pain={x.time}><Value x={644} y={332 + i * 27} w={58} h={27} t={clock(x.time)} size={22} /><Value x={718} y={332 + i * 27} w={60} h={27} t={`${x.score}/10`} size={23} /></g>)}
         {pains.length > 0 ? <NotRecorded x={794} y={352} /> : <NotRecorded x={794} y={352} />}
 
         {/* Medicines */}
@@ -97,7 +97,7 @@ export function ShiftSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen; se
         <Box x={L} y={760} w={564} h={386} s={1.2} c={G} /><Title x={L + 14} y={783} t="Assessments / Clinical Observations" sub="(recorded)" /><H x={L} y={792} w={564} s={1} c={G} />
         {A.map(([t, items, h], i) => {
           const y = ay; ay += h;
-          return <g key={t}>{i > 0 && <H x={L} y={y} w={564} s={0.7} c={G} />}<Small x={L + 14} y={y + 23} t={t} /><Fill x={L + 88} y={y + 2} w={470} h={h - 4} items={items.length ? [{ t: items.map((x) => x.t).join(', '), calm: i < 5 }] : []} size={23} min={12} lead={1.08} slips={i > 6} /></g>;
+          return <g key={t}>{i > 0 && <H x={L} y={y} w={564} s={0.7} c={G} />}<Small x={L + 14} y={y + 23} t={t} /><Fill x={L + 88} y={y + 2} w={470} h={h - 4} items={items.length ? [{ t: items.map((x) => x.t).join(', '), calm: i < 5 }] : []} size={23} min={12} lead={1.08} slips={i > 6} tag={t} /></g>;
         })}
         {/* Plan */}
         <Box x={656} y={760} w={R - 656} h={386} s={1.2} c={G} /><Title x={670} y={783} t="Plan / Ongoing Care" /><H x={656} y={792} w={R - 656} s={1} c={G} />

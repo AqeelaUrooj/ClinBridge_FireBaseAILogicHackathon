@@ -130,7 +130,7 @@ test('pending cloud compare, then System down declared in another tab: request c
   await signIn(page, /Daniel Okafor/);
   await page.getByRole('link', { name: 'More' }).click();
   await page.getByRole('link', { name: 'Device vs Cloud' }).click();
-  await page.getByLabel('Fictional source record').selectOption({ index: 1 });
+  await page.getByLabel('Fictional patient').selectOption({ index: 1 });
   const cloudCard = page.getByRole('region', { name: 'Cloud model' });
   await cloudCard.getByRole('button', { name: 'Run cloud model' }).click();
   await expect.poll(() => held !== null, { timeout: 15_000 }).toBe(true);

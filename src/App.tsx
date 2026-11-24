@@ -32,7 +32,8 @@ import { AuditPage } from './features/admin/AuditPage';
 import { ExportPage } from './features/recovery/RecoveryPages';
 import { RecoveryItemPage, RecoveryLayout, RecoveryNothingOpen } from './features/recovery/RecoveryWorklist';
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
-import { AiCheckPage, PracticeComparePage } from './features/ai/AiPages';
+import { AiCheckPage } from './features/ai/AiPages';
+import { PracticeComparePage } from './features/ai/ComparePage';
 import { PrintFormPage, SpoolerPage } from './features/print/PrintPages';
 import { ReportPage } from './features/reports/ReportPage';
 

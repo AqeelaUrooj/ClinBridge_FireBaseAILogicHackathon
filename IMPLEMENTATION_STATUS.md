@@ -131,6 +131,8 @@ Also working:
 
 `/patients/:id/report` draws one of four handwritten-looking sheets from the patient's own Practice records, offline and without AI. Marked synthetic on screen, on the PNG and on paper. Nothing is saved. Refused in Real records. New tables or fields: none.
 
+Device vs Cloud uses the same four sheets as its picture input (the older small drawn form was removed). Both models get the same file; only vital signs that are written on the sheet are compared; no draft is made from a drawn report. Tested with MOCK models only, not yet with a real one.
+
 ## Public prototype introduction
 
 The landing-page branch implements `/landing` with locally bundled Practice screenshots, workflow, capabilities, safeguards and FAQ. The public page renders independently of the vault. `/` shows the same page to visitors who are not signed in; signed-in staff go to their dashboard (see ROUTES.md, Public homepage).

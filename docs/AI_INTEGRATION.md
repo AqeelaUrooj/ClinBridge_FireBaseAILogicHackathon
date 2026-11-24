@@ -30,6 +30,15 @@
   - It is confirmed beside the photo (existing confirm flow). Correction history and the original photo are unchanged. Medication entry has no AI, so high-alert controls are untouched.
   - Seed proposals have no `_ai` block and show "Simulated proposal".
 
+## Device vs Cloud: what the models get and what is compared
+
+- **Input:** the typed note of one vital-sign record, or one of the four handwritten Practice reports (`src/features/reports`) of one fictional patient. The report picture is drawn by the same renderer, from the same loader (`loadReportData`) and with the same export as the patient's report page, as a JPEG of 1600 pixels width (`reportImage`).
+- **One file:** the preview shows the file itself. Both models get this same Blob and the same text (`VITALS_PROMPT` + `reportPrompt`). The SHA-256 is on the page and in the JSON file.
+- **Compared:** only vital signs, with the existing schema. A report holds several sets, so the instructions name the last one by its time. The known values are the values of that set that are really drawn in this picture (`sheetReading` looks them up in the drawn sheet). What is not on the sheet for that time is not known, not a miss and not counted; an answer for it is shown as "Not in this set".
+- **Not compared:** background, diagnoses, medicines, lines, labs, skin, notes, handover. There is no checked schema for them; that would be separate work.
+- **No draft from a report picture.** `entry.raw_input_kind` can only say `typed` or `photo`. A drawn picture saved as `photo` could later be taken for a photo of real paper, so "Review this one as a draft" exists for the typed note only and the page no longer writes to the photo store.
+- **Real records:** refused by the page and by the loader.
+
 ## Two Firebase app instances (found live, 20 Nov 2026)
 
 - The AI SDK reads the App Check provider **once**, when the AI instance is created. So ClinBridge uses two Firebase apps: `clinbridge` (on-device; never gets App Check, so no reCAPTCHA traffic) and `clinbridge-cloud` (cloud; App Check is initialised **before** `getAI()`).

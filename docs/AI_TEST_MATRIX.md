@@ -42,6 +42,8 @@ So the real browser API was exercised for availability only, and ClinBridge's "c
 
 Details: `docs/LIVE_TEST_RESULTS_2026-11-20.md`.
 
+The "synthetic form image" in the live results of 20 and 22 Nov was an older, small drawn form that is no longer in the app. The four handwritten reports that replace it have been tested with MOCK models only. No real model has read them yet.
+
 ## Live results (22 Nov 2026, owner's PC, `main` `6636639`)
 
 | Scenario | Real model? | Result |
@@ -62,7 +64,7 @@ Details: `docs/LIVE_TEST_RESULTS_2026-11-22.md`.
 2. `.env.local` with the Firebase web config and an App Check reCAPTCHA Enterprise site key (or a registered debug token on localhost, development only).
 3. Run, and record what each step actually shows:
    - **System down drill:** photo of a synthetic vitals form → "Propose values from the photo" → note the time and the values.
-   - **Practice → Device vs Cloud:** the synthetic note, then the synthetic form. Note both sources and the differences.
+   - **Practice → Device vs Cloud:** the synthetic note, then the four handwritten reports. Note both sources and the differences.
    - **Back online → Recovery item with a photo → Cloud second look.**
 4. Put the observed results in TEST_REPORT. Until then, ClinBridge must not claim live AI results.
 

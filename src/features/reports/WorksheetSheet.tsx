@@ -78,7 +78,7 @@ export function WorksheetSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen
         {[0, 1, 2].map((i) => {
           const x = 34 + i * 117.3, o = obs[i], v = o?.v;
           return (
-            <g key={i}>
+            <g key={i} data-reading={o?.time}>
               {i > 0 && <V x={x} y={271} h={162} s={1.4} />}
               <Lab x={x + 6} y={291} t={i === 0 ? 'VS:' : ''} /><Box x={x + (i === 0 ? 34 : 8)} y={279} w={11} h={11} s={1.2} />
               {o && <Value x={x + (i === 0 ? 52 : 26)} y={270} w={66} h={30} t={clock(o.time)} size={23} />}
@@ -106,12 +106,12 @@ export function WorksheetSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen
 
         <Shade x={660} y={545} w={408} h={56} /><Lab x={668} y={567} t="Diet:" /><Value x={710} y={546} w={352} h={30} t={e?.diet} size={24} tag="diet" />
         <Lab x={668} y={594} t="Pills:" /><Fill x={712} y={574} w={350} h={46} items={medOrders(d).filter((x) => /by mouth/i.test(x.t)).map((x) => ({ ...x, mark: undefined }))} size={19} min={10} lead={1.05} />
-        <Lab x={668} y={640} t="CBG:" /><Value x={712} y={620} w={350} h={30} t={sugar.map((x) => `${clock(x.time)}: ${x.value}${x.time.slice(0, 10) === d.nowIso.slice(0, 10) ? '' : ` (${shortDay(x.time)})`}`).join('   ') || null} size={23} />
+        <Lab x={668} y={640} t="CBG:" /><Value x={712} y={620} w={350} h={30} t={sugar.map((x) => `${clock(x.time)}: ${x.value}${x.time.slice(0, 10) === d.nowIso.slice(0, 10) ? '' : ` (${shortDay(x.time)})`}`).join('   ') || null} size={23} tag="CBG:" />
         <Shade x={660} y={656} w={408} h={82} /><Lab x={668} y={678} t="Mobility / ADLs / Safety:" /><Fill x={676} y={682} w={386} h={54} items={[...safetyNotes(d), ...d.orders.filter((o) => o.type === 'nursing').map((o) => ({ t: o.text }))]} size={20} min={11} lead={1.08} />
 
         {/* Systems */}
         {([['Neuro:', 34, 738, 352, 218, neuro(d)], ['Resp:', 34, 956, 352, 216, resp(d)], ['CV:', 34, 1172, 352, 218, cardiac(d)], ['GI:', 386, 738, 392, 162, gi(d)], ['GU:', 386, 900, 392, 163, gu(d)], ['Integ:', 386, 1063, 392, 163, [...skinNotes(d), ...d.sites.marked.map((m) => ({ t: m.site }))].filter((x, i, a) => a.findIndex((y) => y.t === x.t) === i)], ['MSK:', 386, 1226, 392, 164, []]] as [string, number, number, number, number, Item[]][]).map(([t, x, y, w, h, items]) => (
-          <g key={t}><Box x={x} y={y} w={w} h={h} s={1.6} /><Lab x={x + 6} y={y + 21} t={t} /><Fill x={x + 12} y={y + 26} w={w - 22} h={h - 32} items={items} size={28} min={15} lead={1.35} slips /></g>
+          <g key={t}><Box x={x} y={y} w={w} h={h} s={1.6} /><Lab x={x + 6} y={y + 21} t={t} /><Fill x={x + 12} y={y + 26} w={w - 22} h={h - 32} items={items} size={28} min={15} lead={1.35} slips tag={t} /></g>
         ))}
         {hours.map(({ h, items }, i) => {
           const y = 738 + i * 108.6;
