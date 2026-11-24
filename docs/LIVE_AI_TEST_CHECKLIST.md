@@ -38,7 +38,7 @@ If P5 shows "Not downloaded yet", "can't run on this laptop" or image input not 
 | A5 | Press **Propose values from the photo**. | Card shows proposed values |
 | A6 | **Is it genuinely on-device?** Check all of: card label **"On this laptop · ONLY_ON_DEVICE · N ms"**; Network log has **no request to any non-localhost host** (no googleapis, firebase, recaptcha, gstatic); `chrome://on-device-internals` shows the model was used (event log, if shown). | Record label, ms, the values, and the external-request count (must be 0) |
 | A7 | **Put these values in the form** → correct anything against the paper → **Review** → **Save as draft** → the entry shows **"Device AI"** → **Check and confirm** beside the photo. | Saved only after nurse review; record the label |
-| A8 | **Failure path:** open http://localhost:5173 in a browser with no on-device AI (e.g. Firefox), Practice, Daniel Okafor → same photo screen → **Propose values from the photo**. | Clear "no on-device AI" message, nothing sent |
+| A8 | **Failure path:** open http://localhost:5173/sign-in in a browser with no on-device AI (e.g. Firefox), Practice, Daniel Okafor → same photo screen → **Propose values from the photo**. | Clear "no on-device AI" message, nothing sent |
 | A9 | In that browser, type the values by hand → Review → **Save**. | Saves as Confirmed; manual entry unaffected |
 | A10 | Back in Chrome, still offline: reload → unlock → sign in → the A7 record is still there. Then turn Wi-Fi back on. | Offline-first holds |
 

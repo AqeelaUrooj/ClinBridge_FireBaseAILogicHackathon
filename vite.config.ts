@@ -23,7 +23,9 @@ export default defineConfig({
         theme_color: '#1c2536',
         background_color: '#f8f9fb',
         display: 'standalone',
-        start_url: '/',
+        // Staff open the installed app to chart: it starts at sign-in, as before. `id` keeps it the same installed app.
+        id: '/',
+        start_url: '/sign-in',
         icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },
     }),

@@ -36,7 +36,7 @@ On-device AI needs **no Firebase cloud setup and no App Check**, only the three 
 
 ## 4. Download and check the model (network on)
 
-1. http://localhost:5173 → **Use practice passphrase** → **Kim Ellis**, PIN 2468 → More → **AI check**.
+1. http://localhost:5173/sign-in → **Use practice passphrase** → **Kim Ellis**, PIN 2468 → More → **AI check**.
 2. Press **Prepare on-device model** and wait for "ready" (can take a long time).
 3. **Check again**: Prompt API OK, text input OK, image input OK.
 4. `chrome://on-device-internals`: note the model name and version.

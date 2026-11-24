@@ -6,8 +6,9 @@ Built = works. No route is a placeholder any more; an unknown address shows an h
 |---|---|---|
 | `/sign-in` | Pick person, PIN, Practice / Real records | Built |
 | `/lock` | Unlock or switch user | Built |
-| `/` | Goes to `/ward` (nurse) or `/admin` (admin) | Built |
-| `/ward` | My patients: search, filters, cards, patient check | Built |
+| `/` | Not signed in: the public landing page. Signed in: goes to `/ward` (nurse) or `/admin` (admin). Screen locked: goes to `/lock` | Built |
+| `/landing` | Public landing page, for everyone | Built |
+| `/ward` | Nurse dashboard (sign-in needed). My patients: search, filters, cards, patient check | Built |
 | `/add` | Add Note / Form: every patient with form shortcuts (vitals, note, photo, medicine, fluids, lab, handover); patient check first | Built |
 | `/alerts` | Alerts & Orders: drafts to check, critical lab results (read-back status), orders per patient (read only) | Built |
 | `/tools/meds` | Ward medication schedule for today (scheduled doses, Given / Due / Held from records) | Built |
@@ -25,7 +26,7 @@ Built = works. No route is a placeholder any more; an unknown address shows an h
 | `/ai` | AI check: browser, Prompt API, on-device model readiness (text / image), Firebase AI Logic init, App Check mode, current cloud permission, inference modes; "Prepare on-device model" | Built |
 | `/drill/compare` | Device vs Cloud (`PracticeComparePage`): fictional input through `ONLY_ON_DEVICE` and, on request, `ONLY_IN_CLOUD`; real source label per answer; cloud blocked in System down; nurse can review an answer as a draft. Practice data only (refused on Real records) | Built (cloud side live-verified 20 and 22 Nov 2026; on-device side hardware-blocked on the test PC) |
 | `/setup` | First-time setup for Real records (first admin + this laptop); reachable before sign-in, works only while no staff exist | Built |
-| `/admin` | Readiness (offline storage, network, storage space, laptop, AI availability, patient list age, change log, drafts, worklist) | Built |
+| `/admin` | Admin dashboard (sign-in needed, nurses are refused). Readiness (offline storage, network, storage space, laptop, AI availability, patient list age, change log, drafts, worklist) | Built |
 | `/admin/downtime` | Declare System down → checklist + admin PIN → Back online → end (only when worklist done) | Built |
 | `/admin/snapshot` | Current patient list; import (Real records only, fake files refused) | Built |
 | `/admin/staff` | Add, switch off/on, new PIN | Built |
@@ -75,4 +76,18 @@ Every patient page and every `/entries/*` page asks for the patient check (name,
 
 Nurses never see admin links, and `/admin/*` refuses non-admins ("Admins only.") even if typed in.
 
-The public `/landing` route renders `LandingPage` outside the clinical providers. Launch Practice Demo opens the existing Practice sign-in flow.
+## Public homepage
+
+`/` (for visitors) and `/landing` render the same `LandingPage` outside the clinical providers: no vault, no database, no patient, no clinical code. Launch Practice Demo opens the existing Practice sign-in flow.
+
+| Visitor state | Opening `/` |
+|---|---|
+| Not signed in | Landing page |
+| Signed in as nurse / admin | `/ward` / `/admin`, with no new sign-in |
+| Screen locked (also after 5 minutes without use) | `/lock` until the PIN; then the dashboard |
+| After "Lock records" or Switch user | Landing page. Everyone is signed out; every clinical address still asks for the unlock and the PIN |
+| After a page load or refresh | Landing page. The session is only in memory and is not restored (by design) |
+
+- `src/Root.tsx` decides. It knows one yes/no from memory (`src/state/signedIn.ts`); that is not a permission. `RequireAuth` still protects every clinical address and sends visitors to `/sign-in`.
+- The installed app opens at `/sign-in`, as before (`start_url` in `vite.config.ts`; `id: '/'` keeps it the same installed app).
+- Launch Practice Demo always opens Practice. On a laptop with Real records, staff open `/sign-in` (or the installed app).
