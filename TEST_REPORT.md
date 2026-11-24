@@ -303,6 +303,14 @@ Not tested yet: screen reader pass, tablet sizes, Firefox/Safari, real Gemini Na
 - `src/lib/handwriting/hand.test.ts`: the layout keeps every word, numbers always in the clear hand, long words never shortened.
 - `e2e/handwritten-report.spec.ts`: patient check, switching patients and designs, zoom, rotate, PNG (right patient, label in the pixels, nothing stored or sent), print on A4 and Letter, offline, Real records, paper capture unchanged, six widths.
 
+### Reports in Device vs Cloud
+
+All answers are MOCK (Prompt API replaced in the page, cloud replaced by a local stand-in). Nothing here is a live model result.
+
+- `src/features/reports/sheetReading.test.tsx`: the compared values are only what is drawn (all patients, all designs), partial sets, hospital-list sets, blood sugar of another time, crossed-out values, other words for consciousness, no vital signs.
+- `src/lib/ai/compare.test.ts`: values that are not in the input never count.
+- `e2e/compare-page.spec.ts`: four designs and two patients; preview against the picture of the patient's report page (under 0.2 % clearly different pixels); both models get the previewed file (SHA-256) and the same text; answers cleared on every change, late answers and late pictures dropped; old pictures released; no on-device model, no picture support, System down, no vital signs, partial set; nothing stored, no draft; typed note unchanged; offline; six widths.
+
 ## Public landing-page branch
 
 The visual correction uses the shared Stitch v1 landing_page_2 and v3 landing HTML. Compared with the first PR #20 version, the header is shorter and adds a status strip, and the pale-blue hero has tighter typography, four compact metric cards, a panoramic workstation photo, and a detailed Practice dashboard. The workflow uses three columns, the clinical showcase uses two photographic panels, and the navy recovery band uses a photo alongside four proof cards. Scope cards take the place of endorsements. The centered accordion retains the ten accurate answers, and the gradient CTA leads to Practice sign-in above a multi-column footer. The photos are original illustrative assets. The responsive layout adapts the desktop reference at tablet and phone widths.

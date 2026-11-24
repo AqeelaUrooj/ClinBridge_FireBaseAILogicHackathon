@@ -1,4 +1,5 @@
 import type { Entry, VitalSign } from '../../db/schema';
+import { hm } from '../time';
 import type { AiRaw, VitalsProposal } from './service';
 
 /**
@@ -16,6 +17,14 @@ export function aiMeta(e: Pick<Entry, 'ai_proposal'>): AiMeta | null {
   const m = (e.ai_proposal as { _ai?: AiMeta } | null | undefined)?._ai;
   return m && m.engine === 'firebase-ai-logic' ? m : null;
 }
+
+/**
+ * Instructions for a drawn report picture, the same for both models. A sheet holds several sets of vital signs; only the
+ * last one is asked for, so that every answer has one right place on the sheet.
+ */
+export const reportPrompt = (time: string) =>
+  `This picture is a handwritten nursing report. Read only the vital signs written for ${hm(time)} (it may be written ${hm(time).replace(':', '')}), the last set on the sheet. ` +
+  'Use null for a value that is not written for that time or is crossed out. Ignore everything on the sheet that is not a vital sign.';
 
 /** Synthetic narrative written from known values (Practice compare input). Clearly fictional. */
 export function syntheticNote(v: Partial<VitalSign>, time: string): string {

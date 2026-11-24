@@ -14,7 +14,7 @@ Rules for this video:
 1. Terminal: `git switch main`, `git pull --ff-only`, `npm run dev`. Open http://localhost:5173 in Chrome, window about 1440 × 900, zoom 100%.
 2. App Check debug token: the one registered on 22 Nov ("DESKTOP-6NQ637E localhost dev (22 Nov)") works in the same Chrome profile. If a cloud call returns 401, register a new token as in `docs/DEMO_WALKTHROUGH.md` (before the demo, step 2), **off camera**.
 3. More → **Reset practice** for clean fictional data.
-4. Make the paper-form photo: More → Device vs Cloud → **Synthetic paper form (image)**, take a screenshot of the form and save it as `paper-form.png` on the Desktop (fictional values).
+4. Make the paper-form photo: write made-up vital signs by hand on a sheet marked "PRACTICE – FICTIONAL", photograph it and save the picture as `paper-form.png` on the Desktop. Do not use a drawn handwritten report: it is synthetic and must not be shown as paper.
 5. Do one cloud call off camera (Device vs Cloud → Run cloud model) so the first App Check exchange (about 11 s) isn't in the video. Then Reset practice again.
 6. Turn off notifications (Windows Focus Assist on). Close other tabs. Hide the bookmarks bar (Ctrl+Shift+B).
 7. Recording: OBS Studio (installed) → Sources → **Window Capture** → the Chrome window. Settings → Output → MKV or MP4, 1080p, 30 fps. Record each scene as its own clip; it's easier to redo one.
@@ -69,6 +69,6 @@ Captions: `docs/DEMO_VIDEO_CAPTIONS.srt` has the same text with the times above.
 Follow `docs/GEMINI_NANO_SECOND_LAPTOP.md` on that laptop. Only if a real on-device answer appears (label showing on-device / `ONLY_ON_DEVICE`, with the network log empty during the call), replace scenes 5 and 10:
 
 - Scene 5 (1:10–1:35): Photo of paper → **Propose values from the photo** → the values appear with the on-device label → nurse checks and saves. Narration: "During the outage, Gemini Nano reads the photo right here on the laptop through Firebase AI Logic. Nothing leaves the device, and the nurse checks every value before saving."
-- Scene 10 (2:42–2:55): More → Device vs Cloud, both answers side by side, each labelled with where it ran. Narration: "The same form, on device and in the cloud, each labelled with where it really ran."
+- Scene 10 (2:42–2:55): More → Device vs Cloud, both answers side by side, each labelled with where it ran. Narration: "The same handwritten Practice report, on device and in the cloud, each labelled with where it really ran."
 
 Then update the Devpost text and `README.md` to say Gemini Nano was verified live, with the date and laptop model.

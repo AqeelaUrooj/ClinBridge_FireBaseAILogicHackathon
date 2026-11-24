@@ -38,8 +38,8 @@ export function PocketSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen; s
         <Value x={42} y={184} w={716} h={54} t={`Allergy: ${allergyText(d) ?? '— not recorded'}`} size={39} tag="allergies" />
         <Value x={42} y={236} w={716} h={46} t={[e?.code_status, e?.isolation ? `${e.isolation} precautions` : ''].filter(Boolean).join(', ') || null} size={35} calm={false} />
         <H x={44} y={290} w={706} s={2.2} c={pen.ink} />
-        {v ? <><Value x={48} y={300} w={710} h={58} t={obs1} size={44} tag="obs" /><Value x={48} y={356} w={710} h={56} t={`${obs2} @ ${clock(o!.time)}${o!.fromList ? ' (hospital list)' : ''}`} size={42} /></> : <NotRecorded x={52} y={340} t="Vital signs: not recorded" />}
-        {body.length ? <Fill x={52} y={416} w={waiting.length ? 520 : 690} h={split - 430} items={body} size={37} min={17} lead={1.28} slips /> : <NotRecorded x={56} y={460} t="No medicines, fluids or notes recorded" />}
+        {v ? <><Value x={48} y={300} w={710} h={58} t={obs1} size={44} tag="obs" /><Value x={48} y={356} w={710} h={56} t={`${obs2} @ ${clock(o!.time)}${o!.fromList ? ' (hospital list)' : ''}`} size={42} tag="obs2" /></> : <NotRecorded x={52} y={340} t="Vital signs: not recorded" />}
+        {body.length ? <Fill x={52} y={416} w={waiting.length ? 520 : 690} h={split - 430} items={body} size={37} min={17} lead={1.28} slips tag="body" /> : <NotRecorded x={56} y={460} t="No medicines, fluids or notes recorded" />}
         {waiting.length > 0 && <><Fill x={600} y={470} w={176} h={150} items={[{ t: 'pending:', under: true }, ...waiting]} size={29} min={15} /><Arrow x1={546} y1={500} x2={590} y2={490} /></>}
         <Value x={46} y={split} w={340} h={54} t="Handoff/Plan" size={45} calm={false} under />
         {open.length ? <Fill x={54} y={split + 62} w={696} h={HH - split - 178} items={open} size={34} min={16} lead={1.26} slips /> : <NotRecorded x={58} y={split + 92} t="No handover or plan recorded" />}

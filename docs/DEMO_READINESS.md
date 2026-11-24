@@ -24,7 +24,7 @@ It is **not** a completed hybrid-AI demonstration until on-device inference runs
 1. Fill `.env.local` per `docs/FIREBASE_SETUP.md`. On localhost use `npm run dev` with the App Check debug token (cloud needs it; reCAPTCHA keys must not list localhost). On a deployed domain use `npm run build` with a reCAPTCHA Enterprise key for that domain.
 2. Laptop: desktop Chrome 148+, with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled and Chrome restarted.
 3. Open ClinBridge once (caches the app). Unlock with **Use practice passphrase**, sign in as Kim Ellis (PIN 2468) → More → **AI check**. Press **Prepare on-device model** and wait for "ready". Every row should be OK. If "Not downloaded" or "can't run" shows, fix that first.
-4. Print or open a synthetic paper vitals form. Or use Device vs Cloud with the synthetic paper form option, which draws one on screen.
+4. Prepare a photo of a sheet with made-up, hand-written vital signs marked "PRACTICE – FICTIONAL". (The drawn reports in Device vs Cloud are for the model comparison only, not for Photo of paper.)
 
 **Scenario 1: hospital outage (on-device only)**
 1. Kim Ellis → Admin → Downtime → **Start a practice outage**. The banner shows SYSTEM DOWN.
@@ -36,7 +36,7 @@ It is **not** a completed hybrid-AI demonstration until on-device inference runs
 
 **Scenario 2: hybrid comparison (Practice)**
 1. Network on. Still in Practice: Admin → Downtime → tick the checklist → PIN → **Clear network: Back online**. Compare's cloud side is blocked in System down.
-2. More → **Device vs Cloud** → pick a fictional record → Synthetic note or Synthetic paper form.
+2. More → **Device vs Cloud** → pick a fictional patient → Handwritten report (one of four designs) or Synthetic note.
 3. **Run on-device model**, then **Run cloud model** (an explicit press). Each card shows its real source and time. The Differences table lists field by field, without saying which is right.
 4. **Review this one as a draft** → confirm screen (nurse review).
 

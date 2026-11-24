@@ -27,7 +27,7 @@ AI is optional. Every record can be typed by hand, and no AI proposal is ever sa
 |---|---|---|
 | **System Down** | On-device only (Gemini Nano in Chrome), if the laptop supports it. No cloud call can start. A cloud call that was already running is aborted and its answer thrown away, but anything it had already sent has left the laptop (that's why cloud only ever runs on Practice data or after clearance). If on-device isn't available, the nurse types the values; nothing goes to the cloud | `ONLY_ON_DEVICE` |
 | **Back Online** (after an admin's network clearance) | Cloud second look at paper-photo records: lists where the cloud reading differs from what the nurse typed. Nothing is changed automatically; fixes are new versions with a reason | `ONLY_IN_CLOUD` |
-| **Practice: Device vs Cloud** | Runs the same fictional note or form photo through each model separately, labelled with where it really ran | both, never mixed |
+| **Practice: Device vs Cloud** | Runs the same fictional note or handwritten Practice report through each model separately, labelled with where it really ran | both, never mixed |
 
 `PREFER_ON_DEVICE` and `PREFER_IN_CLOUD` are never used, because they can switch engines silently.
 

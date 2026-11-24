@@ -48,7 +48,7 @@ Do this yourself: the Claude in Chrome extension can't drive the browser without
 1. Network on: Kim Ellis → Admin → Downtime → **Start a practice outage**.
 2. F12 → Network tab → tick Preserve log → clear.
 3. **Turn Wi-Fi off.** (Not DevTools "Offline": that also blocks the local dev server.)
-4. Switch user → **Daniel Okafor** → a fictional patient → **Photo of paper** → **Vitals sheet** → a synthetic form photo (drawn in Device vs Cloud → "Synthetic paper form (image)", screenshotted beforehand).
+4. Switch user → **Daniel Okafor** → a fictional patient → **Photo of paper** → **Vitals sheet** → a photo of a sheet with made-up, hand-written values marked "PRACTICE – FICTIONAL" (prepared beforehand).
 5. **Propose values from the photo**. Expected: a proposal labelled **"On this laptop · ONLY_ON_DEVICE · N ms"**.
 6. Check the Network log: **no request to any non-localhost host**.
 7. **Put these values in the form** → correct → Review → save as draft → the entry shows **"Device AI"** → **Check and confirm**.

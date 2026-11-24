@@ -21,7 +21,7 @@ Rules for this test:
 | P5 | Open the app → **Use practice passphrase** → Kim Ellis (PIN 2468) → More → **AI check** → **Prepare on-device model**. Wait (can take many minutes). Then **Check again**. | "On-device model ready." Prompt API, text input and image input rows all **OK**; Firebase "Initialised for project …" |
 | P6 | `chrome://on-device-internals` → model status. Note the model name/version shown. | Model listed as ready |
 | P7 | (Optional) DevTools Console on the app tab: `await LanguageModel.availability({ expectedInputs: [{ type: 'text', languages: ['en'] }, { type: 'image' }], expectedOutputs: [{ type: 'text', languages: ['en'] }] })` | `"available"` |
-| P8 | Make a **synthetic paper form**: either More → Device vs Cloud → pick a record → "Synthetic paper form (image)" (drawn on screen, marked PRACTICE · FICTIONAL PATIENT; screenshot it as PNG), or hand-write made-up vitals on paper marked "PRACTICE – FICTIONAL" and photograph it (JPEG/PNG). Write down the values you used. | Known values to compare against |
+| P8 | Make a **synthetic paper form**: hand-write made-up vitals on paper marked "PRACTICE – FICTIONAL" and photograph it (JPEG/PNG). Write down the values you used. | Known values to compare against |
 
 If P5 shows "Not downloaded yet", "can't run on this laptop" or image input not OK, fix that before the scenarios (free disk space, flag, restart Chrome).
 
@@ -50,12 +50,12 @@ If P5 shows "Not downloaded yet", "can't run on this laptop" or image input not 
 |---|---|---|
 | B1 | Network on. Check cloud is **blocked** while System Down: More → **Device vs Cloud** → cloud card. | "Cloud blocked: System down…"; button disabled |
 | B2 | Kim Ellis → Downtime → tick the checklist → PIN → **Clear network: Back online**. | Banner no longer SYSTEM DOWN |
-| B3 | DevTools → Network → clear → filter `generateContent`. More → **Device vs Cloud** → pick a fictional record → **Synthetic paper form (image)**. | Form drawn; known values listed under it |
+| B3 | DevTools → Network → clear → filter `generateContent`. More → **Device vs Cloud** → pick a fictional patient → **Handwritten report (image)** → one of the four designs. | Report drawn (about 3 s); the compared set, its time and its values are listed under it. Note the fingerprint |
 | B4 | **Run on-device model**. | Label "On this laptop · ONLY_ON_DEVICE · N ms"; **no** generateContent request |
 | B5 | **Run cloud model**. Network: one `POST …:generateContent`, status **200**. Click it → **Response** → note `modelVersion`. | Label **"Cloud · ONLY_IN_CLOUD · N ms"**; record status, `modelVersion`, ms. If 401/403 or an App Check error: see FIREBASE_SETUP step 4 |
 | B6 | Look at **Differences** and at both value lists vs the known values. | Record each field: device / cloud / known |
-| B7 | Repeat B4–B6 with **Synthetic note (text)**. | Same records |
-| B8 | On either card → **Review this one as a draft**. | Opens the confirm screen as a **draft**; nothing is confirmed until a nurse presses confirm; label "Device AI" or "Cloud AI" |
+| B7 | Repeat B4–B6 with the other three designs, then with **Synthetic note (text)**. | Same records |
+| B8 | Typed note only (a drawn report makes no draft): on either card → **Review this one as a draft**. | Opens the confirm screen as a **draft**; nothing is confirmed until a nurse presses confirm; label "Device AI" or "Cloud AI" |
 | B9 | (Optional) Mode change: DevTools → Network throttling **Slow 3G** → **Run cloud model** → quickly, in a second tab, Kim Ellis → Downtime → **Start a practice outage**. | First tab: "Cloud answer discarded…"; no cloud values shown. Then set throttling back to "No throttling" |
 
 ---

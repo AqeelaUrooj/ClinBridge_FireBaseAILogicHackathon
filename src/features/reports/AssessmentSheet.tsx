@@ -62,7 +62,7 @@ export function AssessmentSheet({ d, pen, seed, look }: { d: ReportData; pen: Pe
         {!iso && <Print x={872} y={433} t="Not recorded" size={11} italic fill="#80858f" />}
 
         <Box x={10} y={452} w={325} h={988} s={1.8} /><Head x={10} y={452} w={325} t="ASSESSMENTS" />
-        {A.map(([t, y, h, items], i) => <g key={t}>{i > 0 && <H x={10} y={y} w={325} />}<Label x={20} y={y + 25} t={t} /><Fill x={34} y={y + 31} w={290} h={h - 36} items={items} size={25} min={14} slips indent={6} /></g>)}
+        {A.map(([t, y, h, items], i) => <g key={t}>{i > 0 && <H x={10} y={y} w={325} />}<Label x={20} y={y + 25} t={t} /><Fill x={34} y={y + 31} w={290} h={h - 36} items={items} size={25} min={14} slips indent={6} tag={t} /></g>)}
 
         <Box x={342} y={452} w={346} h={248} s={1.8} /><Head x={342} y={452} w={346} t="IV LINES / FLUIDS" />
         <Fill x={358} y={500} w={320} h={188} items={[...ivLines(d), ...d.io.filter((x) => x.x.category.startsWith('iv')).map((x) => ({ t: `IV in ${x.x.volume_ml} mL @ ${hm(x.time)}` }))]} size={25} min={14} lead={1.35} />
@@ -72,7 +72,7 @@ export function AssessmentSheet({ d, pen, seed, look }: { d: ReportData; pen: Pe
         <Box x={342} y={708} w={346} h={268} s={1.8} /><Head x={342} y={708} w={346} t="VITALS/ACCU CHECK" size={22} />
         <V x={412} y={746} h={152} /><V x={508} y={746} h={152} /><H x={342} y={898} w={346} />
         {obs.map((x, i) => (
-          <g key={x.time}>
+          <g key={x.time} data-reading={x.time}>
             <Print x={352} y={770 + i * 38} t={hm(x.time)} size={16} />{x.fromList && <Print x={352} y={780 + i * 38} t="hospital list" size={8.5} italic fill="#80858f" />}
             <Value x={418} y={749 + i * 38} w={86} h={32} t={bp(x.v) || '—'} size={25} />
             <Print x={516} y={772 + i * 38} t="HR" size={14} /><Value x={540} y={749 + i * 38} w={48} h={32} t={x.v.heart_rate?.toString() ?? '—'} size={24} />
@@ -81,7 +81,7 @@ export function AssessmentSheet({ d, pen, seed, look }: { d: ReportData; pen: Pe
         ))}
         {!obs.length && <NotRecorded x={420} y={772} />}
         <Print x={362} y={926} t="ACCU:" size={17} bold />
-        <Fill x={434} y={903} w={248} h={70} items={sugar.map((x) => ({ t: `${hm(x.time)} – ${x.value} ${x.unit}${x.time.slice(0, 10) === d.nowIso.slice(0, 10) ? '' : ` (${shortDay(x.time)})`}`, calm: true }))} size={21} min={14} />
+        <Fill x={434} y={903} w={248} h={70} items={sugar.map((x) => ({ t: `${hm(x.time)} – ${x.value} ${x.unit}${x.time.slice(0, 10) === d.nowIso.slice(0, 10) ? '' : ` (${shortDay(x.time)})`}`, calm: true }))} size={21} min={14} tag="ACCU:" />
 
         <Box x={342} y={985} w={346} h={306} s={1.8} /><Head x={342} y={985} w={346} t="LABS" />
         <V x={520} y={1023} h={231} />
