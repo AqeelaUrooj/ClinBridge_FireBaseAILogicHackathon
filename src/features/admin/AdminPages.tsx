@@ -1,8 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
-import { verifyChain } from '../../db/audit';
 import { addStaff, clearNetwork, declareDowntime, endDowntime, startPracticeOutageDrill, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
 import type { Role } from '../../db/schema';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
@@ -20,9 +19,8 @@ import { createEncryptedBackup, openBackupFile, restoreEncryptedBackup } from '.
 import { ActivateStaffForm, EnrollLaptopCard, JoinUnitForm } from './EnrollmentUi';
 import { isPendingActivation } from '../../db/enrollment';
 import { CleanupCard } from './CleanupUi';
+import { Err, msg } from './adminUi';
 
-const Err = ({ e }: { e: string | null }) => (e ? <p role="alert" className="text-error font-body-md">{e}</p> : null);
-const msg = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
 
 /** Admin area: screens check the role here, and every action checks it again in the database layer. */
 export function AdminLayout() {
@@ -39,68 +37,6 @@ export function AdminLayout() {
       </nav>
       <Outlet />
     </>
-  );
-}
-
-/* ------------------------------ Readiness ------------------------------ */
-
-function Check({ ok, label, detail }: { ok: boolean | null; label: string; detail: ReactNode }) {
-  return (
-    <li className="flex items-start gap-space-sm py-space-sm border-b border-card-border last:border-0">
-      <Icon name={ok === null ? 'help' : ok ? 'check_circle' : 'warning'} filled className={ok === null ? 'text-outline' : ok ? 'text-sync-green' : 'text-downtime-amber'} />
-      <div className="flex-1"><p className="font-semibold text-primary">{label}</p><p className="font-body-sm text-on-surface-variant">{detail}</p></div>
-    </li>
-  );
-}
-
-export function ReadinessPage() {
-  const { db, clock, phase, snapshot, deviceId } = useApp();
-  const [online, setOnline] = useState(navigator.onLine);
-  const [sw, setSw] = useState<boolean | null>(null);
-  const [persisted, setPersisted] = useState<boolean | null>(null);
-  const [quota, setQuota] = useState<{ used: number; total: number } | null>(null);
-  const ai = typeof (globalThis as { LanguageModel?: unknown }).LanguageModel !== 'undefined';
-  useEffect(() => {
-    const on = () => setOnline(navigator.onLine);
-    addEventListener('online', on); addEventListener('offline', on);
-    void navigator.serviceWorker?.getRegistration().then((r) => setSw(!!r?.active)).catch(() => setSw(false));
-    void navigator.storage?.persisted?.().then(setPersisted).catch(() => setPersisted(null));
-    void navigator.storage?.estimate?.().then((e) => setQuota({ used: e.usage ?? 0, total: e.quota ?? 0 })).catch(() => undefined);
-    return () => { removeEventListener('online', on); removeEventListener('offline', on); };
-  }, []);
-  const data = useLiveQuery(async () => ({
-    chain: await verifyChain(await db.audit_log.orderBy('seq').toArray()),
-    device: await db.device.get(deviceId),
-    staff: await db.practitioner.filter((p) => p.active).count(),
-    drafts: await db.entry.where('status').equals('draft').count(),
-    open: await db.worklist_item.filter((w) => !w.signed_off_at).count(),
-  }), [db, deviceId]);
-  const ageH = snapshot ? (clock.now() - Date.parse(snapshot.taken_at)) / 3_600_000 : null;
-  return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-space-lg">
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name="workflows/device" size={28} />This laptop</h2>
-        <ul>
-          <Check ok={sw} label="Works offline" detail={sw ? 'App is stored on this laptop (service worker active).' : 'Open the app once while online to store it.'} />
-          <Check ok={online} label={online ? 'Network: connected' : 'Network: offline'} detail={online ? 'Cloud features are still only allowed in Back online.' : 'Offline work is fine; everything saves on this laptop.'} />
-          <Check ok={persisted} label="Storage kept by the browser" detail={persisted ? 'The browser will not clear this data on its own.' : 'Not guaranteed. Avoid clearing browser data.'} />
-          <Check ok={quota ? quota.used / Math.max(quota.total, 1) < 0.8 : null} label="Storage space" detail={quota ? `${(quota.used / 1e6).toFixed(1)} MB used of ${(quota.total / 1e9).toFixed(1)} GB` : 'Not reported by this browser.'} />
-          <Check ok={data?.device ? true : null} label="Laptop registered" detail={data?.device ? `${data.device.label} · last clock check ${dateTimeLabel(data.device.last_clock_sync)}` : 'This laptop is not in the device list.'} />
-          <Check ok={null} label="On-device AI" detail={ai ? 'Chrome Prompt API found. Whether this laptop can run the model: More → AI check. Manual capture works without it.' : 'Not available here. Manual capture works without it.'} />
-        </ul>
-      </Card>
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm flex items-center gap-2"><MedIllustration name="workflows/checklist" size={28} />Records</h2>
-        <ul>
-          <Check ok={phase !== 'down' ? true : null} label={`Mode: ${PHASE_LABEL[phase]}`} detail={phase === 'down' ? 'Cloud blocked. Nurses chart on this laptop.' : phase === 'online' ? 'Recovery and export allowed.' : 'No downtime open.'} />
-          <Check ok={ageH != null && ageH < 24} label="Patient list" detail={snapshot ? `Taken ${dateTimeLabel(snapshot.taken_at)} (${ageH!.toFixed(0)} h old) from ${snapshot.source_system}` : 'No patient list loaded.'} />
-          <Check ok={data?.chain.ok ?? null} label="Change log" detail={data ? `${data.chain.verified} of ${data.chain.total} rows verified` : 'Checking…'} />
-          <Check ok={(data?.staff ?? 0) > 0} label="Active staff" detail={`${data?.staff ?? 0} people can sign in`} />
-          <Check ok={data ? data.drafts === 0 : null} label="Drafts waiting" detail={`${data?.drafts ?? 0} records still need checking`} />
-          <Check ok={data ? data.open === 0 : null} label="Worklist" detail={`${data?.open ?? 0} items not signed off`} />
-        </ul>
-      </Card>
-    </div>
   );
 }
 
