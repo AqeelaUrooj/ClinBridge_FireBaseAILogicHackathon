@@ -2,12 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
-import { addStaff, clearNetwork, declareDowntime, endDowntime, startPracticeOutageDrill, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
+import { addStaff, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
 import type { Role } from '../../db/schema';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
 import { SECURITY_POLICY } from '../../config/securityPolicy';
-import { PHASE_LABEL } from '../../lib/phase';
 import { dateTimeLabel } from '../../lib/time';
 import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { MedIllustration } from '../../components/MedIllustration';
@@ -37,75 +36,6 @@ export function AdminLayout() {
       </nav>
       <Outlet />
     </>
-  );
-}
-
-/* ------------------------------ Downtime lifecycle ------------------------------ */
-
-export function DowntimePage() {
-  const { db, clock, deviceId, phase, event, dataset } = useApp();
-  const { user } = useSession();
-  const [ticked, setTicked] = useState<string[]>([]);
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const names = useLiveQuery(async () => new Map((await db.practitioner.toArray()).map((p) => [p.id, p.name])), [db]) ?? new Map();
-  const history = useLiveQuery(() => db.downtime_event.orderBy('declared_at').reverse().toArray(), [db]);
-  const actor = { userId: user!.id, deviceId };
-  const run = async (f: () => Promise<unknown>) => { setBusy(true); setError(null); try { await f(); setPin(''); setTicked([]); } catch (e) { setError(msg(e)); } setBusy(false); };
-  return (
-    <div className="flex flex-col gap-space-lg">
-      <Card className="flex flex-col gap-space-md">
-        <h2 className="font-headline-sm text-headline-sm text-primary">Now: {PHASE_LABEL[phase]}</h2>
-        {phase === 'ready' && (
-          <>
-            <p className="text-on-surface-variant">Declare a downtime when the main EHR is down. Nurses then chart here; cloud is blocked.</p>
-            <Button variant="danger" className="self-start" disabled={busy} onClick={() => run(() => declareDowntime(db, clock, actor))}><Icon name="power_off" />Declare System down</Button>
-          </>
-        )}
-        {phase === 'down' && event && (
-          <>
-            <p className="text-on-surface-variant">System down since {dateTimeLabel(event.declared_at)} (declared by {names.get(event.declared_by) ?? event.declared_by}).</p>
-            <fieldset className="flex flex-col gap-1 rounded-lg border border-card-border p-space-md">
-              <legend className={labelCls}>Before Back online (network clearance)</legend>
-              {POLICY.recovery.networkChecklist.map((c) => (
-                <label key={c} className="flex items-center gap-2 min-h-11 cursor-pointer">
-                  <input type="checkbox" className="w-5 h-5" checked={ticked.includes(c)} onChange={(e) => setTicked(e.target.checked ? [...ticked, c] : ticked.filter((x) => x !== c))} />{c}
-                </label>
-              ))}
-              <p className="font-body-sm text-secondary">Checklist wording is a prototype setting, not approved hospital policy.</p>
-            </fieldset>
-            <div className="flex items-end gap-space-sm">
-              <label className="flex flex-col gap-1"><span className={labelCls}>Your PIN again</span>
-                <input type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value)} className={`${fieldCls()} w-40 font-code-tabular`} aria-label="Your PIN again" /></label>
-              <Button disabled={busy || ticked.length !== POLICY.recovery.networkChecklist.length || pin.length !== 4} onClick={() => run(() => clearNetwork(db, clock, actor, ticked, pin))}><Icon name="wifi" />Clear network — Back online</Button>
-            </div>
-          </>
-        )}
-        {phase === 'online' && event && (
-          <>
-            <p className="text-on-surface-variant">Back online since {dateTimeLabel(event.network_cleared_at)} (cleared by {names.get(event.cleared_by ?? '') ?? event.cleared_by}). Finish the worklist, export, then end the downtime.</p>
-            <Button variant="secondary" className="self-start" disabled={busy} onClick={() => run(() => endDowntime(db, clock, actor))}><Icon name="task_alt" />End downtime</Button>
-          </>
-        )}
-        <Err e={error} />
-      </Card>
-      {dataset === 'practice' && phase !== 'down' && (
-        <Card className="flex flex-col gap-space-sm">
-          <h2 className="font-headline-sm text-headline-sm text-primary">Practice drill</h2>
-          <p className="text-on-surface-variant">Start a new outage on the fictional ward: the current practice downtime is closed (marked as a drill) and System down is declared. Practice data only.</p>
-          <Button variant="danger" className="self-start" disabled={busy} onClick={() => run(() => startPracticeOutageDrill(db, clock, actor))}><Icon name="power_off" />Start a practice outage</Button>
-        </Card>
-      )}
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">History</h2>
-        <ul>{(history ?? []).map((h) => (
-          <li key={h.id} className="py-space-sm border-b border-card-border last:border-0 font-body-md">
-            <strong className="text-primary">{h.id}</strong> · down {dateTimeLabel(h.declared_at)} · back online {h.network_cleared_at ? dateTimeLabel(h.network_cleared_at) : '—'} · ended {h.ended_at ? dateTimeLabel(h.ended_at) : '—'}
-          </li>
-        ))}</ul>
-      </Card>
-    </div>
   );
 }
 
