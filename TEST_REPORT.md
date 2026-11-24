@@ -303,6 +303,8 @@ The visual correction uses the shared Stitch v1 landing_page_2 and v3 landing HT
 
 `e2e/landing.spec.ts` covers 360, 390, 768, 1024 and 1440 CSS pixels, menu focus, keyboard FAQ controls, protected routes, the Practice sign-in entry point, public storage isolation, offline reload and full-page screenshots.
 
+`e2e/homepage.spec.ts` covers `/`: the public page with no database opened and no clinical code loaded, the way from the page to the ward board, nurse and admin redirects without a new sign-in, the locked screen, Switch user, Lock records, page loads, direct addresses with refresh, offline use and the installed-app start address. With the landing page always shown at `/`, six of these tests fail.
+
 ## Collapsed history readability
 
 At 390 px a saved Practice metoprolol tartrate 250 mg administration used 237 px of text in an 89 px single-line summary. The regression follows its correction to 25 mg, shows the old version and checks both summaries fit at 390 and 1440 px. It also checks keyboard expansion, status badges and page overflow. The phone row gives the text more space and all record summaries wrap, including notes, fluids, labs and vitals. Screenshots are under `screens/history-doses-*.png` in the browser-test artifacts.

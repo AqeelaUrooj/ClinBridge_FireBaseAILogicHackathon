@@ -74,7 +74,7 @@ test('installed public page reloads offline without opening a vault', async ({ p
   expect(await page.evaluate(() => indexedDB.databases())).toEqual([]);
 });
 
-for (const route of ['/', '/ward', '/admin', '/patients/pt-01', '/entries/e-022', '/spooler', '/print/mar/pt-01']) {
+for (const route of ['/ward', '/admin', '/patients/pt-01', '/entries/e-022', '/spooler', '/print/mar/pt-01']) {
   test(`unauthenticated ${route} still requires sign-in`, async ({ page }) => {
     await page.goto(route);
     await expect(page).toHaveURL(/\/sign-in$/);

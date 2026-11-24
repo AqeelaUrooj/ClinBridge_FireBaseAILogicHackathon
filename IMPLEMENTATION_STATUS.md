@@ -129,4 +129,4 @@ Also working:
 
 ## Public prototype introduction
 
-The landing-page branch implements `/landing` with locally bundled Practice screenshots, workflow, capabilities, safeguards and FAQ. The public page renders independently of the vault.
+The landing-page branch implements `/landing` with locally bundled Practice screenshots, workflow, capabilities, safeguards and FAQ. The public page renders independently of the vault. `/` shows the same page to visitors who are not signed in; signed-in staff go to their dashboard (see ROUTES.md, Public homepage).

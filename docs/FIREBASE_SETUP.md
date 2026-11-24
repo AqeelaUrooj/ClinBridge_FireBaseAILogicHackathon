@@ -61,7 +61,7 @@ After editing `.env.local`, restart `npm run dev` (Vite reads it at start).
 
 ## 6. Check it
 
-Open http://localhost:5173 → **Use practice passphrase** → sign in as Kim Ellis (PIN 2468) → More → **AI check**:
+Open http://localhost:5173/sign-in → **Use practice passphrase** → sign in as Kim Ellis (PIN 2468) → More → **AI check**:
 
 - "Firebase AI Logic: Initialised for project *your-project-id*" → config read.
 - "App Check (cloud only): reCAPTCHA Enterprise site key set; DEBUG token mode (development build only)" → ready for local cloud tests.

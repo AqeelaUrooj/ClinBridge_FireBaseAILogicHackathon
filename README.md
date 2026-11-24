@@ -46,7 +46,7 @@ npm ci
 npm run dev          # http://localhost:5173
 ```
 
-1. **Unlock:** press **Use practice passphrase** (`practice only fake patients`; public on purpose, it protects only fake data). Real records get their own passphrase and recovery key at first-time setup.
+1. **Open and unlock:** the address shows the public page; press **Launch Practice Demo** (or open `/sign-in`). Then press **Use practice passphrase** (`practice only fake patients`; public on purpose, it protects only fake data). Real records get their own passphrase and recovery key at first-time setup.
 2. **Sign in:** pick any person, PIN **2468** (Practice only). Nurses (RN) chart; Kim Ellis (Admin) runs downtime and recovery.
 3. **Try an outage:** as Admin → Downtime Management → **Start a practice outage**. Chart as a nurse. Then Admin → Downtime Management → tick the checks → **Clear network — Back online** → Recovery Gate & Worklist.
 

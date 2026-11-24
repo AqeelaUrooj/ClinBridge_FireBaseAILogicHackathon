@@ -15,6 +15,7 @@ import type { DowntimeEvent, Practitioner, Snapshot } from '../db/schema';
 import { derivePhase, currentEvent, type Phase } from '../lib/phase';
 import { liveClock, practiceClock, type Clock } from '../lib/time';
 import { publishCloudContext, type CloudContext } from '../lib/cloudGate';
+import { setSignedIn } from './signedIn';
 
 /** Fresh read of the authoritative phase for the cloud gate (right before a cloud request is sent, and after it returns). */
 export async function readCloudContext(db: DowntimeDB, dataset: Dataset): Promise<CloudContext> {
@@ -257,7 +258,10 @@ export const AUTO_LOCK_MS = 5 * 60_000;
 
 export function SessionProvider({ children, autoLockMs = AUTO_LOCK_MS }: { children: ReactNode; autoLockMs?: number }) {
   const { dataset, vault, clock } = useApp();
-  const [user, setUser] = useState<Practitioner | null>(null);
+  const [user, setUserState] = useState<Practitioner | null>(null);
+  // The entry point is told in the same step, so it never shows the public page over a session that just started.
+  const setUser = useCallback((p: Practitioner | null) => { setSignedIn(p !== null); setUserState(p); }, []);
+  useEffect(() => () => setSignedIn(false), []); // this memory goes away with the clinical app
   const [locked, setLocked] = useState(false);
   const [lockInfo, setLockInfo] = useState<LockInfo | null>(null);
   const [verifiedPatientId, setVerified] = useState<string | null>(null);
@@ -269,14 +273,14 @@ export function SessionProvider({ children, autoLockMs = AUTO_LOCK_MS }: { child
     setUser(null);
     setLocked(false);
     setVerified(null);
-  }, [dataset]);
+  }, [dataset, setUser]);
   useEffect(() => {
     if (vault === 'locked') {
       setUser(null);
       setLocked(false);
       setVerified(null);
     }
-  }, [vault]);
+  }, [vault, setUser]);
 
   const lockFor = useCallback((reason: LockInfo['reason']) => {
     setLocked(true);
