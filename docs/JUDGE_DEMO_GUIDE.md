@@ -4,9 +4,9 @@ ClinBridge keeps nursing documentation going when the hospital's EHR is down. Th
 
 ## Live website
 
-Not online yet. The address is added here after the owner approved the deployment and it was tested.
+**https://clinbridge-hackathon.web.app** (released and tested on 24 Nov 2026: [RELEASE_REPORT_2026-11-24.md](RELEASE_REPORT_2026-11-24.md))
 
-Until then, on your own computer: `npm ci`, `npm run build:judge`, `npm run preview:judge`, then open http://localhost:4175.
+Or on your own computer: `npm ci`, `npm run build:judge`, `npm run preview:judge`, then open http://localhost:4175.
 
 ## Install it (Windows laptop, Chrome or Edge)
 

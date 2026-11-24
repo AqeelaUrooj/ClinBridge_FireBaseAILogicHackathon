@@ -139,4 +139,4 @@ The landing-page branch implements `/landing` with locally bundled Practice scre
 
 ## Public judge website
 
-`npm run build:judge`: the landing page and the Practice app as one installable web app, for Firebase Hosting (`firebase.json`). Practice only (the database layer refuses Real records, first-time setup is not in the code). Install button with the browser's own dialog or instructions. Not deployed. The key of the encrypted records is dropped when the clinical app is left. New tables or fields: none.
+`npm run build:judge`: the landing page and the Practice app as one installable web app, for Firebase Hosting (`firebase.json`). Practice only (the database layer refuses Real records, first-time setup is not in the code). Install button with the browser's own dialog or instructions. Live at https://clinbridge-hackathon.web.app since 24 Nov 2026 (docs/RELEASE_REPORT_2026-11-24.md). The key of the encrypted records is dropped when the clinical app is left. New tables or fields: none.
