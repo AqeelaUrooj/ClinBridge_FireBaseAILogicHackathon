@@ -237,9 +237,13 @@ export function useApp(): AppState {
 
 /* ---------------- Session (signed-in nurse, lock, verified patient) ---------------- */
 
+/** Why and when the screen was locked. Kept only in memory, shown on the lock screen. */
+export interface LockInfo { reason: 'idle' | 'person'; at: string }
+
 interface SessionState {
   user: Practitioner | null;
   locked: boolean;
+  lockInfo: LockInfo | null;
   verifiedPatientId: string | null;
   signIn: (p: Practitioner) => void;
   unlock: () => void;
@@ -252,9 +256,10 @@ const SessionCtx = createContext<SessionState | null>(null);
 export const AUTO_LOCK_MS = 5 * 60_000;
 
 export function SessionProvider({ children, autoLockMs = AUTO_LOCK_MS }: { children: ReactNode; autoLockMs?: number }) {
-  const { dataset, vault } = useApp();
+  const { dataset, vault, clock } = useApp();
   const [user, setUser] = useState<Practitioner | null>(null);
   const [locked, setLocked] = useState(false);
+  const [lockInfo, setLockInfo] = useState<LockInfo | null>(null);
   const [verifiedPatientId, setVerified] = useState<string | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
@@ -273,16 +278,18 @@ export function SessionProvider({ children, autoLockMs = AUTO_LOCK_MS }: { child
     }
   }, [vault]);
 
-  const lock = useCallback(() => {
+  const lockFor = useCallback((reason: LockInfo['reason']) => {
     setLocked(true);
+    setLockInfo({ reason, at: clock.nowIso() });
     setVerified(null);
-  }, []);
+  }, [clock]);
+  const lock = useCallback(() => lockFor('person'), [lockFor]);
 
   useEffect(() => {
     if (!user || locked) return;
     const reset = () => {
       window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(lock, autoLockMs);
+      timer.current = window.setTimeout(() => lockFor('idle'), autoLockMs);
     };
     reset();
     const evs = ['pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
@@ -291,11 +298,12 @@ export function SessionProvider({ children, autoLockMs = AUTO_LOCK_MS }: { child
       window.clearTimeout(timer.current);
       evs.forEach((e) => window.removeEventListener(e, reset));
     };
-  }, [user, locked, lock, autoLockMs]);
+  }, [user, locked, lockFor, autoLockMs]);
 
   const value: SessionState = {
     user,
     locked,
+    lockInfo,
     verifiedPatientId,
     signIn: (p) => {
       setUser(p);
