@@ -39,7 +39,7 @@ Nurses chart. The admin declares the outage, clears the network and runs the rec
 7. Close the window, open it again: what you saved is still there.
 8. Switch Wi-Fi on. The banner still says SYSTEM DOWN: a network alone clears nothing.
 9. **Kim Ellis** → Downtime Management → tick the three checks → PIN → **Clear network — Back online** → Recovery Gate & Worklist.
-10. More → Export: **Prepare export file** → FHIR R4 file for the EHR team. ClinBridge does not send it anywhere.
+10. Recovery Gate & Worklist → **Export** → **Prepare export file** → FHIR R4 file for the EHR team. ClinBridge does not send it anywhere.
 
 Optional, only while Back online and when cloud AI is set up for this site: More → **Device vs Cloud**.
 

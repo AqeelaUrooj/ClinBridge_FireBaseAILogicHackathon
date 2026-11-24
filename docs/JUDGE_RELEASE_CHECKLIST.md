@@ -1,5 +1,7 @@
 # Release checklist for the public judge website
 
+Open tests on the live site: [PHYSICAL_OFFLINE_TESTS.md](PHYSICAL_OFFLINE_TESTS.md) (install dialog, Wi-Fi off, Windows restart) and [GEMINI_NANO_VERIFICATION_CHECKLIST.md](GEMINI_NANO_VERIFICATION_CHECKLIST.md) (on-device AI).
+
 For the owner. `PROJECT` stands for the approved Firebase project ID. Every step marked **APPROVAL** needs a separate yes. Fictional Practice data only. Background: [DEPLOYMENT.md](../DEPLOYMENT.md). What judges read: [JUDGE_DEMO_GUIDE.md](JUDGE_DEMO_GUIDE.md).
 
 ## 1. Before anything is public

@@ -1,5 +1,7 @@
 # Gemini Nano on a second (compatible) Windows laptop
 
+Shorter way without any set-up, on the live site: [GEMINI_NANO_VERIFICATION_CHECKLIST.md](GEMINI_NANO_VERIFICATION_CHECKLIST.md). This file is the local development route.
+
 Goal: one genuine on-device inference run (Demo B), on synthetic data only. Nothing here is verified yet; record results only after they really happen.
 
 ## 1. Check the laptop first (5 minutes, no installs)
