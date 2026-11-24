@@ -20,6 +20,10 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      # Public judge website: its own build, release check and browser tests.
+      - run: npm run build:judge
+      - run: npm run check:judge
+      - run: npm run test:judge
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

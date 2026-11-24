@@ -30,6 +30,14 @@
 .lp-kicker { display: inline-block; border: 1px solid #d2dce6; border-radius: 20px; background: #f8fbff; color: var(--muted); padding: 4px 12px; }
 .lp-intro { max-width: 655px; margin: auto; color: #45474c; }
 .lp-actions { gap: 12px; justify-content: center; flex-wrap: wrap; margin: 25px 0; }
+.lp-install { max-width: 655px; margin: -8px auto 26px; padding: 12px 16px; background: #fff; border: 1px solid #d1d9e2; border-radius: 6px; display: grid; gap: 6px; font-size: .82rem; color: var(--muted); }
+.lp-install > p:first-child { color: #45474c; font-size: .9rem; }
+.lp-install-result { color: var(--ink); font-weight: 700; }
+.lp-install-help { display: grid; gap: 6px; background: var(--tint); border-radius: 4px; padding: 10px 12px; color: #33475b; text-align: left; }
+.lp-install-offline { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 650; color: #2f4a60; }
+.lp-install-offline .material-symbols-outlined { font-size: 18px; }
+.lp-actions .material-symbols-outlined { font-size: 20px; }
+.lp-cta .lp-secondary { margin: 18px 0 0 12px; color: #fff; background: transparent; border-color: #6d8295; }
 .lp-metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); max-width: 1000px; margin: 0 auto 24px; gap: 9px; text-align: left; }
 .lp-metrics li { padding: 10px 13px; background: #fff; border-left: 3px solid #bad5f0; min-height: 108px; }
 .lp-metrics li > div, .lp-step-status { display: flex; justify-content: space-between; gap: 6px; align-items: center; }

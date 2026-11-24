@@ -89,7 +89,7 @@ export function EnrollLaptopCard() {
 
 /** Laptop 2: first-time setup → "Join this unit". */
 export function JoinUnitForm() {
-  const { db, clock, vaultCreated } = useApp();
+  const { db, clock, vaultCreated, exclusive } = useApp();
   const navigate = useNavigate();
   const [text, setText] = useState<string | null>(null);
   const [fp, setFp] = useState<string | null>(null);
@@ -146,7 +146,7 @@ export function JoinUnitForm() {
     <div className="flex flex-col gap-space-md">
       {code ? (
         <>
-          <RecoveryCodeConfirm code={code} onConfirmed={() => void finish()} confirmLabel={busy ? 'Setting up…' : 'Join and encrypt'} />
+          <RecoveryCodeConfirm code={code} onConfirmed={() => void exclusive(finish)} confirmLabel={busy ? 'Setting up…' : 'Join and encrypt'} />
           <Button variant="ghost" className="self-start" disabled={busy} onClick={() => setCode(null)}>Back</Button>
         </>
       ) : !pkg ? (

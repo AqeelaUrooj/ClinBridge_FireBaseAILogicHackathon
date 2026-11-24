@@ -1,3 +1,4 @@
+import { PUBLIC_DEMO } from '../../config/publicDemo';
 import { useState } from 'react';
 import { useApp } from '../../state/app';
 import { Button, Icon } from '../../components/ui';
@@ -101,14 +102,14 @@ export function UnlockVault() {
             <Icon name="lock" className="text-primary" />
             <h1 id="unlock-title" className="font-headline-lg text-headline-lg text-primary">Unlock records on this laptop</h1>
           </div>
-          <div className="grid grid-cols-2 gap-space-sm" role="radiogroup" aria-label="Which records">
+          {!PUBLIC_DEMO && <div className="grid grid-cols-2 gap-space-sm" role="radiogroup" aria-label="Which records">
             {(['practice', 'live'] as const).map((d) => (
               <button key={d} role="radio" aria-checked={dataset === d} onClick={() => { setError(null); setDataset(d); }}
                 className={`min-h-12 rounded-lg border px-3 text-left ${dataset === d ? 'border-primary bg-surface-container-low' : 'border-card-border bg-surface-container-lowest'}`}>
                 <span className="block font-headline-sm text-headline-sm text-primary">{d === 'practice' ? 'Practice' : 'Real records'}</span>
               </button>
             ))}
-          </div>
+          </div>}
 
           {newCode ? (
             <RecoveryCodeConfirm code={newCode} onConfirmed={() => { setNewCode(null); finishRecovery(); }} confirmLabel="Done, open the records" />

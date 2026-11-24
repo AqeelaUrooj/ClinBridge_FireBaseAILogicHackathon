@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { LandingPage } from './features/landing/LandingPage';
+import { NewerVersion } from './components/NewerVersion';
 import { useSignedIn } from './state/signedIn';
 
 const ClinicalApplication = lazy(() => import('./ClinicalApplication'));
@@ -17,10 +18,14 @@ function Entry() {
 }
 
 export function Root() {
+  const signedIn = useSignedIn();
   return (
-    <Routes>
-      <Route path="/landing" element={<LandingPage />} />
-      <Route path="*" element={<Entry />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/landing" element={<LandingPage />} />
+        <Route path="*" element={<Entry />} />
+      </Routes>
+      {!signedIn && <NewerVersion />}
+    </>
   );
 }

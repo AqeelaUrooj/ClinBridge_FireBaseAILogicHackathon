@@ -8,6 +8,8 @@ import { FRONT_DETAIL, SHAPES, SILHOUETTE } from '../body/anatomy';
 import bedside from './assets/bedside.jpg';
 import tablet from './assets/tablet.jpg';
 import handover from './assets/handover.jpg';
+import { PUBLIC_DEMO } from '../../config/publicDemo';
+import { InstallPractice } from './InstallPractice';
 import './landing.css';
 
 const sections = [
@@ -15,6 +17,9 @@ const sections = [
   ['hybrid-ai', 'Hybrid AI'], ['recovery', 'Recovery'], ['faq', 'FAQ'],
 ] as const;
 const repository = 'https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon';
+
+/** Shown only when the owner sets a real address for the build. */
+const video: string = import.meta.env.VITE_DEMO_VIDEO_URL ?? '';
 
 const metrics = [
   ['Charting', 'Offline-first', 'Document on the configured laptop', 'offline_bolt'],
@@ -134,7 +139,13 @@ export function LandingPage() {
             <p className="lp-kicker"><i /> Offline-first nursing documentation</p>
             <h1>When the EHR goes down,<br />{' '}<em>nursing documentation continues.</em></h1>
             <p className="lp-intro">Chart locally, keep a paper backup and prepare for recovery. Explore the workflow with fictional Practice records.</p>
-            <div className="lp-actions"><DemoLink /><a className="lp-secondary" href="#features">Explore Features ↓</a></div>
+            {PUBLIC_DEMO ? (
+              <InstallPractice launch={<DemoLink />}>
+                <a className="lp-secondary" href={repository}>View Project on GitHub</a>
+                {video.startsWith('https://') && <a className="lp-secondary" href={video}>Watch Demo Video</a>}
+                <a className="lp-secondary" href="#features">Explore Features ↓</a>
+              </InstallPractice>
+            ) : <div className="lp-actions"><DemoLink /><a className="lp-secondary" href="#features">Explore Features ↓</a></div>}
             <ul className="lp-metrics">{metrics.map(([label, value, detail, icon]) => (
               <li key={label}><div><small>{label}</small><Icon name={icon} /></div><strong>{value}</strong><p>{detail}</p></li>
             ))}</ul>
@@ -191,7 +202,7 @@ export function LandingPage() {
           <div className="lp-centered"><p className="lp-label">Prototype details</p><h2>Frequently asked questions</h2></div>
           {questions.map(([question, answer]) => <details key={question}><summary>{question}<Icon name="expand_more" /></summary><p>{answer}</p></details>)}
         </div></section>
-        <section className="lp-cta"><div className="lp-wrap"><h2>Walk through a Practice shift</h2><p>Explore local charting, paper backup and structured recovery with fictional records.</p><DemoLink /></div></section>
+        <section className="lp-cta"><div className="lp-wrap"><h2>Walk through a Practice shift</h2><p>Explore local charting, paper backup and structured recovery with fictional records.</p><DemoLink />{PUBLIC_DEMO && <a className="lp-secondary" href="#install">Install Practice App</a>}</div></section>
       </main>
       <footer className="lp-footer">
         <div className="lp-footer-strip"><div className="lp-wrap"><span><Icon name="description" /> Prototype documentation</span><div><a href="#workflow">Offline workflow</a><a href="#recovery">Recovery and export</a><a href="#faq">Practice FAQ</a></div></div></div>
@@ -200,7 +211,7 @@ export function LandingPage() {
           <nav aria-label="Footer features"><h3>Platform</h3><a href="#features">Clinical workflows</a><a href="#hybrid-ai">Paper capture and AI</a><a href="#recovery">Recovery and export</a></nav>
           <nav aria-label="Footer navigation"><h3>Project</h3><a href={repository}>GitHub source</a><a href={repository + '/blob/main/LICENSE'}>Apache-2.0 license</a><a href="#faq">FAQ</a></nav>
           <div><h3>Practice</h3><DemoLink /></div>
-          <p className="lp-footer-note">ClinBridge source is available under Apache-2.0. Practice screens contain fictional records.</p>
+          <p className="lp-footer-note">ClinBridge source is available under Apache-2.0. Practice screens contain fictional records.{PUBLIC_DEMO && <> <a href="/third-party-licenses.txt">Licenses of fonts and code</a></>}</p>
         </div>
       </footer>
     </div>

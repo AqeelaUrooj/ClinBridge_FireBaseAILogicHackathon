@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import { encryptionMiddleware, setVaultMode } from './encryption';
+import { PUBLIC_DEMO } from '../config/publicDemo';
 import type {
   ActiveOrder, Allergy, AuditLog, Device, DowntimeEvent, Encounter, Entry, Handoff, IntakeOutput,
   KeyStore, LabEvent, MedAdmin, Note, Patient, Practitioner, Snapshot, SnapshotResult, VitalSign, WorklistItem,
@@ -70,6 +71,7 @@ export class DowntimeDB extends Dexie {
 
   constructor(public readonly dataset: Dataset, name = `downtimekit-${dataset}`) {
     super(name);
+    if (PUBLIC_DEMO && dataset !== 'practice') throw new Error('The public demo has fictional Practice records only.');
     // Version 1 = final 19-table schema. Never edit a released version; add a new one for each migration.
     this.version(1).stores(V1_STORES);
     // Version 2 (P-02, approved): adds optional entry.change_reason. No new table, no index change, still 19 tables.

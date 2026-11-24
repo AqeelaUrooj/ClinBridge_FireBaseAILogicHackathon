@@ -9,6 +9,10 @@
 
 Why not cut the figures out of the reference sheet: in the Theme 2 figures the chest and head are painted dark as a sample selection, callout lines run into the body, and each figure is only about 330 × 600 px. Removing those would mean repainting the image.
 
+## App icons (`public/`)
+
+`icon.svg` is ClinBridge's own mark. `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` (mark inside the safe circle) and `apple-touch-icon.png` are drawn from it with `node scripts/make-icons.mjs`. No outside artwork.
+
 ## Icons (`src/assets/medical/`)
 
 Cut from the supplied reference sheet (Theme 2 column) with `scripts/extract_icons.py`, with a transparent background, square and 57–200 px. WebP, 1.3–8 KB each, about 80 KB in total. Registry and component: `src/components/MedIllustration.tsx`.

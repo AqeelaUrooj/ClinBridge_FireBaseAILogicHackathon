@@ -61,6 +61,7 @@ Everything above works with no Firebase setup and no network.
 | `npm run dev` | Start the dev server |
 | `npm run build` | Typecheck and build the offline app into `dist/` |
 | `npm run preview` | Serve the built app on port 4173 |
+| `npm run build:judge` · `check:judge` · `preview:judge` · `test:judge` | Public judge website: Practice only, installable ([docs/JUDGE_DEMO_GUIDE.md](docs/JUDGE_DEMO_GUIDE.md), [DEPLOYMENT.md](DEPLOYMENT.md)) |
 | `npm run typecheck` | TypeScript strict check |
 | `npm run lint` | ESLint |
 | `npm test` | Unit tests (Vitest) |

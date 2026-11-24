@@ -322,3 +322,13 @@ The visual correction uses the shared Stitch v1 landing_page_2 and v3 landing HT
 ## Collapsed history readability
 
 At 390 px a saved Practice metoprolol tartrate 250 mg administration used 237 px of text in an 89 px single-line summary. The regression follows its correction to 25 mg, shows the old version and checks both summaries fit at 390 and 1440 px. It also checks keyboard expansion, status badges and page overflow. The phone row gives the text more space and all record summaries wrap, including notes, fluids, labs and vitals. Screenshots are under `screens/history-doses-*.png` in the browser-test artifacts.
+
+## Public judge website
+
+- `src/state/lifecycle.test.tsx`: leaving the clinical app during the first start, at rest, during an unlock, and switching the data set always ends locked; a cut-off first start is completed; cloud requests stop. All six fail on the code before.
+- `src/lib/install.test.ts`, `src/db/publicDemo.test.ts`: install states (nothing is claimed before the browser reports it); a Real database cannot be made in the public build.
+- `scripts/check-judge-build.mjs`: the files of the build itself.
+- `e2e-judge/website.spec.ts`: public pages with the hosting headers, manifest, icons, Chrome's installability check, every answer of the install dialog, Practice only, nurse / admin / locked, leaving to the public page, direct addresses with refresh, four widths.
+- `e2e-judge/offline.spec.ts`: the website's server is really stopped: first start, outage with charting and all four handwritten reports, browser restart, recovery, export; a newer version that waits; a cut-off first visit and a cut-off first start.
+- `e2e-judge/ai.spec.ts`: no Firebase project; App Check before the cloud request, System down block, no fallback, Content-Security-Policy. MOCK answers only, nothing reaches Google.
+- By hand, 24 Nov 2026, Windows 10, real Chrome 157, new profile: Chrome offered the installation, the app was installed through Chrome's own installer (started by a test command, not by a click in its dialog), Start menu entry, own window at `/sign-in`, vitals saved, window closed, website stopped, started again from the Start menu, record still there, uninstalled (entry gone, record kept, installable again). The website was `localhost`. Not done: the click in Chrome's dialog, a Wi-Fi switch, a real hosting address.
