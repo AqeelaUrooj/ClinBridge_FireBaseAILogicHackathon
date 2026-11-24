@@ -2,21 +2,17 @@ import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
-import { addStaff, firstTimeSetup, resetStaffPin, setStaffActive } from '../../db/repos/admin';
-import type { Role } from '../../db/schema';
+import { firstTimeSetup } from '../../db/repos/admin';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
 import { SECURITY_POLICY } from '../../config/securityPolicy';
-import { dateTimeLabel } from '../../lib/time';
 import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
-import { MedIllustration } from '../../components/MedIllustration';
 import { fieldCls, labelCls } from '../charting/TwoStepEditor';
 import { PassphraseHelp, RecoveryCodeConfirm } from '../auth/UnlockVault';
 import { auditVaultEvent, createVault, isUnlocked } from '../../db/vault';
 import { checkPassphrase, newRecoveryCode } from '../../lib/vaultCrypto';
 import { createEncryptedBackup, openBackupFile, restoreEncryptedBackup } from '../../db/encryptedBackup';
-import { ActivateStaffForm, EnrollLaptopCard, JoinUnitForm } from './EnrollmentUi';
-import { isPendingActivation } from '../../db/enrollment';
+import { JoinUnitForm } from './EnrollmentUi';
 import { CleanupCard } from './CleanupUi';
 import { Err, msg } from './adminUi';
 
@@ -36,87 +32,6 @@ export function AdminLayout() {
       </nav>
       <Outlet />
     </>
-  );
-}
-
-/* ------------------------------ Staff ------------------------------ */
-
-export function StaffPage() {
-  const { db, clock, deviceId } = useApp();
-  const { user } = useSession();
-  const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
-  const [form, setForm] = useState({ name: '', initials: '', role: 'RN' as Role, pin: '' });
-  const [pinFor, setPinFor] = useState<{ id: string; pin: string } | null>(null);
-  const [activating, setActivating] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const actor = { userId: user!.id, deviceId };
-  const run = async (f: () => Promise<unknown>, after?: () => void) => { setError(null); try { await f(); after?.(); } catch (e) { setError(msg(e)); } };
-  return (
-    <div className="flex flex-col gap-space-lg">
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Staff on this laptop</h2>
-        <ul>{(staff ?? []).map((p) => (
-          <li key={p.id} className="flex flex-wrap items-center gap-space-md min-h-14 border-b border-card-border last:border-0">
-            <span className="w-10 h-10 rounded-full bg-secondary-fixed grid place-items-center font-bold">{p.initials}</span>
-            <span className="flex-1 font-semibold">{p.name}</span>
-            <Badge tone={p.role === 'admin' ? 'navy' : 'blue'}>{p.role === 'admin' ? 'Admin' : p.role}</Badge>
-            {!p.active ? <Badge>Switched off</Badge> : isPendingActivation(p) ? <Badge tone="amber">Needs activation</Badge> : <Badge tone="green">Active</Badge>}
-            {isPendingActivation(p)
-              ? <Button variant="secondary" disabled={!p.active} onClick={() => setActivating(p.id)}>Activate</Button>
-              : <Button variant="secondary" onClick={() => setPinFor({ id: p.id, pin: '' })}>New PIN</Button>}
-            <Button variant={p.active ? 'danger' : 'secondary'} onClick={() => run(() => setStaffActive(db, clock, actor, p.id, !p.active))}>{p.active ? 'Switch off' : 'Switch on'}</Button>
-          </li>
-        ))}</ul>
-        {activating && staff?.find((x) => x.id === activating) && <ActivateStaffForm person={staff.find((x) => x.id === activating)!} onDone={() => setActivating(null)} />}
-        {pinFor && (
-          <div className="flex items-end gap-space-sm mt-space-md">
-            <label className="flex flex-col gap-1"><span className={labelCls}>New 4-digit PIN for {staff?.find((s) => s.id === pinFor.id)?.name}</span>
-              <input type="password" inputMode="numeric" maxLength={4} value={pinFor.pin} onChange={(e) => setPinFor({ ...pinFor, pin: e.target.value })} className={`${fieldCls()} w-40`} aria-label="New PIN" /></label>
-            <Button onClick={() => run(() => resetStaffPin(db, clock, actor, pinFor.id, pinFor.pin), () => setPinFor(null))}>Save PIN</Button>
-            <Button variant="ghost" onClick={() => setPinFor(null)}>Cancel</Button>
-          </div>
-        )}
-      </Card>
-      <Card className="flex flex-col gap-space-sm">
-        <h2 className="font-headline-sm text-headline-sm text-primary">Add a person</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-space-md">
-          <label className="flex flex-col gap-1"><span className={labelCls}>Name</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldCls()} aria-label="Name" /></label>
-          <label className="flex flex-col gap-1"><span className={labelCls}>Initials</span><input value={form.initials} maxLength={3} onChange={(e) => setForm({ ...form, initials: e.target.value })} className={fieldCls()} aria-label="Initials" /></label>
-          <label className="flex flex-col gap-1"><span className={labelCls}>Role</span>
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className={fieldCls()} aria-label="Role"><option value="RN">RN</option><option value="LPN">LPN</option><option value="admin">Admin</option></select></label>
-          <label className="flex flex-col gap-1"><span className={labelCls}>4-digit PIN</span><input type="password" inputMode="numeric" maxLength={4} value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value })} className={fieldCls()} aria-label="PIN" /></label>
-        </div>
-        <Button className="self-start" onClick={() => run(() => addStaff(db, clock, actor, form), () => setForm({ name: '', initials: '', role: 'RN', pin: '' }))}><Icon name="person_add" />Add</Button>
-        <p className="font-body-sm text-secondary">What each role may do follows the UI/UX role table. Second-checker eligibility is a prototype setting (see Settings).</p>
-      </Card>
-      <Err e={error} />
-    </div>
-  );
-}
-
-/* ------------------------------ Devices, audit, settings ------------------------------ */
-
-export function DevicesPage() {
-  const { db, deviceId } = useApp();
-  const devices = useLiveQuery(() => db.device.toArray(), [db]);
-  const counts = useLiveQuery(async () => { const m = new Map<string, number>(); (await db.entry.toArray()).forEach((e) => m.set(e.device_id, (m.get(e.device_id) ?? 0) + 1)); return m; }, [db]);
-  return (
-    <div className="flex flex-col gap-space-lg">
-    <Card>
-      <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Laptops</h2>
-      <ul>{(devices ?? []).map((d) => (
-        <li key={d.id} className="flex flex-wrap items-center gap-space-md min-h-14 border-b border-card-border last:border-0">
-          <MedIllustration name="workflows/device" size={26} />
-          <span className="flex-1"><strong className="text-primary">{d.label}</strong> <span className="text-secondary">· {d.id} · {d.unit}</span></span>
-          <span className="font-body-sm text-on-surface-variant">Last clock check {dateTimeLabel(d.last_clock_sync)}</span>
-          <span className="font-body-sm text-on-surface-variant">{counts?.get(d.id) ?? 0} records</span>
-          {d.id === deviceId && <Badge tone="navy">This laptop</Badge>}
-        </li>
-      ))}</ul>
-      <p className="font-body-sm text-secondary mt-space-sm">Each record keeps its laptop and a counter, so clock problems can be found in Recovery.</p>
-    </Card>
-    <EnrollLaptopCard />
-    </div>
   );
 }
 
