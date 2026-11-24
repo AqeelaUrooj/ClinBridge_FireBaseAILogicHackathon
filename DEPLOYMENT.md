@@ -57,7 +57,7 @@ There is no `.firebaserc`: the project is named in each command, so nothing is p
 
 ### Firebase project
 
-Seen in the Firebase console on 24 Nov 2026 (read only): there is a project for this hackathon, on the **no-cost Spark plan**. **Hosting is not set up there yet.** The console says that since October 2026 the first Hosting site of a project is made on demand, so the owner may have to press **Hosting → Get started** once. Do not use a clinical or private project, and do not upgrade the plan for this.
+Seen in the Firebase console on 24 Nov 2026 (read only): there is a project for this hackathon, on the **no-cost Spark plan**. The Firebase CLI (25 Nov) shows that its Hosting site already exists; nothing has to be activated. Do not use a clinical or private project, and do not upgrade the plan for this.
 
 ### AI and App Check on the website (optional)
 
@@ -66,7 +66,7 @@ The public build does **not** read `.env.local`. Without more, everything works 
 1. Copy `hosting/.env.example` to `hosting/.env.local` (never committed) and fill in the web app settings of the approved demo project. They become public; the App Check debug switch is always off in this build.
 2. Google Cloud → reCAPTCHA → the website's key → **Domains**: add the exact host name of the preview and of the final site. Not `localhost`. A changed preview host name must be added again.
 3. Firebase → App Check → the web app is registered with that key; **Firebase AI Logic stays Enforced**.
-4. Google Cloud → Credentials → the browser API key: limit it to the website's addresses (HTTP referrers) and to the Firebase AI Logic, App Check and Installations APIs. Keep the AI Logic quota low: the site is public.
+4. Google Cloud → Credentials → the browser API key: limited to the website's addresses (HTTP referrers) and to the Firebase AI Logic and Firebase App Check APIs; AI Logic limit 5 per minute per user (set on 24 Nov 2026, docs/LIVE_TEST_RESULTS_2026-11-24.md).
 5. After the deployment: one cloud run in Device vs Cloud (Back online), and one blocked run in System down.
 
 Firebase Authentication, Firestore and Storage are not used; there are no "authorized domains" to set for them.

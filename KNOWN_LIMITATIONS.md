@@ -24,7 +24,7 @@
 - **Phone-width screens** work (menu behind a header button; tested at 390 px) but the app is designed for ward laptops. Paper sheets scroll sideways inside their own box on a phone; print from a laptop.
 - **Date picker format** follows the browser's language setting (may show month/day order). Saved times are ISO with the ward's offset.
 - **Icon font is large** (~4 MB, cached once for offline). Can be subset later.
-- **The public judge build is not a security boundary.** It opens Practice only, but the source is public and everything runs on the visitor's computer (docs/JUDGE_DEMO_GUIDE.md). Installation was tested on Windows 10 with Chrome only; not with Edge, macOS, phones, and not yet from a real hosting address.
+- **The public judge build is not a security boundary.** It opens Practice only, but the source is public and everything runs on the visitor's computer (docs/JUDGE_DEMO_GUIDE.md). Installation was tested on Windows 10 with Chrome only (also from the Firebase preview address); not with Edge, macOS or phones.
 - **A newer version waits** until every ClinBridge window is closed. Someone who never closes it keeps the old version.
 - **One browser tab at a time.** Writes are ordered inside one tab; two tabs writing at the same moment retry, but this is not fully tested.
 - **Clinical policy is a prototype.** High-alert list partial, second-checker roles not approved, no timing policy (More → Clinical settings shows this).
