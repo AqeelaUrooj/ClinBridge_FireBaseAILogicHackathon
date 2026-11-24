@@ -34,3 +34,7 @@ Licence note: the reference sheet was supplied by the project owner as an AI-gen
 ## Landing-page photography
 
 The bedside workstation, tablet, and shift-handover photographs in `src/features/landing/assets` are original OpenAI ImageGen illustrations of fictional people and settings. The work used the project-owned Stitch layout as a composition reference, and the bundled JPEGs have no third-party photo dependency. The dashboard is static React markup with illustrative Practice values and the project's existing anatomy artwork. The gallery uses cropped screenshots from fictional Practice workflows.
+
+## Synthetic handwritten reports
+
+Drawn by the program when they are opened (`src/features/reports`, `src/lib/handwriting`). There are no report picture files per patient. The four designs follow the layout of reference sheets the project owner supplied; the reference pictures themselves are not in the repository and no name, value or logo was taken from them. Handwriting fonts: see `NOTICE`. `src/features/landing/assets/report.jpg` is a crop of such a report without name or MRN, with the synthetic label; it replaces `paper.png` (a strip of three buttons).

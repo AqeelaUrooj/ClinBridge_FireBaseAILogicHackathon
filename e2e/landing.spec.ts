@@ -35,8 +35,8 @@ for (const width of [1440, 1024, 768, 390, 360]) {
     await expect(page.locator('details[open]')).toHaveCount(0);
     await page.getByRole('button', { name: 'Patient history' }).click();
     await expect(page.getByAltText(/Oxygen saturation trend/)).toBeVisible();
-    await page.getByRole('button', { name: 'Paper forms' }).click();
-    await expect(page.getByAltText(/paper-form selector/)).toBeVisible();
+    await page.getByRole('button', { name: 'Paper report' }).click();
+    await expect(page.getByAltText(/synthetic handwritten Practice report/)).toBeVisible();
     await page.getByRole('button', { name: 'Bedside charting' }).click();
     await expect(page.locator('.lp-metrics > li')).toHaveCount(4);
     await expect(page.locator('.lp-steps > li')).toHaveCount(3);

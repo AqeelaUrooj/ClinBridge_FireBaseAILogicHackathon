@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import charting from './assets/charting.png';
-import paper from './assets/paper.png';
+import report from './assets/report.jpg';
 import trend from './assets/trend.png';
 import { Icon } from '../../components/ui';
 import { FRONT_DETAIL, SHAPES, SILHOUETTE } from '../body/anatomy';
@@ -39,7 +39,7 @@ const safeguards = [
 const previews = [
   { title: 'Bedside charting', image: charting, alt: 'Practice charting shortcuts for medicines, vitals, fluids, notes and paper photos.' },
   { title: 'Patient history', image: trend, alt: 'Oxygen saturation trend from the fictional Practice history.' },
-  { title: 'Paper forms', image: paper, alt: 'The Practice paper-form selector with MAR, vitals and SBAR options.' },
+  { title: 'Paper report', image: report, alt: 'Part of a synthetic handwritten Practice report: assessments, IV lines and plan. Not a medical record.' },
 ];
 
 const questions = [

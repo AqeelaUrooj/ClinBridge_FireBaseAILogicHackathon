@@ -67,7 +67,7 @@ function whenText(nowIso: string, iso: string): string {
 
 export function PatientSummary() {
   const { patient } = useCurrentPatient();
-  const { db, clock } = useApp();
+  const { db, clock, dataset } = useApp();
   const { user, lock } = useSession();
   const navigate = useNavigate();
   const data = useLiveQuery(async () => {
@@ -250,6 +250,7 @@ export function PatientSummary() {
         <ButtonLink variant="secondary" to={`/print/mar/${patient.id}`}>Medication record (DT-MAR-01)</ButtonLink>
         <ButtonLink variant="secondary" to={`/print/vit/${patient.id}`}>Vitals, neuro and I/O (DT-VIT-02)</ButtonLink>
         <ButtonLink variant="secondary" to={`/print/sbar/${patient.id}`}>SBAR handover (DT-SBAR-03)</ButtonLink>
+        {dataset === 'practice' && <ButtonLink variant="secondary" to={`/patients/${patient.id}/report`}><Icon name="draw" />View handwritten report (synthetic)</ButtonLink>}
         <Button onClick={() => { lock(); navigate('/lock'); }}><Icon name="lock" />Quick lock</Button>
       </Card>
     </>

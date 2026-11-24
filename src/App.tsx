@@ -34,6 +34,7 @@ import { RecoveryItemPage, RecoveryLayout, RecoveryNothingOpen } from './feature
 import { NotBuilt, AddPage, AlertsPage, MorePage } from './features/misc/Pages';
 import { AiCheckPage, PracticeComparePage } from './features/ai/AiPages';
 import { PrintFormPage, SpoolerPage } from './features/print/PrintPages';
+import { ReportPage } from './features/reports/ReportPage';
 
 function RequireAuth() {
   const { user, locked } = useSession();
@@ -87,6 +88,8 @@ export function App() {
           {/* Paper downtime forms (DT-MAR-01, DT-VIT-02, DT-SBAR-03) and the packet builder. The app frame is hidden when printing. */}
           <Route path="/print/:kind/:id" element={<PrintFormPage />} />
           <Route path="/spooler" element={<SpoolerPage />} />
+          {/* Synthetic handwritten report (Practice only). Outside PatientLayout: it prints its own sheet. */}
+          <Route path="/patients/:id/report" element={<ReportPage />} />
           <Route path="/drill/compare" element={<PracticeComparePage />} />
           <Route path="/ai" element={<AiCheckPage />} />
           <Route path="/admin" element={<AdminLayout />}>
