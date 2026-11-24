@@ -27,7 +27,7 @@ const PLAIN = 'inline-flex items-center gap-1 min-h-11 px-3 rounded-lg border bo
  */
 export function Timeline() {
   const { patient } = useCurrentPatient();
-  const { db, event, clock } = useApp();
+  const { db, event, clock, dataset } = useApp();
   const { user } = useSession();
   const entries = useLiveQuery(() => listPatientEntries(db, patient.id), [db, patient.id]);
   const staff = useLiveQuery(() => db.practitioner.toArray(), [db]);
@@ -167,6 +167,7 @@ export function Timeline() {
             <button type="button" onClick={() => window.print()} className="flex items-center gap-space-sm min-h-11 px-space-md rounded-lg bg-surface-container-low text-primary hover:bg-surface-container font-body-md text-body-md font-semibold text-left">
               <Icon name="print" /><span className="flex-1">Print history</span><span className="font-body-sm text-body-sm font-normal text-secondary">or save as PDF</span>
             </button>
+            {dataset === 'practice' && <ActionRow to={`${base}/report`} icon="draw" label="Handwritten report (synthetic)" />}
           </Card>
 
           <Card className="flex flex-col gap-space-sm shadow-sm" aria-label="Care team">

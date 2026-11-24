@@ -16,6 +16,10 @@ app (dist/) bundles code from these packages, among others:
 - Inter typeface via @fontsource/inter (SIL Open Font License 1.1,
   Copyright 2016 The Inter Project Authors, https://github.com/rsms/inter).
   The font files remain under the OFL 1.1, not the Apache License.
+- Handwriting typefaces for the synthetic Practice reports, via @fontsource
+  (SIL Open Font License 1.1, each font under its own copyright): Caveat,
+  Kalam, Nothing You Could Do, Architects Daughter, Indie Flower, Covered By
+  Your Grace, Just Me Again Down Here. The font files remain under the OFL 1.1.
 
 Design and artwork
 ------------------

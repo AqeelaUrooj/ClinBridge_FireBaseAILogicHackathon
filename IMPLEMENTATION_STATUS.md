@@ -127,6 +127,10 @@ Also working:
 - Print views for the medicine schedule and vitals flowsheet, a screen-reader pass.
 - Owner decisions on note templates and print audit, listed in docs/V3_ZIP_COMPLETION_REPORT.md section 12.
 
+## Synthetic handwritten reports (Practice only)
+
+`/patients/:id/report` draws one of four handwritten-looking sheets from the patient's own Practice records, offline and without AI. Marked synthetic on screen, on the PNG and on paper. Nothing is saved. Refused in Real records. New tables or fields: none.
+
 ## Public prototype introduction
 
 The landing-page branch implements `/landing` with locally bundled Practice screenshots, workflow, capabilities, safeguards and FAQ. The public page renders independently of the vault. `/` shows the same page to visitors who are not signed in; signed-in staff go to their dashboard (see ROUTES.md, Public homepage).

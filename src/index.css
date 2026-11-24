@@ -53,6 +53,9 @@
   .print-break { break-before: page; }
   .print-sheet thead { display: table-header-group; }
   .print-sheet { font-size: 9.5pt; }
+  /* Synthetic Practice report: one sheet that fits A4 and Letter. */
+  .report-print { break-inside: avoid; }
+  .report-print svg { display: block; width: 100%; height: auto; max-height: 234mm; margin: 0 auto; }
 }
 
 /* Paper downtime forms on screen: shown as a sheet of paper. */
