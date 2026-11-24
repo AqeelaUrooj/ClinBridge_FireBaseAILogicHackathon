@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useApp, useSession, isAdmin } from './state/app';
+import { PUBLIC_DEMO } from './config/publicDemo';
 import { AppShell } from './components/AppShell';
 import { SignIn, LockScreen } from './features/auth/SignIn';
 import { UnlockVault } from './features/auth/UnlockVault';
@@ -71,7 +72,7 @@ export function App() {
       <Route path="/sign-in" element={<SignIn />} />
       <Route path="/lock" element={<LockScreen />} />
       {/* Reachable before anyone exists: the page itself only works while Real records has no staff. */}
-      <Route path="/setup" element={<main className="min-h-screen bg-background p-space-md md:p-space-xl flex flex-col items-center gap-space-lg"><SetupPage /></main>} />
+      <Route path="/setup" element={PUBLIC_DEMO ? <Navigate to="/sign-in" replace /> : <main className="min-h-screen bg-background p-space-md md:p-space-xl flex flex-col items-center gap-space-lg"><SetupPage /></main>} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route index element={<Home />} />

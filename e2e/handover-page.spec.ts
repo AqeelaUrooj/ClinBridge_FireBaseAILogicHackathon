@@ -124,6 +124,7 @@ for (const width of [1440, 1024, 768, 390, 360]) {
     for (const path of ['/patients/pt-09/handoff', '/patients/pt-09/handoff/new']) {
       await goTo(page, path);
       await expect(page.getByRole('heading', { name: path.endsWith('new') ? 'New handover' : 'SBAR handover' })).toBeVisible();
+      await page.evaluate(() => Promise.all(Array.from(document.fonts as unknown as Iterable<FontFace>).map((f) => f.load().catch(() => undefined))).then(() => undefined)); // icons are text until their font is there
       const r = await page.evaluate(() => {
         const W = document.documentElement.clientWidth;
         const skip = (e: Element) => !!e.closest('[aria-label="Patient pages"], [aria-label^="Vital signs table"]');

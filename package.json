@@ -8,11 +8,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 4173",
+    "build:judge": "tsc -b && vite build --mode judge",
+    "check:judge": "node scripts/check-judge-build.mjs",
+    "preview:judge": "vite preview --mode judge --port 4175 --strictPort",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:judge": "playwright test --config playwright.judge.config.ts",
     "preview:e2e-ai": "vite build --mode e2e-ai --outDir dist-e2e-ai && vite preview --outDir dist-e2e-ai --port 4174"
   },
   "dependencies": {

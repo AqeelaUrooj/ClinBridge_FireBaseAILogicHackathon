@@ -1,3 +1,4 @@
+import { PUBLIC_DEMO } from '../config/publicDemo';
 import { useEffect, useRef, useState, type Ref, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -64,7 +65,7 @@ export function ModeBanner({ onMenu, menuOpen, menuRef }: { menuRef?: Ref<HTMLBu
       </div>
       {dataset === 'practice' && (
         <div className="h-6 flex items-center gap-space-sm px-space-md font-label-uppercase text-[10px] tracking-wider text-white" style={{ background: 'repeating-linear-gradient(135deg,#4a6078 0 14px,#3e5468 14px 28px)' }}>
-          <Icon name="school" className="text-[14px]" />PRACTICE · FAKE PATIENTS ONLY · NOT A CLINICAL RECORD
+          <Icon name="school" className="text-[14px]" />PRACTICE · FAKE PATIENTS ONLY · NOT A CLINICAL RECORD{PUBLIC_DEMO && <span className="hidden md:inline">· PUBLIC DEMO: NEVER ENTER REAL PATIENT DETAILS</span>}
         </div>
       )}
       {vault === 'plain-data' && (

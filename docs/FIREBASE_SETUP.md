@@ -8,7 +8,7 @@ On-device AI (Scenario A) needs only steps 1–2 and 5. Cloud AI (Scenarios B an
 ## 1. Project and web app
 
 1. Firebase console → create a project (or open the one you want to use).
-2. Project settings → **Your apps** → **Add app** → Web. Give it a name (e.g. "ClinBridge local"). Firebase Hosting is not needed.
+2. Project settings → **Your apps** → **Add app** → Web. Give it a name (e.g. "ClinBridge local"). Firebase Hosting is not needed for local use (public website: DEPLOYMENT.md).
 3. Keep the config page open: you need `apiKey`, `authDomain`, `projectId`, `appId`, `messagingSenderId` in step 5.
 
 ## 2. Firebase AI Logic
@@ -69,5 +69,7 @@ Open http://localhost:5173/sign-in → **Use practice passphrase** → sign in a
 Before committing anything, run `git status` and make sure `.env.local` is **not** listed.
 
 ## Optional: deployed test (Vercel or any HTTPS host)
+
+The public judge website has its own settings file (`hosting/.env.local`): see DEPLOYMENT.md, Public judge website.
 
 Not needed for the hackathon test. If you deploy, add the deployed domain to the reCAPTCHA key (step 3), set the same variables (without `VITE_FIREBASE_APPCHECK_DEBUG`) in the host's environment settings, and build with `npm run build`. Then App Check uses real reCAPTCHA and no debug token is involved.

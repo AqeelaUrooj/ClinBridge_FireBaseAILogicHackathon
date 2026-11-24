@@ -136,3 +136,7 @@ Device vs Cloud uses the same four sheets as its picture input (the older small 
 ## Public prototype introduction
 
 The landing-page branch implements `/landing` with locally bundled Practice screenshots, workflow, capabilities, safeguards and FAQ. The public page renders independently of the vault. `/` shows the same page to visitors who are not signed in; signed-in staff go to their dashboard (see ROUTES.md, Public homepage).
+
+## Public judge website
+
+`npm run build:judge`: the landing page and the Practice app as one installable web app, for Firebase Hosting (`firebase.json`). Practice only (the database layer refuses Real records, first-time setup is not in the code). Install button with the browser's own dialog or instructions. Not deployed. The key of the encrypted records is dropped when the clinical app is left. New tables or fields: none.

@@ -5,6 +5,8 @@ import type { Practitioner } from '../../db/schema';
 import { verifyPin } from '../../lib/crypto';
 import { AUTO_LOCK_MS, useApp, useSession } from '../../state/app';
 import { PRACTICE_PIN } from '../../db/seed';
+import { PUBLIC_DEMO } from '../../config/publicDemo';
+import { useOfflineReady } from '../../lib/offlineCopy';
 import { PHASE_LABEL } from '../../lib/phase';
 import { dateTimeLabel, hm, sinceText } from '../../lib/time';
 import { Badge, Button, Icon } from '../../components/ui';
@@ -106,6 +108,18 @@ function Frame({ children }: { children: ReactNode }) {
   );
 }
 
+/** Public demo only: what this is, and whether it can be used without internet yet. */
+function DemoNote() {
+  const offline = useOfflineReady();
+  return (
+    <div role="note" aria-label="Public demo" className={`${BOX} flex flex-col gap-1 font-body-md text-body-md text-on-surface-variant`}>
+      <p className="font-bold text-primary">Public demo: fictional patients only</p>
+      <p>Never type real patient details and never photograph a real paper form here.</p>
+      <p role="status" className="flex items-center gap-1"><Icon name={offline ? 'offline_pin' : 'downloading'} className="text-[18px]" />{offline ? 'Saved in this browser. It now opens without internet.' : 'Saving the app for offline use. Stay online until this is done.'}</p>
+    </div>
+  );
+}
+
 export function SignIn() {
   const { db, dataset, setDataset, ready, bootError, snapshot, clock, vault } = useApp();
   const { signIn } = useSession();
@@ -150,7 +164,7 @@ export function SignIn() {
               <Small icon="schedule" label="Screen lock" value={`${AUTO_LOCK_MS / 60_000} min`} note="Without use" />
               <Small icon="pin" label="Wrong PIN" value={`${MAX_TRIES} tries`} note="Then wait 1 min" />
             </div>
-            <div className="flex flex-col gap-space-sm">
+            {PUBLIC_DEMO ? <DemoNote /> : <div className="flex flex-col gap-space-sm">
               <span className="font-label-uppercase text-label-uppercase text-slate-muted">WHICH RECORDS</span>
               <div className="grid grid-cols-2 gap-space-sm" role="radiogroup" aria-label="Which records">
                 {(['practice', 'live'] as const).map((d) => (
@@ -161,7 +175,7 @@ export function SignIn() {
                   </button>
                 ))}
               </div>
-            </div>
+            </div>}
             <p className={`${BOX} flex items-start gap-space-sm font-body-md text-body-md text-on-surface-variant mt-auto`}><Icon name="verified_user" />Your own PIN opens your session. What you save is kept on this laptop under your name.</p>
             {bootError && <p role="alert" className="text-error font-semibold">Could not open the records: {bootError}</p>}
           </section>
@@ -173,6 +187,8 @@ export function SignIn() {
             </div>
             {!ready ? (
               <p role="status" className="text-secondary">Opening records on this laptop…</p>
+            ) : staff.length === 0 && PUBLIC_DEMO ? (
+              <p role="status" className="text-secondary">Loading the fictional staff… If this stays, reload the page.</p>
             ) : staff.length === 0 ? (
               <div className="flex flex-col gap-space-sm">
                 <p className="font-body-lg text-body-lg">This laptop is not set up for real records yet.</p>

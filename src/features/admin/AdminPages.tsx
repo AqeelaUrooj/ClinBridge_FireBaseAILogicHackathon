@@ -35,7 +35,7 @@ export function AdminLayout() {
 /* ------------------------------ First-time setup (Real records) ------------------------------ */
 
 export function SetupPage() {
-  const { db, clock, dataset, vaultCreated } = useApp();
+  const { db, clock, dataset, vaultCreated, exclusive } = useApp();
   const navigate = useNavigate();
   const staffCount = useLiveQuery(() => db.practitioner.count(), [db]);
   const [f, setF] = useState({ name: '', initials: '', pin: '', deviceLabel: '', unit: '', pass1: '', pass2: '' });
@@ -137,7 +137,7 @@ export function SetupPage() {
         </>
       ) : (
         <>
-          <RecoveryCodeConfirm code={code} onConfirmed={() => void finish()} confirmLabel={busy ? 'Setting up…' : restore ? 'Restore and encrypt' : 'Create admin and encrypt'} />
+          <RecoveryCodeConfirm code={code} onConfirmed={() => void exclusive(finish)} confirmLabel={busy ? 'Setting up…' : restore ? 'Restore and encrypt' : 'Create admin and encrypt'} />
           <Button variant="ghost" className="self-start" disabled={busy} onClick={() => setCode(null)}>Back</Button>
         </>
       )}

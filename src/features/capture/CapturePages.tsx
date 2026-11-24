@@ -1,3 +1,4 @@
+import { PUBLIC_DEMO } from '../../config/publicDemo';
 import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
@@ -141,6 +142,7 @@ export function CapturePage() {
                 <span aria-hidden className="w-20 h-5 -mt-2 rounded bg-outline-variant grid place-items-center"><span className="w-10 h-1.5 rounded bg-surface-container-lowest" /></span>
                 <MedIllustration name="workflows/paper-photo" size={72} />
                 <p className="font-body-md text-on-surface-variant">Lay the form flat, in good light, with all four corners in the picture. The photo is saved here before anything is typed.</p>
+                {PUBLIC_DEMO && <p className="rounded-lg bg-downtime-amber-bg border border-downtime-amber-border p-space-sm text-[#5c400c] font-semibold">Public demo: use a made-up sheet only, never a real patient’s paper.</p>}
                 <label className="inline-flex items-center gap-2 min-h-12 px-space-lg rounded-lg bg-primary text-on-primary font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-secondary">
                   <Icon name="photo_camera" />{busy ? 'Saving…' : 'Take or choose photo'}
                   <input type="file" accept="image/*" capture="environment" className="sr-only" data-testid="photo-input" disabled={busy} onChange={(e) => void onFile(e.target.files?.[0])} />

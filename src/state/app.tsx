@@ -7,6 +7,7 @@ import {
   auditVaultEvent, createVault, detectVault, isUnlocked, lockVault, peekVault, readVaultRow, recoverVault, refreshPlainAllowance, resealLegacyRows,
   unlockFromRow, type UnlockSecret,
 } from '../db/vault';
+import { PUBLIC_DEMO } from '../config/publicDemo';
 import { PUBLIC_PRACTICE_PASSPHRASE, SECURITY_POLICY } from '../config/securityPolicy';
 import { importPracticeSeed } from '../db/seed';
 import { openWithMigration } from '../db/backup';
@@ -47,6 +48,8 @@ interface AppState {
   lockRecords: () => void;
   /** First-time setup of Real records: vault created before any record. */
   vaultCreated: () => void;
+  /** Run work that puts a key in memory, so leaving the clinical app waits for it and then locks. */
+  exclusive: <T>(work: () => Promise<T>) => Promise<T>;
   /** After recover(): the new recovery key has been shown and confirmed; open the records. */
   finishRecovery: () => void;
 }
@@ -57,6 +60,7 @@ const DATASET_KEY = 'dtk.dataset'; // app preference only, never clinical data
 const PRACTICE_DEVICE = 'dev-01';   // the practice story runs on laptop DT-4W-01
 
 function readDataset(): Dataset {
+  if (PUBLIC_DEMO) return 'practice'; // whatever an older build stored on this address
   try {
     if (window.location.pathname === '/sign-in' && new URLSearchParams(window.location.search).get('demo') === 'practice') {
       localStorage.setItem(DATASET_KEY, 'practice');
@@ -66,6 +70,19 @@ function readDataset(): Dataset {
   } catch {
     return 'practice';
   }
+}
+
+/**
+ * Work that puts a vault key in memory (start-up, unlock, recovery, first-time setup), one at a time per database.
+ * Leaving the clinical app or switching the data set adds a lock to the end of the same line, so a key never outlives
+ * the app that asked for it, and half-finished work (the first Practice load) is completed before it locks.
+ */
+const lanes = new Map<string, Promise<unknown>>();
+
+function inLane<T>(dbName: string, work: () => Promise<T>): Promise<T> {
+  const next = (lanes.get(dbName) ?? Promise.resolve()).then(work);
+  lanes.set(dbName, next.catch(() => undefined));
+  return next;
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -101,7 +118,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setReady(false);
     setVault('booting');
     setBootError(null);
-    (async () => {
+    void inLane(db.name, async () => {
+      if (cancelled) return;
       try {
         const peek = await peekVault(db.name);
         if (peek.row) {
@@ -130,13 +148,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         if (!cancelled) setBootError(e instanceof Error ? e.message : String(e));
       }
-    })();
+    });
     return () => {
       cancelled = true;
+      // The idle lock goes away with this app (public page) or data set, so the key must go too.
+      void inLane(db.name, async () => { if (isUnlocked(db)) lockVault(db); });
     };
   }, [db, dataset, clock, bootDevice]);
 
-  const unlock = useCallback(async (secret: UnlockSecret) => {
+  const unlock = useCallback((secret: UnlockSecret) => inLane(db.name, async () => {
     const peek = await peekVault(db.name);
     if (!peek.row) throw new Error('There is no encrypted vault on this laptop for these records.');
     await unlockFromRow(db.name, peek.row, secret);
@@ -149,9 +169,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lockVault(db);
       throw e;
     }
-  }, [db, clock, bootDevice, openAndFinish]);
+  }), [db, clock, bootDevice, openAndFinish]);
 
-  const recover = useCallback(async (recoveryCode: string, newPassphrase: string) => {
+  const recover = useCallback((recoveryCode: string, newPassphrase: string) => inLane(db.name, async () => {
     const peek = await peekVault(db.name);
     if (!peek.row) throw new Error('There is no encrypted vault on this laptop for these records.');
     await unlockFromRow(db.name, peek.row, { recovery: recoveryCode });
@@ -164,7 +184,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       lockVault(db);
       throw e;
     }
-  }, [db, clock, bootDevice, openAndFinish]);
+  }), [db, clock, bootDevice, openAndFinish]);
 
   const lockRecords = useCallback(() => {
     if (!isUnlocked(db)) return;
@@ -199,8 +219,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     publishCloudContext({ dataset, phase: usable ? phaseNow : 'down' });
   }, [dataset, phaseNow, usable]);
+  useEffect(() => () => publishCloudContext({ dataset, phase: 'down' }), [dataset]); // nobody watches the phase any more: stop cloud requests
 
   const setDataset = useCallback((d: Dataset) => {
+    if (PUBLIC_DEMO) return;
     try {
       localStorage.setItem(DATASET_KEY, d);
     } catch {
@@ -225,6 +247,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     recover,
     lockRecords,
     vaultCreated: () => setVault('unlocked'),
+    exclusive: (work) => inLane(db.name, work),
     finishRecovery: () => { if (isUnlocked(db)) setVault('unlocked'); },
   };
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;

@@ -91,4 +91,6 @@ Nurses never see admin links, and `/admin/*` refuses non-admins ("Admins only.")
 
 - `src/Root.tsx` decides. It knows one yes/no from memory (`src/state/signedIn.ts`); that is not a permission. `RequireAuth` still protects every clinical address and sends visitors to `/sign-in`.
 - The installed app opens at `/sign-in`, as before (`start_url` in `vite.config.ts`; `id: '/'` keeps it the same installed app).
+- Leaving the clinical app for `/` or `/landing` locks the encrypted records: the key is dropped, running cloud requests stop, and coming back asks for the unlock and the PIN.
+- Public judge website (`npm run build:judge`): the landing page also has Install Practice App and View Project on GitHub; `/setup` goes to `/sign-in`; only Practice exists. See docs/JUDGE_DEMO_GUIDE.md.
 - Launch Practice Demo always opens Practice. On a laptop with Real records, staff open `/sign-in` (or the installed app).

@@ -7,7 +7,7 @@
   - **Existing plain Real records are not encrypted.** A database that held Real records before this build stays plain (red banner) until the migration is approved.
   - **Plain copies that still exist:** the pre-encryption checkpoint and older safety copies in `downtimekit-backups` (listed on More, marked "not encrypted"). On Practice an admin can remove them through the guarded cleanup (Admin → Backup). For Real records, removing them needs separate approval. A FHIR export file is plain by design.
   - **Deleting is not wiping.** Browsers don't promise that deleted IndexedDB data is erased from the disk, and SSDs keep old blocks. Downloaded files are outside the app.
-  - **Memory:** the key stays in browser memory while unlocked. JavaScript can't force the browser to wipe it at once after locking.
+  - **Memory:** the key stays in browser memory while unlocked. JavaScript can't force the browser to wipe it at once after locking. Leaving to the public page or switching the data set now drops the key as well (before, it stayed until the next start).
   - **While unlocked**, a malicious extension or injected script could read records. There are no third-party scripts in the app.
   - **One shared unit passphrase** can leak socially. Losing both the passphrase and the recovery key makes the records unreadable (paper stays the source).
   - **Rollback is not detected:** someone with the files could put back an older genuine copy of a whole row. Edited index fields, ciphertext moved between rows, added plain rows and old-format (v1) copies are detected.
@@ -24,6 +24,8 @@
 - **Phone-width screens** work (menu behind a header button; tested at 390 px) but the app is designed for ward laptops. Paper sheets scroll sideways inside their own box on a phone; print from a laptop.
 - **Date picker format** follows the browser's language setting (may show month/day order). Saved times are ISO with the ward's offset.
 - **Icon font is large** (~4 MB, cached once for offline). Can be subset later.
+- **The public judge build is not a security boundary.** It opens Practice only, but the source is public and everything runs on the visitor's computer (docs/JUDGE_DEMO_GUIDE.md). Installation was tested on Windows 10 with Chrome only; not with Edge, macOS, phones, and not yet from a real hosting address.
+- **A newer version waits** until every ClinBridge window is closed. Someone who never closes it keeps the old version.
 - **One browser tab at a time.** Writes are ordered inside one tab; two tabs writing at the same moment retry, but this is not fully tested.
 - **Clinical policy is a prototype.** High-alert list partial, second-checker roles not approved, no timing policy (More → Clinical settings shows this).
 - **Fluid totals are per calendar day**, not per shift (shift times not approved).

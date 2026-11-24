@@ -1,6 +1,11 @@
 node_modules
 dist
 dist-e2e-ai
+dist-judge
+dist-judge-ai
+.firebase
+.firebaserc
+firebase-debug.log
 dev-dist
 coverage
 playwright-report
