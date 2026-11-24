@@ -3,14 +3,13 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
 import { firstTimeSetup } from '../../db/repos/admin';
-import { Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
+import { Button, EmptyState, PageTitle } from '../../components/ui';
 import { fieldCls, labelCls } from '../charting/TwoStepEditor';
 import { PassphraseHelp, RecoveryCodeConfirm } from '../auth/UnlockVault';
 import { auditVaultEvent, createVault, isUnlocked } from '../../db/vault';
 import { checkPassphrase, newRecoveryCode } from '../../lib/vaultCrypto';
-import { createEncryptedBackup, openBackupFile, restoreEncryptedBackup } from '../../db/encryptedBackup';
+import { openBackupFile, restoreEncryptedBackup } from '../../db/encryptedBackup';
 import { JoinUnitForm } from './EnrollmentUi';
-import { CleanupCard } from './CleanupUi';
 import { Err, msg } from './adminUi';
 import { SetupFrame } from './SetupFrame';
 
@@ -144,56 +143,5 @@ export function SetupPage() {
       )}
       <Err e={error} />
     </SetupFrame>
-  );
-}
-
-/** Admin → Backup: encrypted backup file (P-04 decision B1). */
-export function BackupPage() {
-  const { db, clock, deviceId, dataset } = useApp();
-  const { user } = useSession();
-  const [p1, setP1] = useState('');
-  const [p2, setP2] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const make = async () => {
-    setError(null);
-    setDone(null);
-    if (p1 !== p2) return setError('The two backup passphrases are not the same.');
-    setBusy(true);
-    try {
-      const { fileText, header } = await createEncryptedBackup(db, p1, { clock, actor: { userId: user!.id, deviceId } });
-      const url = URL.createObjectURL(new Blob([fileText], { type: 'application/json' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = `clinbridge-${dataset}-backup-${clock.nowIso().slice(0, 16).replace(/[:T]/g, '-')}.json`; a.click();
-      URL.revokeObjectURL(url);
-      setDone(header.fingerprint);
-    } catch (e) {
-      setError(msg(e));
-    } finally {
-      setP1('');
-      setP2('');
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="flex flex-col gap-space-lg max-w-2xl">
-    <Card className="flex flex-col gap-space-md">
-      <h2 className="font-headline-sm text-headline-sm text-primary">Encrypted backup file</h2>
-      <p className="text-on-surface-variant">Makes one file with every record and photo on this laptop, encrypted (AES-256-GCM) with a <strong>backup passphrase</strong> that you choose now. It must be different from the unit passphrase. The laptop&apos;s keys are never in the file.</p>
-      <p className="text-on-surface-variant font-body-sm">The browser saves the file where its downloads go. ClinBridge cannot see or protect that folder: move the file to storage your hospital approves, and keep the backup passphrase apart from the file. To restore, use first-time setup on an empty laptop (Real records).</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-        <label className="flex flex-col gap-1"><span className={labelCls}>Backup passphrase</span>
-          <input type="password" value={p1} onChange={(e) => setP1(e.target.value)} className={fieldCls()} aria-label="Backup passphrase" autoComplete="new-password" /></label>
-        <label className="flex flex-col gap-1"><span className={labelCls}>Backup passphrase again</span>
-          <input type="password" value={p2} onChange={(e) => setP2(e.target.value)} className={fieldCls()} aria-label="Backup passphrase again" autoComplete="new-password" /></label>
-      </div>
-      <PassphraseHelp />
-      <Button className="self-start" disabled={busy || !p1} onClick={() => void make()}><Icon name="download" />{busy ? 'Encrypting…' : 'Make encrypted backup'}</Button>
-      {done && <p role="status" className="text-sync-green">Backup file made. Fingerprint recorded in the change log: <span className="font-code-tabular break-all">{done}</span></p>}
-      <Err e={error} />
-    </Card>
-    <CleanupCard />
-    </div>
   );
 }
