@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
-import { addStaff, firstTimeSetup, importSnapshot, checkSnapshotFile, resetStaffPin, setStaffActive } from '../../db/repos/admin';
+import { addStaff, firstTimeSetup, resetStaffPin, setStaffActive } from '../../db/repos/admin';
 import type { Role } from '../../db/schema';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
@@ -36,53 +36,6 @@ export function AdminLayout() {
       </nav>
       <Outlet />
     </>
-  );
-}
-
-/* ------------------------------ Patient list (snapshot) ------------------------------ */
-
-export function SnapshotPage() {
-  const { db, clock, deviceId, dataset, snapshot } = useApp();
-  const { user } = useSession();
-  const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<string | null>(null);
-  const counts = useLiveQuery(async () => ({ patient: await db.patient.count(), encounter: await db.encounter.count(), allergy: await db.allergy.count(), active_order: await db.active_order.count(), snapshot_result: await db.snapshot_result.count() }), [db]);
-  async function onFile(f: File | undefined) {
-    if (!f) return;
-    setError(null); setReport(null);
-    try {
-      const json = JSON.parse(await f.text());
-      const check = checkSnapshotFile(json);
-      if (!check.ok) { setError(check.errors.join(' ')); return; }
-      await importSnapshot(db, clock, { userId: user!.id, deviceId }, json);
-      setReport(`Loaded: ${Object.entries(check.counts).map(([k, v]) => `${v} ${k}`).join(', ')}.`);
-    } catch (e) { setError(msg(e)); }
-  }
-  return (
-    <div className="flex flex-col gap-space-lg">
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Current patient list</h2>
-        {snapshot ? (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-space-lg gap-y-1 font-body-md">
-            <dt className="text-secondary">Taken</dt><dd>{dateTimeLabel(snapshot.taken_at)}</dd>
-            <dt className="text-secondary">From</dt><dd>{snapshot.source_system}</dd>
-            <dt className="text-secondary">Unit</dt><dd>{snapshot.unit}</dd>
-            <dt className="text-secondary">On this laptop</dt><dd>{counts ? `${counts.patient} patients, ${counts.encounter} stays, ${counts.allergy} allergies, ${counts.active_order} orders, ${counts.snapshot_result} results` : '…'}</dd>
-          </dl>
-        ) : <p className="text-secondary">No patient list loaded.</p>}
-      </Card>
-      <Card className="flex flex-col gap-space-sm">
-        <h2 className="font-headline-sm text-headline-sm text-primary">Load a new patient list</h2>
-        {dataset === 'live' ? (
-          <>
-            <p className="text-on-surface-variant">JSON file with the six patient-list tables only (snapshot, patient, encounter, allergy, active_order, snapshot_result). Clinical records are never imported. Files marked as fake are refused.</p>
-            <label className="self-start inline-flex items-center gap-2 min-h-11 px-space-md rounded-lg border border-card-border cursor-pointer"><Icon name="upload_file" />Choose file<input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => void onFile(e.target.files?.[0])} /></label>
-          </>
-        ) : <p className="text-secondary">Practice uses its own fake patient list. Switch to Real records to load a hospital list.</p>}
-        {report && <p role="status" className="text-sync-green">{report}</p>}
-        <Err e={error} />
-      </Card>
-    </div>
   );
 }
 
