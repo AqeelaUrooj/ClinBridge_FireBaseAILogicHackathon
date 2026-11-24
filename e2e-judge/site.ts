@@ -2,7 +2,7 @@ import { createServer, type Server } from 'node:http';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
-import { chromium, expect, type Page } from '@playwright/test';
+import { chromium, expect, type BrowserContext, type Page } from '@playwright/test';
 import { unlockIfNeeded } from '../e2e/helpers';
 
 /**
@@ -51,9 +51,13 @@ export class Site {
 }
 
 /** A browser profile on disk: what a judge's Chrome keeps when the window is closed. */
-export const openProfile = (dir: string, offline = false) => chromium.launchPersistentContext(dir, {
-  ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), viewport: { width: 1366, height: 768 }, offline,
-});
+export async function openProfile(dir: string, offline = false) {
+  const ctx = await chromium.launchPersistentContext(dir, {
+    ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {}), viewport: { width: 1366, height: 768 }, offline,
+  });
+  await noRealCloud(ctx);
+  return ctx;
+}
 
 /** Go to an address inside the running app (no page load, as with a link or the Back button). */
 export const go = (page: Page, path: string) => page.evaluate((p) => { history.pushState({}, '', p); dispatchEvent(new PopStateEvent('popstate')); }, path);
@@ -86,6 +90,9 @@ export async function signOut(page: Page) {
   await page.getByRole('button', { name: 'Switch user' }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
 }
+
+/** Nothing in these tests may reach a real Firebase project, also when the build has one. */
+export const noRealCloud = (ctx: BrowserContext) => ctx.route(/googleapis\.com|google\.com|gstatic\.com/, (r) => r.abort());
 
 /** Addresses outside the site and things the Content-Security-Policy refused. Both must stay empty. */
 export function watch(page: Page) {

@@ -50,6 +50,9 @@ need(!/(src|href)="(https?:)?\/\//.test(readFileSync(join(dir, 'index.html'), 'u
 const all = text.map(([, s]) => s).join('\n');
 const set = (k) => new RegExp(`${k}["']?\\s*:\\s*["'\`][^"'\`]+["'\`]`).test(all);
 need(!set('VITE_FIREBASE_API_KEY') || existsSync('hosting/.env.local') || !!process.env.VITE_FIREBASE_API_KEY, 'AI configuration comes only from hosting/.env.local, never from a developer\'s .env.local');
+// During a deployment the Firebase CLI says which project it sends to (GCLOUD_PROJECT).
+const target = process.env.GCLOUD_PROJECT;
+if (target && set('VITE_FIREBASE_PROJECT_ID')) need(new RegExp(`VITE_FIREBASE_PROJECT_ID["']?\\s*:\\s*["'\`]${target}["'\`]`).test(all), 'the build was made for the Firebase project it is sent to');
 console.log(`info AI configuration in this build (names only): ${['API_KEY', 'PROJECT_ID', 'APP_ID', 'APPCHECK_SITE_KEY'].map((k) => `${k} ${set(`VITE_FIREBASE_${k}`) ? 'set' : 'not set'}`).join(', ')}`);
 console.log(`info ${files.length} files, ${(files.reduce((n, f) => n + statSync(f).size, 0) / 1048576).toFixed(1)} MB`);
 if (problems.length) { console.error(`\n${problems.length} problem(s). Do not publish this build.`); process.exit(1); }

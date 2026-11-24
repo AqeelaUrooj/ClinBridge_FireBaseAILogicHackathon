@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { go, openPatient, signIn, signOut, watch } from './site';
 
@@ -25,6 +26,7 @@ const noModel = (page: Page) => page.addInitScript(() => { delete (window as unk
 const cloud = (page: Page) => page.getByRole('region', { name: 'Cloud model' });
 
 test('without a Firebase project the public demo has no AI, says so, and charting works; nothing is sent', async ({ page }) => {
+  test.skip(existsSync('hosting/.env.local'), 'this build has the real demo project; tests never call it');
   await noModel(page);
   const seen = watch(page);
   await page.goto('/sign-in');

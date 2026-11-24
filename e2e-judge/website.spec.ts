@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { unlockIfNeeded, unlockPractice } from '../e2e/helpers';
-import { go, openPatient, pin, savedOffline, signIn, signOut, watch } from './site';
+import { go, noRealCloud, openPatient, pin, savedOffline, signIn, signOut, watch } from './site';
 
 /** The public website of the judge build: landing page, installation, Practice only, routing. Fictional data only. */
+test.beforeEach(({ context }) => noRealCloud(context));
 const landing = (page: Page) => page.getByRole('heading', { level: 1, name: /When the EHR goes down/ });
 const install = (page: Page) => page.getByRole('button', { name: 'Install Practice App' });
 const about = (page: Page) => page.getByRole('region', { name: 'About the Practice app' });

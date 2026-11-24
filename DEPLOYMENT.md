@@ -73,6 +73,8 @@ Firebase Authentication, Firestore and Storage are not used; there are no "autho
 
 ### Preview, then production (only after the owner's approval)
 
+Step by step with the tests: [docs/JUDGE_RELEASE_CHECKLIST.md](docs/JUDGE_RELEASE_CHECKLIST.md).
+
 A preview address is public for everyone who has it. Node 22, the Firebase CLI (`npm install -g firebase-tools`) and the owner's own login are needed.
 
 ```powershell
@@ -80,7 +82,7 @@ firebase login
 ```
 
 ```powershell
-firebase hosting:channel:deploy judge-preview --project APPROVED_PROJECT_ID --expires 7d
+firebase hosting:channel:deploy judge-preview --project APPROVED_PROJECT_ID --expires 7d --no-authorized-domains
 ```
 
 Test the preview with a new Chrome profile ([docs/JUDGE_DEMO_GUIDE.md](docs/JUDGE_DEMO_GUIDE.md), with Wi-Fi really off). Then, with a second approval:
