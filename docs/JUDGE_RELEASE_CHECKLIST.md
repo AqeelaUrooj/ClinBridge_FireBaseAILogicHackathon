@@ -20,8 +20,8 @@ The release check runs again before every deployment. It stops the deployment wh
 - [ ] `hosting/.env.local` exists (copied web app settings, no debug switch). `npm run check:judge` says which names are set, never a value.
 - [ ] App Check → APIs: **Firebase AI Logic: Enforced**. App Check → Apps: the web app is **Registered**.
 - [ ] reCAPTCHA key → Domains: the final host name, and the preview host name **after** the preview exists. The preview name is `PROJECT--judge-preview-HASH.web.app`; it is not covered by the final name. Never `localhost`. Remove the preview name again when the preview ends.
-- [ ] Quota (recommended): Google Cloud → APIs → Firebase AI Logic API → Quotas & System Limits → "Generate content requests … per user …": default 100 per minute; 5 is enough for this demo.
-- [ ] API key (recommended before production): Google Cloud → Credentials → the browser key → **Websites**: the final host and the preview host, each with `/*`. A star inside a name (`name--*.web.app`) is not allowed there. If localhost is still used for development, add it too or use another key. **APIs**: Firebase AI Logic API, Firebase App Check API, Firebase Installations API.
+- [x] Done on 24 Nov 2026 (5 per minute per user in all regions). Quota: Google Cloud → APIs → Firebase AI Logic API → Quotas & System Limits → "Generate content requests … per user …": default 100 per minute.
+- [x] Done on 24 Nov 2026 (production, preview and localhost:5173; two APIs; see LIVE_TEST_RESULTS_2026-11-24.md). API key: Google Cloud → Credentials → the browser key → **Websites**: the final host and the preview host, each with `/*`. A star inside a name (`name--*.web.app`) is not allowed there. If localhost is still used for development, add it too or use another key. **APIs**: Firebase AI Logic API, Firebase App Check API.
 - [ ] Delete App Check debug tokens that are not needed any more.
 
 On Spark with the Gemini Developer API nothing is charged: above the free limits a request is refused and ClinBridge says so. reCAPTCHA: 10,000 free assessments a month.
