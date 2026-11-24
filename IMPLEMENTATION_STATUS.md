@@ -131,7 +131,7 @@ Also working:
 
 `/patients/:id/report` draws one of four handwritten-looking sheets from the patient's own Practice records, offline and without AI. Marked synthetic on screen, on the PNG and on paper. Nothing is saved. Refused in Real records. New tables or fields: none.
 
-Device vs Cloud uses the same four sheets as its picture input (the older small drawn form was removed). Both models get the same file; only vital signs that are written on the sheet are compared; no draft is made from a drawn report. Tested with MOCK models only, not yet with a real one.
+Device vs Cloud uses the same four sheets as its picture input (the older small drawn form was removed). Both models get the same file; only vital signs that are written on the sheet are compared; no draft is made from a drawn report. Cloud side tried with the real model on 24 Nov 2026 (five runs, docs/RELEASE_REPORT_2026-11-24.md); on-device only with mocks.
 
 ## Public prototype introduction
 

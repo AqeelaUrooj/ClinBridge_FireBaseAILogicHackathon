@@ -74,5 +74,5 @@ Suggested 3-minute story: 1 → 2 (go offline in DevTools first) → 5 → 6 →
 
 - First load needs the network (to cache the app). Do it before going offline.
 - Chrome desktop only for AI; the rest works in other Chromium browsers but is tested in Chrome only.
-- Hosting is optional (Vercel or any static HTTPS host; see DEPLOYMENT.md). Not deployed yet.
+- The Practice-only judge build is live at https://clinbridge-hackathon.web.app (Firebase Hosting, 24 Nov 2026; RELEASE_REPORT_2026-11-24.md). Tests that a person must still do: PHYSICAL_OFFLINE_TESTS.md.
 - No real hospital review; say so in the submission (`docs/SECURITY_REVIEW.md`).

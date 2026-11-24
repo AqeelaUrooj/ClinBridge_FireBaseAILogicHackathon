@@ -4,6 +4,8 @@ Offline nursing documentation for when the hospital EHR (electronic health recor
 
 When ransomware or an outage takes the EHR offline, nurses fall back to paper and the records pile up for weeks of back-entry. ClinBridge runs in Chrome on a ward laptop with no network. Nurses keep charting vitals, medicines, notes, fluids, labs, body map and handovers into an encrypted local database. When systems come back, an admin clears the network, and Firebase AI Logic gives a cloud "second look" at paper-photo records before they are exported as FHIR R4 for the EHR.
 
+**Live demo (fictional patients only): https://clinbridge-hackathon.web.app** · [Judge demo guide](docs/JUDGE_DEMO_GUIDE.md)
+
 > **Prototype. Not approved for real patients.** Practice mode uses fictional patients only. Never type real patient information into it.
 
 ## What works today
@@ -14,8 +16,8 @@ When ransomware or an outage takes the EHR offline, nurses fall back to paper an
 | Encrypted local records (AES-256-GCM per record, unit passphrase, tamper-evident audit chain) | **Working, prototype**: names, values and notes are encrypted; ids, times and statuses stay readable but tamper-checked. Not reviewed by hospital security | Unit tests; checked live after reload. Gaps: `KNOWN_LIMITATIONS.md` |
 | System Down blocks cloud AI: no new cloud call can start, and a call already running is aborted and its answer thrown away | **Verified** (automated tests; cloud button blocked and 0 requests seen live). An abort can't recall data that had already been sent | Unit + browser tests; `docs/AI_INTEGRATION.md` |
 | Back Online network clearance by an admin, then cloud second look (never edits the record) | **Verified live** | `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
-| Genuine Firebase cloud AI (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`, App Check enforced), text notes and paper-form photos | **Live-tested** on the owner's PC, 20 and 22 Nov 2026 | `docs/LIVE_TEST_RESULTS_2026-11-20.md`, `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
-| Gemini Nano on-device inference (`ONLY_ON_DEVICE`, network blocked during the call) | **Implemented and mock-tested, not live-verified.** The test PC's hardware can't run Gemini Nano | `docs/AI_TEST_MATRIX.md`, `docs/GEMINI_NANO_SECOND_LAPTOP.md` |
+| Genuine Firebase cloud AI (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`, App Check enforced), text notes and paper-form photos | **Live-tested** on the owner's PC, 20 and 22 Nov 2026, and on the live site with real App Check, 24 Nov 2026 | `docs/RELEASE_REPORT_2026-11-24.md`, `docs/LIVE_TEST_RESULTS_2026-11-24.md`, `docs/LIVE_TEST_RESULTS_2026-11-20.md`, `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
+| Gemini Nano on-device inference (`ONLY_ON_DEVICE`, network blocked during the call) | **Implemented and mock-tested, not live-verified.** The test PC's hardware can't run Gemini Nano | `docs/AI_TEST_MATRIX.md`, `docs/GEMINI_NANO_VERIFICATION_CHECKLIST.md` |
 | FHIR R4 export (file) | **Working**: 0 errors from the official HL7 validator in CI. Many fields are free text; no live EHR link | `docs/FHIR_VALIDATION.md` |
 | Real patient deployment | **Not approved** | Clinical rules and security are prototypes (`KNOWN_LIMITATIONS.md`) |
 
