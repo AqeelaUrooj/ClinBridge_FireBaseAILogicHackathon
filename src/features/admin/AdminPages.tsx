@@ -1,12 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { isAdmin, useApp, useSession } from '../../state/app';
 import { firstTimeSetup } from '../../db/repos/admin';
-import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
-import { CLINICAL_WARNINGS } from '../../config/clinicalWarnings';
-import { SECURITY_POLICY } from '../../config/securityPolicy';
-import { Badge, Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
+import { Button, Card, EmptyState, Icon, PageTitle } from '../../components/ui';
 import { fieldCls, labelCls } from '../charting/TwoStepEditor';
 import { PassphraseHelp, RecoveryCodeConfirm } from '../auth/UnlockVault';
 import { auditVaultEvent, createVault, isUnlocked } from '../../db/vault';
@@ -15,6 +12,7 @@ import { createEncryptedBackup, openBackupFile, restoreEncryptedBackup } from '.
 import { JoinUnitForm } from './EnrollmentUi';
 import { CleanupCard } from './CleanupUi';
 import { Err, msg } from './adminUi';
+import { SetupFrame } from './SetupFrame';
 
 
 /** Admin area: screens check the role here, and every action checks it again in the database layer. */
@@ -32,46 +30,6 @@ export function AdminLayout() {
       </nav>
       <Outlet />
     </>
-  );
-}
-
-export function SettingsPage() {
-  const item = (label: string, value: ReactNode, approved: boolean) => (
-    <li className="py-space-sm border-b border-card-border last:border-0 flex flex-wrap items-start gap-space-md">
-      <span className="w-56 font-semibold text-primary">{label}</span><span className="flex-1">{value}</span>
-      <Badge tone={approved ? 'green' : 'amber'}>{approved ? 'Approved' : 'Not approved'}</Badge>
-    </li>
-  );
-  return (
-    <div className="flex flex-col gap-space-lg">
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Clinical settings</h2>
-        <p className="text-on-surface-variant mb-space-sm">{POLICY.note} They are read only here; a hospital-approved policy will replace them.</p>
-        <ul>
-          {item('High-alert medicines', `${POLICY.highAlert.entries.map((e) => e.label).join(', ')} · second nurse PIN for ${[...new Set(POLICY.highAlert.entries.flatMap((e) => e.events))].join(', ')}${POLICY.highAlert.listIsComplete ? '' : ' · partial list'}`, POLICY.highAlert.approved)}
-          {item('Second checker', POLICY.secondChecker.roles.join(', '), POLICY.secondChecker.approved)}
-          {item('Medicine timing (Overdue)', POLICY.medicationTiming.windows.length ? `${POLICY.medicationTiming.windows.length} windows` : 'None: doses show Due only', POLICY.medicationTiming.approved)}
-          {item('Vital-sign warning ranges', 'Warn only, never block', CLINICAL_WARNINGS.review.approved)}
-          {item('Recovery queue order', Object.entries(POLICY.recovery.categoryRank).sort((a, b) => b[1] - a[1]).map(([k]) => k).join(' > '), POLICY.recovery.approved)}
-          {item('Network clearance checklist', `${POLICY.recovery.networkChecklist.length} items + admin PIN`, POLICY.recovery.approved)}
-        </ul>
-      </Card>
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">Security settings</h2>
-        <p className="text-on-surface-variant mb-space-sm">Prototype values. Hospital IT/security must review them before real use.</p>
-        <ul>
-          {item('Records lock after no use', `${SECURITY_POLICY.vaultIdleLockMinutes} minutes (unit passphrase needed again)`, SECURITY_POLICY.approved)}
-          {item('Passphrase key derivation', `PBKDF2-SHA-256, ${SECURITY_POLICY.pbkdf2Iterations.toLocaleString('en-US')} iterations; AES-256-GCM records`, SECURITY_POLICY.approved)}
-        </ul>
-      </Card>
-      <Card>
-        <h2 className="font-headline-sm text-headline-sm text-primary mb-space-sm">App</h2>
-        <ul className="font-body-md list-disc pl-6">
-          <li>Auto-lock after 5 minutes without use; 5 wrong PINs lock sign-in for 1 minute.</li>
-          <li>No early-warning or risk score is calculated.</li>
-        </ul>
-      </Card>
-    </div>
   );
 }
 
@@ -141,8 +99,7 @@ export function SetupPage() {
   };
 
   return (
-    <Card className="flex flex-col gap-space-md max-w-2xl">
-      <h2 className="font-headline-sm text-headline-sm text-primary">First-time setup</h2>
+    <SetupFrame step={code ? 3 : 1} kind={join ? 'join' : restore ? 'restore' : 'new'}>
       {!code ? (
         <>
           <div className="flex flex-wrap gap-space-sm" role="radiogroup" aria-label="How to set up">
@@ -186,7 +143,7 @@ export function SetupPage() {
         </>
       )}
       <Err e={error} />
-    </Card>
+    </SetupFrame>
   );
 }
 
