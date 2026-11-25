@@ -31,7 +31,13 @@ class PatientFacts {
 
   /// "68M"
   String get ageSex => '$age${patient.sexLetter}';
-  List<Allergy> get realAllergies => [for (final a in allergies) if (!a.isNone && a.status == 'active') a];
+  /// Active allergies, the most severe first (stored severity; the stored order is kept within one severity), so a page with
+  /// room for one name shows the severe one.
+  List<Allergy> get realAllergies {
+    int rank(Allergy a) => switch (a.severity) { 'severe' => 0, 'moderate' => 1, 'mild' => 2, _ => 3 };
+    final real = [for (final a in allergies) if (!a.isNone && a.status == 'active') a];
+    return [for (var r = 0; r < 4; r++) ...real.where((a) => rank(a) == r)];
+  }
   bool get hasSevereAllergy => realAllergies.any((a) => a.severity == 'severe');
 
   /// "PENICILLIN" / "No known allergies" / "Allergies not recorded"

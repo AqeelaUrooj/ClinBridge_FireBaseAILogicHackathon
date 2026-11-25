@@ -12,6 +12,7 @@ import 'package:clinbridge_practice/data/repos/ops.dart';
 import 'package:clinbridge_practice/data/schema.dart';
 import 'package:clinbridge_practice/data/store.dart';
 import 'package:clinbridge_practice/data/vault.dart';
+import 'package:clinbridge_practice/domain/facts.dart';
 import 'package:clinbridge_practice/domain/fhir.dart';
 import 'package:clinbridge_practice/domain/meds.dart';
 import 'package:clinbridge_practice/domain/vitals.dart';
@@ -356,6 +357,10 @@ void main() {
       h.app.leavePatient();
       expect(() => saveVitals(h.app.ctx(), 'pt-02'), throwsA(isA<StaleContextError>()));
       expect(s.count('entry'), 49);
+    });
+
+    test('the severe allergy comes first on every page (Tom Hale: shellfish before codeine)', () {
+      expect(loadFacts(s, 'pt-05', h.app.nowIso)!.realAllergies.map((a) => a.substance), ['Shellfish', 'Codeine']);
     });
 
     test('an order of another patient is refused', () async {

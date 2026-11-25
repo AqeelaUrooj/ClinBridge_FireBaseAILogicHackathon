@@ -1,20 +1,20 @@
 # Test report, 25 Nov 2026
 
-Windows 10 Pro 10.0.19045, 8 GB RAM, 2 cores. Flutter 3.29.0 / Dart 3.7.0. **No Android phone and no emulator was used.** Everything below ran on the PC, on the app's own Dart code, with a real SQLCipher library (Windows DLL) and a test double for the Android side.
+Windows 10 Pro 10.0.19045, 8 GB RAM, 2 cores. Flutter 3.29.0 / Dart 3.7.0. The tests below ran on the PC, on the app's own Dart code, with a real SQLCipher library (Windows DLL) and a test double for the Android side. **Phone test: [PHYSICAL_ANDROID_RESULTS_2026-11-25.md](PHYSICAL_ANDROID_RESULTS_2026-11-25.md).** No emulator was used.
 
 ## Commands and results (final code)
 
 | Command | Result |
 |---|---|
 | `dart analyze lib test` | exit 0, no issues |
-| `flutter test test/core_test.dart test/fhir_parity_test.dart test/screens test/visual` | exit 0, 218 passed |
+| `flutter test test/core_test.dart test/fhir_parity_test.dart test/screens test/visual` | exit 0, 219 passed |
 | `flutter test test/integration` | exit 0, 19 passed |
 | `flutter build apk --release --target-platform android-arm,android-arm64` | exit 0 |
 | Fault injection on a copy of the core (`mutate.py`) | see below |
 
 | Test group | Tests | What it covers |
 |---|---|---|
-| `test/core_test.dart` | 47 | encrypted files, wrong/missing keys, changed page, newer schema, failed migration, interrupted set-up, two set-ups at once, PIN limits and restart, roles, lock, stale contexts, wrong patient, blank vs 0, exactly once, every point of failure in a save, process death, corrections, high-alert rules, dose locks, downtime, recovery, handover, export, reset |
+| `test/core_test.dart` | 48 | encrypted files, wrong/missing keys, changed page, newer schema, failed migration, interrupted set-up, two set-ups at once, PIN limits and restart, roles, lock, stale contexts, wrong patient, blank vs 0, exactly once, every point of failure in a save, process death, corrections, high-alert rules, dose locks, downtime, recovery, handover, export, reset |
 | `test/fhir_parity_test.dart` | 1 | all 301 resources equal the website's export of the same dataset, except the added `HTEST` tag and the word "Device" for "Laptop". Skipped unless `WEB_FHIR` is set |
 | `test/screens/*` | 127 | each screen group through its UI on the real core |
 | `test/visual/*` | 43 | 293 captures: 27 reference screens at first viewport, full page, 360 and 430 dp, text scale 1.5, and the states that exist only in the HTML. Overflow is an error |
@@ -32,7 +32,7 @@ A reviewer who had not written the code read all of it. Findings fixed the same 
 
 | Severity | Finding | Now |
 |---|---|---|
-| Critical | SQLCipher was never selected on Android; the app could not have opened its records on a phone (host tests hid this) | `lib/data/cipher.dart`, called first in `main()`. The compiled app names `libsqlcipher.so`. **To be proven on a phone** |
+| Critical | SQLCipher was never selected on Android; the app could not have opened its records on a phone (host tests hid this) | `lib/data/cipher.dart`, called first in `main()`. The compiled app names `libsqlcipher.so`. Proven on a phone the same day |
 | High | a paper draft changed after a declined co-sign could be reported as saved | the draft itself is confirmed; a key never returns a draft as a record |
 | High | going back and creating the store twice could lock the records for good | one job at a time, checked again before the file is written |
 | High | a scheduled dose without a due time escaped the slot lock | due time required, waiting drafts hold their slot |
@@ -45,8 +45,8 @@ The end-to-end tests found and fixed: blank pages on Back, a layout error for a 
 
 | | |
 |---|---|
-| File | `release/clinbridge-practice-0.1.0-TEST.apk` (local, not committed), 48,803,044 bytes |
-| SHA-256 | `4d8b4650b5a213a6248e5bc1ca0b492aab9c978cbeaf9d13cb48d695a8416817` |
+| File | `release/clinbridge-practice-0.1.0-TEST.apk` (local, not committed), 48,819,428 bytes |
+| SHA-256 | `361ee5e02d2e8f86702e536de51d30d3b253444ca7bedc540ece1b28820b7cd7` |
 | Package, version | `org.clinbridge.practice`, 0.1.0 (1), release build, minSdk 26, targetSdk 35, armeabi-v7a + arm64-v8a |
 | Signing | **test build**: this PC's Android debug key (APK signature scheme v2). No production key exists; nothing secret is in the source |
 | Permissions | CAMERA, ACCESS_NETWORK_STATE. No INTERNET |
@@ -55,7 +55,7 @@ The end-to-end tests found and fixed: blank pages on Back, a layout error for a 
 
 ## Not verified
 
-- Installation and every Android part on a real phone: Keystore, SQLCipher loading, camera, torch, picker, save and print screens, recent-apps cover, back gesture, battery values, process death by Android, full disk, very low battery. Steps: [PHYSICAL_ANDROID_TESTS.md](PHYSICAL_ANDROID_TESTS.md).
+- On the phone: what [PHYSICAL_ANDROID_RESULTS_2026-11-25.md](PHYSICAL_ANDROID_RESULTS_2026-11-25.md) lists as not done; one phone only.
 - TalkBack. Landscape (the app is portrait only). Tablets.
 - Android with 16 KB memory pages.
 - The HL7 validator was not run on the mobile file; it equals the website's file, which passed it (0 errors, `docs/FHIR_VALIDATION.md`), except the added tag.

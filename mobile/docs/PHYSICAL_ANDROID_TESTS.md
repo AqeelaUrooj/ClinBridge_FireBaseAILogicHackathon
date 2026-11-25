@@ -1,6 +1,6 @@
 # Physical Android test
 
-On one Android phone (Android 8 or newer), fictional data only. **State: not done. No phone was connected when this was written.** The emulator was not used (build PC: 8 GB RAM, 2 cores).
+On one Android phone (Android 8 or newer), fictional data only. **State: run on a realme 5i on 25 Nov 2026, results in [PHYSICAL_ANDROID_RESULTS_2026-11-25.md](PHYSICAL_ANDROID_RESULTS_2026-11-25.md).** The emulator was not used (build PC: 8 GB RAM, 2 cores).
 
 Preparation on the phone: Settings → About phone → tap "Build number" 7 times → Developer options → **USB debugging** on. Connect the USB cable and accept "Allow USB debugging" for this PC. No Google account, SIM or real data is needed.
 

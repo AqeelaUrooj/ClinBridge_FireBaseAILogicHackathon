@@ -63,7 +63,7 @@ class Store {
   String get cipherVersion => '${_db.select('PRAGMA cipher_version').first.values.first}';
 
   void _migrate() {
-    final v = _db.select('PRAGMA user_version').first.values.first as int;
+    final v = _pragmaInt('user_version');
     if (v > schemaVersion) throw const AppError('These records were made by a newer version of the app. Nothing was changed.');
     if (v == schemaVersion) return;
     _db.execute('BEGIN IMMEDIATE');
@@ -217,12 +217,13 @@ class Store {
   String? meta(String key) => get('m_meta', key)?['value'] as String?;
   void setMeta(String key, String value) => put('m_meta', {'id': key, 'value': value});
 
+  /// SQLCipher answers some of its PRAGMAs with text (Android: page_size), others with a number.
+  int _pragmaInt(String name) => int.parse('${_db.select('PRAGMA $name').first.values.first}');
+
   /// Size of the database in bytes (pages), as SQLite reports it.
   int sizeBytes() {
     _check();
-    final pc = _db.select('PRAGMA page_count').first.values.first as int;
-    final ps = _db.select('PRAGMA page_size').first.values.first as int;
-    return pc * ps;
+    return _pragmaInt('page_count') * _pragmaInt('page_size');
   }
 
   /// SQLite's own structure check ("ok" when nothing is wrong).

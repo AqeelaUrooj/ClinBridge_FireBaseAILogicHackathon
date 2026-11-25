@@ -4,7 +4,7 @@ Native (Flutter) offline app for fictional nursing downtime drills. **Prototype.
 
 - What it is and why it is built this way: [docs/ARCHITECTURE_AND_DECISIONS.md](docs/ARCHITECTURE_AND_DECISIONS.md)
 - Screens, routes, controls: [docs/ROUTE_AND_CONTROL_MATRIX.md](docs/ROUTE_AND_CONTROL_MATRIX.md) · differences from the designs: [docs/VISUAL_DIFFERENCES.md](docs/VISUAL_DIFFERENCES.md)
-- Tests and what is not verified: [docs/TEST_REPORT_2026-11-25.md](docs/TEST_REPORT_2026-11-25.md) · phone test: [docs/PHYSICAL_ANDROID_TESTS.md](docs/PHYSICAL_ANDROID_TESTS.md)
+- Tests and what is not verified: [docs/TEST_REPORT_2026-11-25.md](docs/TEST_REPORT_2026-11-25.md) · phone test: [results](docs/PHYSICAL_ANDROID_RESULTS_2026-11-25.md), [steps](docs/PHYSICAL_ANDROID_TESTS.md)
 - Assets and licences: [NOTICE.md](NOTICE.md)
 
 ## Build

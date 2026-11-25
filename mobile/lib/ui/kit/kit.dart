@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import 'tokens.dart';
@@ -350,6 +351,24 @@ class TapToType extends StatelessWidget {
       );
 }
 
+/// Drawn in place of a part that failed to draw.
+class BrokenPage extends StatelessWidget {
+  const BrokenPage({super.key});
+  @override
+  Widget build(BuildContext context) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: ColoredBox(
+          color: C.surface,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(S.lg),
+              child: Text('PRACTICE: this part of the page could not be shown. Saved records are not changed. Go back; if that does not help, close the app and open it again, and tell IT.', style: T.bodyMd, textAlign: TextAlign.center),
+            ),
+          ),
+        ),
+      );
+}
+
 /// Asks before a page with meaningful unsaved input is left (arrow, Android back). [dirty] is read when leaving.
 class LeaveGuard extends StatelessWidget {
   final bool Function() dirty;
@@ -392,7 +411,12 @@ class PhonePage extends StatelessWidget {
   final ScrollController? controller;
   const PhonePage({super.key, this.header, this.footer, this.nav, required this.children, this.pad = const EdgeInsets.fromLTRB(S.md, S.md, S.md, S.xl), this.color = C.surface, this.gap = 0, this.statusColor, this.controller});
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    // Status-bar icons that can be seen on whatever this page draws behind them.
+    final dark = (header == null ? color : statusColor ?? color).computeLuminance() > 0.5;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(statusBarColor: const Color(0x00000000), statusBarIconBrightness: dark ? Brightness.dark : Brightness.light, statusBarBrightness: dark ? Brightness.light : Brightness.dark),
+      child: Scaffold(
         backgroundColor: color,
         resizeToAvoidBottomInset: true,
         body: Column(children: [
@@ -409,7 +433,9 @@ class PhonePage extends StatelessWidget {
           if (footer != null) SafeArea(top: false, bottom: nav == null, child: footer!),
           if (nav != null) ColoredBox(color: C.surfaceLowest, child: SafeArea(top: false, child: nav!)),
         ]),
-      );
+      ),
+    );
+  }
 }
 
 class NavItem {

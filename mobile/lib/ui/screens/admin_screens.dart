@@ -349,7 +349,7 @@ class _ReadinessScreenState extends State<ReadinessScreen> {
           Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
             tag(ev == null ? 'NO OPEN INCIDENT' : 'INCIDENT ${ev.id.toUpperCase()}', C.caution.withValues(alpha: 0.2), C.secondaryFixed),
             tag('PRACTICE DRILL', C.tertiaryContainer, _mintText, icon: Symbols.school),
-            Text(live ? 'LIVE DRILL' : (phase == ops.Phase.online ? 'BACK ONLINE' : 'NO DRILL'), style: T.labelMd.c(C.onPrimary)),
+            Text(live ? 'DRILL OPEN' : (phase == ops.Phase.online ? 'BACK ONLINE' : 'NO DRILL'), style: T.labelMd.c(C.onPrimary)),
           ])
         else Row(children: [
           Flexible(flex: 5, child: tag(ev == null ? 'NO OPEN INCIDENT' : 'INCIDENT ${ev.id.toUpperCase()}', C.caution.withValues(alpha: 0.2), C.secondaryFixed)),
@@ -358,7 +358,7 @@ class _ReadinessScreenState extends State<ReadinessScreen> {
           const SizedBox(width: 8),
           Dot(live ? C.error : (phase == ops.Phase.online ? _mint : C.outline)),
           const SizedBox(width: 6),
-          Flexible(flex: 3, child: Text(live ? 'LIVE DRILL' : (phase == ops.Phase.online ? 'BACK ONLINE' : 'NO DRILL'), style: T.labelMd.c(C.onPrimary))),
+          Flexible(flex: 3, child: Text(live ? 'DRILL OPEN' : (phase == ops.Phase.online ? 'BACK ONLINE' : 'NO DRILL'), style: T.labelMd.c(C.onPrimary))),
         ]),
         const SizedBox(height: 8),
         Row(children: [
