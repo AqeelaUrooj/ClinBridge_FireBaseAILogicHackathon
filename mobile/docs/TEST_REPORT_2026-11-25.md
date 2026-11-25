@@ -24,7 +24,7 @@ Cases asked for: auth and roles, offline workflow, wrong patient and stale conte
 
 ## Fault injection
 
-`D:\ClinBridge_AndroidTools\mutate.py` puts one fault at a time into a copy of the core (45 faults: removed patient check, removed attestation hash, no rollback, no lockout, blank as 0, no encryption key, …) and runs the core tests. Result on the final core: 44 caught, 1 not (drafts are left out of the export in two places; removing one changes nothing). Earlier rounds missed four faults; tests were added for them.
+A local script (`mutate.py`, not in the repository) puts one fault at a time into a copy of the core (45 faults: removed patient check, removed attestation hash, no rollback, no lockout, blank as 0, no encryption key, …) and runs the core tests. Result on the final core: 44 caught, 1 not (drafts are left out of the export in two places; removing one changes nothing). Earlier rounds missed four faults; tests were added for them.
 
 ## Independent review
 

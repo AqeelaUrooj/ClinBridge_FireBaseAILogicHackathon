@@ -16,3 +16,27 @@ test-results
 *.log
 .DS_Store
 *.tsbuildinfo
+
+# Android: never in the repository
+*.apk
+*.aab
+*.apks
+*.idsig
+*.jks
+*.keystore
+*.p12
+*.pfx
+key.properties
+keystore.properties
+local.properties
+# Local test evidence, device logs, databases and exported practice files
+/release/
+/phone/
+/evidence/
+logcat*.txt
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+clinbridge-PRACTICE-export-*.json

@@ -9,7 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:sqlite3/open.dart';
 
 /// Host tests run on real SQLCipher (Windows DLL, not in the repository). Set SQLCIPHER_HOST to its folder.
-final String sqlcipherDir = Platform.environment['SQLCIPHER_HOST'] ?? r'D:\ClinBridge_AndroidTools\sqlcipher-host';
+final String sqlcipherDir = Platform.environment['SQLCIPHER_HOST'] ?? (throw StateError('Set SQLCIPHER_HOST, see README.md'));
 bool _loaded = false;
 
 void useHostSqlcipher() {

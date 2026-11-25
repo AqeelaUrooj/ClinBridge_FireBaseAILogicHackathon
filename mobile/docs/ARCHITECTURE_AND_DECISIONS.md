@@ -8,7 +8,7 @@ ClinBridge Practice for Android: native-rendered (Flutter), offline, fictional p
 |---|---|
 | Upstream | `main` = `origin/main` = `5e18173` (checked 25 Nov 2026). `59dc187` is an ancestor; only documents differ. `0d3c51c` is only on `origin/feat/judge-practice-pwa` |
 | Existing mobile project, `AGENTS.md`, `CLAUDE.md` | none |
-| Isolation | git worktree `D:\ClinBridge_Mobile`, local branch `feat/android-practice-app`, everything in `mobile/`. Website, PWA, hosting and Firebase files are unchanged |
+| Isolation | branch `feat/android-practice-app`, everything in `mobile/`. Website, PWA, hosting and Firebase files are unchanged |
 | Rules ported from | `src/config/{clinicalPolicy,clinicalWarnings,medicationPolicy,securityPolicy}.ts`, `src/lib/{vitals,meds,charting,recovery,fhir,photoQuality,time,phase,dose,crypto}.ts`, `src/db/repos/{entries,admin,worklist,handoff,export}.ts`, `src/db/{audit,seed,vault,encryption}.ts`, `src/state/app.tsx`, `src/features/{auth,patient,ward,meds,body,charting,capture,recovery}` |
 | Their tests read | `src/db/repos/*.test.ts`, `src/lib/*.test.ts`, `src/db/{audit,encryption,reliability}.test.ts` |
 

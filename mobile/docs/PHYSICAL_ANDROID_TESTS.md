@@ -4,7 +4,7 @@ On one Android phone (Android 8 or newer), fictional data only. **State: run on 
 
 Preparation on the phone: Settings → About phone → tap "Build number" 7 times → Developer options → **USB debugging** on. Connect the USB cable and accept "Allow USB debugging" for this PC. No Google account, SIM or real data is needed.
 
-Install: `adb install -r clinbridge-practice-0.1.0-TEST.apk` (from `D:\ClinBridge_AndroidTools\sdk\platform-tools`). Or copy the APK to the phone and open it (Android asks to allow the installation from that app).
+Install: `adb install -r clinbridge-practice-0.1.0-TEST.apk` (Android SDK platform-tools). Or copy the APK to the phone and open it (Android asks to allow the installation from that app).
 
 Evidence to record for each step: pass / fail, time, screenshot without other apps' content.
 
