@@ -1,6 +1,6 @@
 # Signing and release
 
-**State, 25 Nov 2026: 0.1.0 is signed with the owner's key and tested on the phone.**
+**State, 25 Nov 2026: 0.1.0 is signed with the owner's key, tested on the phone and published as [android-v0.1.0](https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/releases/tag/android-v0.1.0).** The file was downloaded again after publishing; its SHA-256 is the one below.
 
 | | |
 |---|---|
