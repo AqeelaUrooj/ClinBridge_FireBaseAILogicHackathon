@@ -6,7 +6,8 @@ import { go, noRealCloud, openPatient, pin, savedOffline, signIn, signOut, watch
 /** The public website of the judge build: landing page, installation, Practice only, routing. Fictional data only. */
 test.beforeEach(({ context }) => noRealCloud(context));
 const landing = (page: Page) => page.getByRole('heading', { level: 1, name: /When the EHR goes down/ });
-const install = (page: Page) => page.getByRole('button', { name: 'Install Practice App' });
+const install = (page: Page) => page.locator('.lp-actions').getByRole('button', { name: 'Install Desktop App' });
+const access = (page: Page) => page.getByRole('region', { name: 'Web, desktop and Android' });
 const about = (page: Page) => page.getByRole('region', { name: 'About the Practice app' });
 const unlock = (page: Page) => page.getByRole('heading', { name: 'Unlock records on this laptop' });
 const databases = (page: Page) => page.evaluate(async () => (await indexedDB.databases()).map((d) => d.name));
@@ -20,7 +21,7 @@ test('/ and /landing are public: every action is real, nothing clinical is loade
     await expect(landing(page)).toBeVisible();
     const main = page.getByRole('main');
     await expect(main.getByRole('link', { name: /Launch Practice Demo/ }).first()).toHaveAttribute('href', '/sign-in?demo=practice');
-    await expect(main.getByRole('link', { name: 'View Project on GitHub' })).toHaveAttribute('href', 'https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon');
+    await expect(main.getByRole('link', { name: 'View Project on GitHub' }).first()).toHaveAttribute('href', 'https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon');
     await expect(main.getByRole('link', { name: 'Watch Demo Video' })).toHaveCount(0); // no address was given
     await expect(install(page)).toBeVisible();
     await expect(about(page)).toContainText('including offline charting');
@@ -45,11 +46,51 @@ for (const width of [1440, 768, 390, 360]) {
     await expect(page.getByRole('note', { name: 'How to install' })).toBeVisible();
     await savedOffline(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-    const out = await page.locator('.lp-actions > *, .lp-install, .lp-install *, .lp-cta a').evaluateAll((els, w) => els.filter((e) => { const b = e.getBoundingClientRect(); return b.left < 0 || b.right > w + 1; }).map((e) => e.textContent), width);
+    const out = await page.locator('.lp-actions > *, .lp-install, .lp-install *, .lp-access, .lp-access *, .lp-project *, .lp-cta a').evaluateAll((els, w) => els.filter((e) => { const b = e.getBoundingClientRect(); return b.left < 0 || b.right > w + 1; }).map((e) => e.textContent), width);
     expect(out).toEqual([]);
     await page.screenshot({ path: info.outputPath('screens', `install-${width}.png`) });
   });
 }
+
+test('product access: web and desktop work, the Android button is on only with a published release', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('.lp-actions').getByRole('link', { name: 'Android App' }).click();
+  await expect(page).toHaveURL(/#access$/);
+  await expect(access(page)).toBeInViewport();
+  await expect(access(page).getByRole('link', { name: /Launch Practice Demo/ })).toHaveAttribute('href', '/sign-in?demo=practice');
+  await access(page).getByRole('button', { name: 'Install Desktop App' }).click();
+  await expect(access(page).getByRole('note', { name: 'How to install' })).toContainText(/In Chrome: click the install icon/);
+  await expect(access(page)).toContainText('Separate Practice-only offline prototype. Firebase AI features are available in the web application, not the Android application.');
+  const { ANDROID_RELEASE: release, androidDownload } = await import('../src/config/androidRelease');
+  const button = access(page).getByRole('button', { name: 'Download Android APK' });
+  if (release) {
+    await expect(access(page).getByRole('link', { name: 'Download Android APK' })).toHaveAttribute('href', androidDownload(release)!.apk);
+    await expect(button).toHaveCount(0);
+  } else {
+    await expect(button).toBeDisabled();
+    expect(await page.locator('a[href*="/releases"], a[href$=".apk"]').count()).toBe(0);
+  }
+  const main = 'https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/';
+  for (const path of ['tree/main/src', 'tree/main/mobile', 'blob/main/docs/JUDGE_DEMO_GUIDE.md', 'blob/main/docs/JUDGE_DEMO_GUIDE.md#install-it-windows-laptop-chrome-or-edge', 'blob/main/mobile/docs/INSTALL_ANDROID.md', 'blob/main/docs/AI_INTEGRATION.md', 'blob/main/mobile/docs/ARCHITECTURE_AND_DECISIONS.md', 'blob/main/mobile/docs/TEST_REPORT_2026-11-25.md']) {
+    await expect(access(page).locator(`a[href="${main}${path}"]`).first(), path).toBeVisible();
+  }
+});
+
+test('desktop card: accepted, installed, and no button inside the installed app', async ({ page }) => {
+  await page.goto('/');
+  await offer(page, 'accepted');
+  await access(page).getByRole('button', { name: 'Install Desktop App' }).click();
+  await expect(access(page)).toContainText('You accepted.');
+  await page.evaluate(() => dispatchEvent(new Event('appinstalled')));
+  await expect(access(page)).toContainText('Your browser installed ClinBridge Practice.');
+  await page.addInitScript(() => {
+    const real = window.matchMedia.bind(window);
+    window.matchMedia = (q) => (q.includes('display-mode: standalone') ? { ...real(q), matches: true, media: q, addEventListener() {}, removeEventListener() {} } as unknown as MediaQueryList : real(q));
+  });
+  await page.reload();
+  await expect(access(page)).toContainText('You are using the installed app.');
+  await expect(page.getByRole('button', { name: 'Install Desktop App' })).toHaveCount(0);
+});
 
 test('manifest, icons and what Chrome says about installability', async ({ page, request }) => {
   const m = await (await request.get('/manifest.webmanifest')).json() as { icons: { src: string; sizes: string; type: string; purpose: string }[] };

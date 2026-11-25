@@ -42,7 +42,7 @@ Use Chrome with a **new profile** (profile picture → Add → Continue without 
 
 **A. Page and installation**
 - [ ] The landing page opens by HTTPS. `/ward` typed in the address asks for unlock and sign-in. Reload works on every address.
-- [ ] "Saved in this browser. It now opens without internet." appears. Click **Install Practice App** → Chrome's dialog → **Install**. The page says installed only after that.
+- [ ] "Saved in this browser. It now opens without internet." appears. Click **Install Desktop App** → Chrome's dialog → **Install**. The page says installed only after that.
 - [ ] Its own window, name and icon; Start menu entry "ClinBridge Practice"; it starts at sign-in; no Real records anywhere.
 
 **B. Real network disconnection**

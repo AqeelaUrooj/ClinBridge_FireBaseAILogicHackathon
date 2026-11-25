@@ -11,7 +11,7 @@ Or on your own computer: `npm ci`, `npm run build:judge`, `npm run preview:judge
 ## Install it (Windows laptop, Chrome or Edge)
 
 1. Open the website. Wait for **"Saved in this browser. It now opens without internet."** (about 6 MB, once).
-2. Click **Install Practice App** and answer your browser's question.
+2. Click **Install Desktop App** and answer your browser's question.
    If no question appears: Chrome: install icon in the address bar, or ⋮ → Cast, save and share → Install page as app. Edge: "App available" in the address bar, or … → Apps → Install this site as an app.
 3. **ClinBridge Practice** opens in its own window and is in the Start menu.
 
@@ -30,7 +30,7 @@ Nurses chart. The admin declares the outage, clears the network and runs the rec
 
 ## Recommended demo (about 6 minutes)
 
-1. Open the landing page and **Install Practice App**. Open ClinBridge Practice from the Start menu.
+1. Open the landing page and **Install Desktop App**. Open ClinBridge Practice from the Start menu.
 2. Sign in as **Daniel Okafor**. Open two patients from the ward board.
 3. Lock → Switch user → **Kim Ellis** → Downtime Management → **Start a practice outage**. The banner says SYSTEM DOWN. This is a *simulated EHR outage*.
 4. **Switch the laptop's Wi-Fi off.** This is the *real* loss of network. Close the ClinBridge window and open it again from the Start menu. Unlock and sign in as Daniel Okafor.
@@ -51,6 +51,7 @@ Optional, only while Back online and when cloud AI is set up for this site: More
 - Cloud AI is blocked while the system is down, and off when this site has no Firebase project or App Check.
 - The Practice passphrase and PIN are public. They protect nothing on this site; the same encryption code runs as in the full app.
 - Installation was tested on Windows 10 with Chrome. Edge, macOS, iPhone, iPad and Android were not tested.
+- The [Android app](../mobile/README.md) is a separate, Practice-only offline prototype without AI. It was tested on one phone (Android 10). Its records are not shared with the web application.
 - A preview address is temporary: an app installed from it stops being updated when the preview ends.
 
 ## Trouble with installing or the first start

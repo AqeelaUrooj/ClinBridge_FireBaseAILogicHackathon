@@ -9,7 +9,7 @@ Before you start: remove a ClinBridge Practice app that was installed from the *
 ## Test 1. Install with Chrome's own dialog
 
 - [ ] Open the live site. Wait for "Saved in this browser. It now opens without internet."
-- [ ] Click **Install Practice App** → Chrome's dialog → **Install**.
+- [ ] Click **Install Desktop App** → Chrome's dialog → **Install**.
 - [ ] Expected: the page does not say "installed" before you click Install; then an own window opens at the sign-in page; name "ClinBridge Practice" and the ClinBridge icon; an entry in the Start menu.
 - [ ] Also try **Cancel** in the dialog once (before installing): the page says "Not installed."
 
