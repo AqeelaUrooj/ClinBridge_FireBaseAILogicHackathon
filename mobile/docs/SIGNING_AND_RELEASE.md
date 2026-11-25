@@ -1,6 +1,14 @@
 # Signing and release
 
-**State, 25 Nov 2026: not signed for release, not published.**
+**State, 25 Nov 2026: 0.1.0 is signed with the owner's key and tested on the phone.**
+
+| | |
+|---|---|
+| File | `clinbridge-android-practice.apk`, 48,822,784 bytes |
+| SHA-256 | `b8a40f8021abb534c7d5be22a6bb7744a89bfdcbd1f9b4d4e50f839d499b073d` |
+| Signature | APK Signature Scheme v2 and v3, RSA 4096, `CN=ClinBridge Practice, O=ClinBridge` |
+| Certificate SHA-256 | `061f988b60f72e02f18d4199b1c65de4d37d02443d3e8632f13f4120c7fe8c83` |
+| Content | 136 files, identical to the tested APK `361ee5e0…` |
 
 ## Why the test APK is not published
 

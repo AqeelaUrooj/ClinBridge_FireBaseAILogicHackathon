@@ -55,6 +55,25 @@ The owner reported "All five pass" for these steps. They were not watched or mea
 | Fictional form: photo taken or uploaded, kept, values typed, committed | pass |
 | Largest text size in Settings: nothing cut off | pass |
 
+## Release-signed APK on the same phone, 25 Nov 2026
+
+`clinbridge-android-practice.apk`, SHA-256 `b8a40f8021abb534c7d5be22a6bb7744a89bfdcbd1f9b4d4e50f839d499b073d`, checked on the phone. The test app was no longer installed; its fictional records were deleted with it. Fictional data only.
+
+| Step | Result |
+|---|---|
+| First start with Wi-Fi and mobile data off (network unreachable): encrypted store created, roster shown | pass |
+| Wrong PIN refused (4 tries left), then nurse signed in | pass |
+| Patient check; vitals with pulse 81, rest blank; review says "Not assessed"; two fast taps on Save = one record (49 to 50) | pass |
+| Force-stop: records locked, opened with the passphrase, pulse 81 is there | pass |
+| The old test APK (other signature) over it: refused by Android, the app stays | pass |
+| The same file over it with `adb install -r`: 50 records, pulse 81 is there | pass |
+| Screenshot refused; not debuggable; not in Android's network group; no INTERNET permission; no patient text in the log | pass |
+| Wi-Fi on again: no traffic recorded for the app | pass |
+| Camera: asked when used, allowed, live picture with torch switch (no picture taken) | pass |
+| Admin: readiness page; integrity: structure ok, encrypted pages authentic, change log 168 of 168 rows | pass |
+
+One line of the raw log says FAIL because the script looked for the passphrase one page too early; it was repeated and passed. Not repeated with this signature: airplane mode, phone restart, medicines, paper photo, FHIR file, printing (same files as above).
+
 ## Not done
 
 A real printer · a full disk · low battery · other phones and Android versions (only Android 10 was tested) · TalkBack.

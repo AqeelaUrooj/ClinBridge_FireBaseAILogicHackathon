@@ -48,7 +48,8 @@ The end-to-end tests found and fixed: blank pages on Back, a layout error for a 
 | File | `release/clinbridge-practice-0.1.0-TEST.apk` (local, not committed), 48,819,428 bytes |
 | SHA-256 | `361ee5e02d2e8f86702e536de51d30d3b253444ca7bedc540ece1b28820b7cd7` |
 | Package, version | `org.clinbridge.practice`, 0.1.0 (1), release build, minSdk 26, targetSdk 35, armeabi-v7a + arm64-v8a |
-| Signing | **test build**: this PC's Android debug key (APK signature scheme v2). No production key exists; nothing secret is in the source |
+| Release-signed file | `clinbridge-android-practice.apk`, 48,822,784 bytes, SHA-256 `b8a40f8021abb534c7d5be22a6bb7744a89bfdcbd1f9b4d4e50f839d499b073d`; same 136 files, see [SIGNING_AND_RELEASE.md](SIGNING_AND_RELEASE.md) |
+| Signing of the file above | **test build**: this PC's Android debug key (APK signature scheme v2). Nothing secret is in the source |
 | Permissions | CAMERA, ACCESS_NETWORK_STATE. No INTERNET |
 | Backup | `allowBackup=false`, extraction rules exclude everything |
 | Content | approved Practice seed; the design fixture is not inside |
