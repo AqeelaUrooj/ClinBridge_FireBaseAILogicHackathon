@@ -59,4 +59,4 @@ Battery threshold and freeze policy · physician override · drug interaction or
 
 ## Not built, needs approval
 
-Cloud or on-device AI, Firebase (no mobile app registered), EHR re-ingest, mesh/BLE/AirDrop, barcode/wristband scan, hardware key, biometric sign-in, thermal printer, production signing, store publication.
+Cloud or on-device AI, Firebase (no mobile app registered), EHR re-ingest, mesh/BLE/AirDrop, barcode/wristband scan, hardware key, biometric sign-in, thermal printer, store publication.

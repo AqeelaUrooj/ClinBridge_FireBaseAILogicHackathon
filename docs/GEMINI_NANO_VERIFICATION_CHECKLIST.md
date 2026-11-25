@@ -60,7 +60,7 @@ Known values for Tom Hale, 12:00 (the page shows them): 114/66, pulse 72, breath
 
 ## Part 4. The same in the installed app
 
-- [ ] Install Practice App, Wi-Fi off, start from the Start menu, one design, **Run on-device model**. Write down whether it works. (Not stated in the docs; either answer is a result.)
+- [ ] Install Desktop App, Wi-Fi off, start from the Start menu, one design, **Run on-device model**. Write down whether it works. (Not stated in the docs; either answer is a result.)
 
 ## Part 5. Results (no keys, tokens or DevTools console in pictures)
 

@@ -9,14 +9,15 @@ import bedside from './assets/bedside.jpg';
 import tablet from './assets/tablet.jpg';
 import handover from './assets/handover.jpg';
 import { PUBLIC_DEMO } from '../../config/publicDemo';
+import { REPOSITORY as repository } from '../../config/androidRelease';
 import { InstallPractice } from './InstallPractice';
+import { ProductAccess } from './ProductAccess';
 import './landing.css';
 
 const sections = [
   ['overview', 'Overview'], ['features', 'Features'], ['workflow', 'Offline Workflow'],
   ['hybrid-ai', 'Hybrid AI'], ['recovery', 'Recovery'], ['faq', 'FAQ'],
 ] as const;
-const repository = 'https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon';
 
 /** Shown only when the owner sets a real address for the build. */
 const video: string = import.meta.env.VITE_DEMO_VIDEO_URL ?? '';
@@ -141,6 +142,7 @@ export function LandingPage() {
             <p className="lp-intro">Chart locally, keep a paper backup and prepare for recovery. Explore the workflow with fictional Practice records.</p>
             {PUBLIC_DEMO ? (
               <InstallPractice launch={<DemoLink />}>
+                <a className="lp-secondary" href="#access"><Icon name="android" /> Android App ↓</a>
                 <a className="lp-secondary" href={repository}>View Project on GitHub</a>
                 {video.startsWith('https://') && <a className="lp-secondary" href={video}>Watch Demo Video</a>}
                 <a className="lp-secondary" href="#features">Explore Features ↓</a>
@@ -157,6 +159,7 @@ export function LandingPage() {
             <BedsidePreview />
           </div>
         </section>
+        {PUBLIC_DEMO && <ProductAccess launch={<DemoLink />} />}
         <section id="workflow" tabIndex={-1} className="lp-tint"><div className="lp-wrap lp-section">
           <div className="lp-section-heading"><div><p className="lp-label">Clinical continuity</p><h2>What happens when the EHR goes offline?</h2></div><p>From preparing the workstation to reconciling the documentation after an outage.</p></div>
           <ol className="lp-steps">{steps.map(([time, status, icon, title, detail, annotation]) => <li key={status}>
@@ -202,14 +205,14 @@ export function LandingPage() {
           <div className="lp-centered"><p className="lp-label">Prototype details</p><h2>Frequently asked questions</h2></div>
           {questions.map(([question, answer]) => <details key={question}><summary>{question}<Icon name="expand_more" /></summary><p>{answer}</p></details>)}
         </div></section>
-        <section className="lp-cta"><div className="lp-wrap"><h2>Walk through a Practice shift</h2><p>Explore local charting, paper backup and structured recovery with fictional records.</p><DemoLink />{PUBLIC_DEMO && <a className="lp-secondary" href="#install">Install Practice App</a>}</div></section>
+        <section className="lp-cta"><div className="lp-wrap"><h2>Walk through a Practice shift</h2><p>Explore local charting, paper backup and structured recovery with fictional records.</p><DemoLink />{PUBLIC_DEMO && <a className="lp-secondary" href="#access">Install Desktop App</a>}</div></section>
       </main>
       <footer className="lp-footer">
         <div className="lp-footer-strip"><div className="lp-wrap"><span><Icon name="description" /> Prototype documentation</span><div><a href="#workflow">Offline workflow</a><a href="#recovery">Recovery and export</a><a href="#faq">Practice FAQ</a></div></div></div>
         <div className="lp-wrap lp-footer-grid">
           <div><a className="lp-brand" href="#overview"><img src="/icon.svg" alt="" />ClinBridge</a><p>Offline-first nursing documentation prototype.<br />Fictional Practice records only.</p></div>
           <nav aria-label="Footer features"><h3>Platform</h3><a href="#features">Clinical workflows</a><a href="#hybrid-ai">Paper capture and AI</a><a href="#recovery">Recovery and export</a></nav>
-          <nav aria-label="Footer navigation"><h3>Project</h3><a href={repository}>GitHub source</a><a href={repository + '/blob/main/LICENSE'}>Apache-2.0 license</a><a href="#faq">FAQ</a></nav>
+          <nav aria-label="Footer navigation"><h3>Project</h3><a href={repository}>GitHub source</a>{PUBLIC_DEMO && <a href="#access">Web, desktop and Android</a>}<a href={repository + '/blob/main/LICENSE'}>Apache-2.0 license</a><a href="#faq">FAQ</a></nav>
           <div><h3>Practice</h3><DemoLink /></div>
           <p className="lp-footer-note">ClinBridge source is available under Apache-2.0. Practice screens contain fictional records.{PUBLIC_DEMO && <> <a href="/third-party-licenses.txt">Licenses of fonts and code</a></>}</p>
         </div>

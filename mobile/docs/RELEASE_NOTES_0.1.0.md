@@ -1,4 +1,4 @@
-# ClinBridge Practice for Android 0.1.0 (draft, not published)
+# ClinBridge Practice for Android 0.1.0
 
 Native Android application for offline bedside nursing documentation with encrypted local storage.
 
@@ -8,10 +8,10 @@ Native Android application for offline bedside nursing documentation with encryp
 |---|---|
 | File | `clinbridge-android-practice.apk` |
 | Version | 0.1.0 (1), package `org.clinbridge.practice` |
-| Size | *after release signing* |
-| SHA-256 | *after release signing* |
-| Signing certificate SHA-256 | *after release signing* |
-| Android | 8.0 (API 26) or newer, ARM phones (arm64-v8a, armeabi-v7a) |
+| Size | 48,822,784 bytes (46.6 MB) |
+| SHA-256 | `b8a40f8021abb534c7d5be22a6bb7744a89bfdcbd1f9b4d4e50f839d499b073d` |
+| Signing certificate SHA-256 | `061f988b60f72e02f18d4199b1c65de4d37d02443d3e8632f13f4120c7fe8c83` |
+| Supported Android | 8.0 (API 26) or newer, ARM phones (arm64-v8a, armeabi-v7a) |
 | Tested on | realme 5i, Android 10 (one phone) |
 | Permissions | camera (asked for when used), network state. **No internet permission** |
 
@@ -28,11 +28,12 @@ Daniel Okafor (nurse) or Kim Ellis (admin), PIN `2468`, passphrase `practice onl
 ## Tested
 
 - 238 automated tests (219 core, screen and visual tests, 19 whole-app journeys) on the app's code.
-- Phone test on 25 Nov 2026, first with the same code under a test signature: first start offline, PIN lockout, patient check, vitals, medicines with second nurse, camera, process death, update over an older build, FHIR file, integrity check, no network use. [Results](https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/blob/main/mobile/docs/PHYSICAL_ANDROID_RESULTS_2026-11-25.md)
-- This signed file on the phone: *after release signing*
+- Phone test on 25 Nov 2026 of the same files under a test signature: first start offline, PIN lockout, patient check, vitals, medicines with second nurse, camera, process death, update over an older build, FHIR file, integrity check, no network use. [Results](https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/blob/main/mobile/docs/PHYSICAL_ANDROID_RESULTS_2026-11-25.md)
+- This signed file on the same phone: first start with the network off, wrong PIN, sign-in, patient check, a record kept after force-stop and after an update with the same key, other signatures refused, screenshots blocked, no network use, camera permission, admin integrity check.
 
 ## Known limitations
 
+- The signed file was tested with Wi-Fi and mobile data off, not in airplane mode, and without restarting the phone; the owner did both with the test-signed file.
 - Tested on one phone and one Android version. Not tested: TalkBack, tablets, landscape (portrait only), a real printer, a full disk, low battery, Android with 16 KB memory pages.
 - No AI, no cloud, no synchronisation, no EHR connection. The FHIR R4 file is saved where you choose.
 - The Practice passphrase and PIN are public and protect fictional data only.

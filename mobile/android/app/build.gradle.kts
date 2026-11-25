@@ -32,7 +32,7 @@ android {
 
     buildTypes {
         release {
-            // TEST BUILD: signed with this PC's Android debug key. No production signing key exists or is in the source.
+            // TEST BUILD: signed with this PC's Android debug key. Releases are signed afterwards, see docs/SIGNING_AND_RELEASE.md.
             signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
