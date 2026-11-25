@@ -1,0 +1,61 @@
+name: clinbridge_practice
+description: "ClinBridge Practice for Android: offline nursing downtime drills with fictional patients only."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Encrypted SQLite: sqlite3 (FFI) with Zetetic SQLCipher binaries.
+  sqlite3: 2.9.4
+  sqlcipher_flutter_libs: 0.6.8
+  # SHA-256, HMAC; AES-GCM for the vault key envelope.
+  crypto: 3.0.6
+  pointycastle: 4.0.0
+  # Icons of the Stitch designs, bundled (Apache-2.0).
+  material_symbols_icons: 4.2960.0
+  # Printable sheets.
+  pdf: 3.11.3
+  # Decodes camera/picked pictures for the local quality hints.
+  image: 4.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/seed/
+    - assets/art/
+    - assets/fonts/Inter-OFL.txt
+    - assets/fonts/Roboto-LICENSE.txt
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-400.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-500.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-600.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-700.ttf
+          weight: 700
+        - asset: assets/fonts/Inter-800.ttf
+          weight: 800
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
+    - family: RobotoMono
+      fonts:
+        - asset: assets/fonts/RobotoMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/RobotoMono-Bold.ttf
+          weight: 700
