@@ -12,7 +12,12 @@ export interface AndroidRelease {
  * The Android release that exists on GitHub. null: none is published, so the website shows no download address and the
  * button is off. Fill it in only after the release was published and its file was downloaded again and compared.
  */
-export const ANDROID_RELEASE: AndroidRelease | null = null;
+export const ANDROID_RELEASE: AndroidRelease | null = {
+  tag: 'android-v0.1.0',
+  version: '0.1.0',
+  bytes: 48_822_784,
+  sha256: 'b8a40f8021abb534c7d5be22a6bb7744a89bfdcbd1f9b4d4e50f839d499b073d',
+};
 
 /** Null when the values can not be those of a real file. */
 export function androidDownload(r: AndroidRelease | null) {
