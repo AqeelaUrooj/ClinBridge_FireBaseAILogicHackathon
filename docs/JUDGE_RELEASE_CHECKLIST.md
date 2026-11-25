@@ -67,7 +67,7 @@ If the cloud run says 401 or 403: check the domain in the reCAPTCHA key, then th
 
 ## 6. Production (**APPROVAL**, separate for every release)
 
-First release: 24 Nov 2026, [RELEASE_REPORT_2026-11-24.md](RELEASE_REPORT_2026-11-24.md). If the release step answers HTTP 500, check that the live site is unchanged, then run the same command again.
+First release: 24 Nov 2026, [RELEASE_REPORT_2026-11-24.md](RELEASE_REPORT_2026-11-24.md). Second: 25 Nov 2026, [RELEASE_REPORT_2026-11-25.md](RELEASE_REPORT_2026-11-25.md). If the release step answers HTTP 500, check that the live site is unchanged, then run the same command again.
 
 ```powershell
 firebase deploy --only hosting --project PROJECT

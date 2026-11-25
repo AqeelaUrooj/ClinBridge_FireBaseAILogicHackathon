@@ -10,7 +10,7 @@ When ransomware or an outage takes the EHR offline, nurses fall back to paper an
 
 | | Get it | Source | Guide | Tests |
 |---|---|---|---|---|
-| **Web application** | [Launch the demo](https://clinbridge-hackathon.web.app) | [`src/`](src) | [Judge demo guide](docs/JUDGE_DEMO_GUIDE.md) | [Release report](docs/RELEASE_REPORT_2026-11-24.md), [test report](TEST_REPORT.md) |
+| **Web application** | [Launch the demo](https://clinbridge-hackathon.web.app) | [`src/`](src) | [Judge demo guide](docs/JUDGE_DEMO_GUIDE.md) | [Release report](docs/RELEASE_REPORT_2026-11-25.md), [first release](docs/RELEASE_REPORT_2026-11-24.md), [test report](TEST_REPORT.md) |
 | **Desktop application** (the web application, installed by Chrome or Edge) | **Install Desktop App** on the website | [`src/`](src) | [Installation](docs/JUDGE_DEMO_GUIDE.md#install-it-windows-laptop-chrome-or-edge) | [Offline tests](docs/PHYSICAL_OFFLINE_TESTS.md) |
 | **Android application** (separate, Practice only, offline, no AI) | [APK 0.1.0](https://github.com/AqeelaUrooj/ClinBridge_FireBaseAILogicHackathon/releases/tag/android-v0.1.0) | [`mobile/`](mobile) | [Installation](mobile/docs/INSTALL_ANDROID.md) | [Test report](mobile/docs/TEST_REPORT_2026-11-25.md), [phone test](mobile/docs/PHYSICAL_ANDROID_RESULTS_2026-11-25.md) |
 
