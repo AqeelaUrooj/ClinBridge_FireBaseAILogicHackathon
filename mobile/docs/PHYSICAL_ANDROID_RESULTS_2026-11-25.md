@@ -43,6 +43,18 @@
 
 Two lines of the raw log say FAIL because the test script looked for the wrong words ("Wait", and text that was outside the visible part); both were repeated and passed.
 
-## Not done on the phone (a person is needed)
+## Done by the owner on the same phone, 25 Nov 2026
 
-Phone restart · the airplane-mode switch itself (Wi-Fi and mobile data were off instead) · largest text size (adb may not change it on this phone) · is the camera preview upright (no picture of the room was taken off the phone) · upload from the gallery, keeping a photo of a fictional form and committing it · a real printer · a full disk, low battery · other phones and Android versions, TalkBack.
+The owner reported "All five pass" for these steps. They were not watched or measured by the test script, and no details were given.
+
+| Step | Owner's report |
+|---|---|
+| Phone restarted, app opened and unlocked, Sam Rivera's pulse still 81 | pass |
+| Airplane mode on: the app opens and works | pass |
+| Paper photo: the camera picture is upright | pass |
+| Fictional form: photo taken or uploaded, kept, values typed, committed | pass |
+| Largest text size in Settings: nothing cut off | pass |
+
+## Not done
+
+A real printer · a full disk · low battery · other phones and Android versions (only Android 10 was tested) · TalkBack.
