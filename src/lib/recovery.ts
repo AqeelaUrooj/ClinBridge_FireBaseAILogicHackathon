@@ -75,9 +75,14 @@ export function queuePriority(type: EntryType, flags: WorklistFlag[], policy: Cl
   return rank * 10 + flags.length;
 }
 
-/** Entries that belong to a downtime: care time inside the event window, live (confirmed) records only. */
+/**
+ * Entries that belong to a downtime: care time inside the event window, live (confirmed) records only.
+ * Care times are typed to the minute (seconds are 0), the declaration has seconds: the window therefore starts at the
+ * beginning of the declaration's minute, so a record measured in that first minute is never left out of recovery.
+ */
 export function inDowntime(e: Entry, ev: DowntimeEvent | undefined): boolean {
   if (!ev || e.status !== 'confirmed') return false;
   const t = Date.parse(e.care_time);
-  return t >= Date.parse(ev.declared_at) && (!ev.ended_at || t <= Date.parse(ev.ended_at));
+  const start = Math.floor(Date.parse(ev.declared_at) / 60_000) * 60_000;
+  return t >= start && (!ev.ended_at || t <= Date.parse(ev.ended_at));
 }

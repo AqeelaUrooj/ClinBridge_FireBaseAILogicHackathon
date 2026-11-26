@@ -34,6 +34,20 @@ describe('recovery worklist (rules only)', () => {
     expect(items.find((i) => i.entry_id === dup.id)!.priority).toBeGreaterThan(items.find((i) => i.entry_id === future.id)!.priority);
     expect(await buildWorklist(db, clock, nurse)).toBe(0); // idempotent
   });
+  it('lists a record measured in the first minute of the outage (care times have no seconds), not one from the minute before', async () => {
+    const ev = (await db.downtime_event.toArray()).find((e) => e.network_cleared_at && !e.ended_at)!;
+    const minute = ev.declared_at.slice(0, 16);
+    const offset = ev.declared_at.slice(-6);
+    await db.downtime_event.update(ev.id, { declared_at: `${minute}:40${offset}` }); // declared 40 s into the minute
+    const note = { category: 'assessment', text: 'x', score_name: null, score_value: null } as const;
+    const first = await createEntry(db, clock, nurse, { type: 'note', patientId: 'pt-09', careTime: `${minute}:00${offset}`, values: note });
+    const before = new Date(Date.parse(`${minute}:00${offset}`) - 60_000);
+    const earlier = await createEntry(db, clock, nurse, { type: 'note', patientId: 'pt-09', careTime: `${before.toISOString().slice(0, 19)}Z`, values: note });
+    await buildWorklist(db, clock, nurse);
+    const listed = new Set((await db.worklist_item.toArray()).map((i) => i.entry_id));
+    expect(listed.has(first.id)).toBe(true);
+    expect(listed.has(earlier.id)).toBe(false);
+  });
   it('sign-off is recorded once, refused for drafts, audited', async () => {
     const item = (await db.worklist_item.toArray()).find((w) => !w.signed_off_at)!;
     await signOffItem(db, clock, nurse, item.id);
