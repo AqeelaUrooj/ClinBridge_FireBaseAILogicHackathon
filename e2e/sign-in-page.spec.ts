@@ -48,7 +48,7 @@ test('this laptop: real facts only; no badge, mesh, power, drift, escrow or AI c
   const box = page.getByRole('region', { name: 'This laptop' });
   for (const t of ['4 West', 'Network cleared at 12:40', 'Downtime started 03:40, not ended yet', 'Encrypted (AES-256-GCM)', '10 patients on the list', '5 min', '5 tries']) await expect(box).toContainText(t);
   await expect(page.getByRole('main')).toContainText('DT-4W-01');
-  await expect(page.getByRole('main')).toContainText('6 people on this laptop');
+  await expect(page.getByRole('main')).toContainText('7 people on this laptop'); // incl. the fictional Admission Staff account
   await expect(page.getByRole('main')).not.toContainText(/badge|\bmesh\b|enclave|escrow|\bMAC\b|\bUPS\b|drift|\bViT\b|SQLite|Epic|air-gapped|signed/i);
   await expect(page.locator('body')).not.toContainText(PATIENTS);
   await page.getByText('Forgot your PIN? Ask an admin.').click();

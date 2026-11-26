@@ -12,6 +12,7 @@
  *   record countersignatures or handover sign-off.
  * Writing on a printed sheet does not put anything into ClinBridge; someone has to type it in.
  */
+import { allergyState } from '../../lib/admission';
 import type { ReactNode } from 'react';
 import type { VitalSign } from '../../db/schema';
 import { ROUTE_LABEL } from '../../config/medicationPolicy';
@@ -42,7 +43,9 @@ function Lines({ n }: { n: number }) {
 function allergyText(d: PrintData): string {
   const real = d.bundle.allergies.filter((a) => !isNoKnownAllergy(a));
   if (real.length) return real.map((a) => `${a.substance.toUpperCase()}${a.reaction ? ` (${a.reaction}${a.severity ? `, ${a.severity}` : ''})` : ''}`).join(' · ');
-  return d.bundle.allergies.length ? 'No known allergies' : 'Allergies not recorded in ClinBridge: ask and write here ____________';
+  const st = allergyState(d.bundle.patient, d.bundle.allergies);
+  if (st.text === 'No known allergies') return st.text;
+  return `${st.tone === 'amber' ? st.text : 'Allergies not recorded in ClinBridge'}: ask and write here ____________`;
 }
 
 /** Patient identification strip. It sits in a table header, so the browser repeats it on every printed page. */

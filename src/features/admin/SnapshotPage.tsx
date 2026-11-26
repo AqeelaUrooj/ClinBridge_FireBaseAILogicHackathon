@@ -8,6 +8,7 @@ import { fieldCls } from '../charting/TwoStepEditor';
 import { Block, Err, Facts, Head, PANEL, PaperHead, Tile, msg } from './adminUi';
 import { fullName, isNoKnownAllergy } from '../patient/patientData';
 import { checkStoredList, type ListRow } from './listCheck';
+import { isLocallyRegistered } from '../../lib/admission';
 
 const GRID = 'xl:grid-cols-[3.5rem_minmax(0,1.2fr)_6.5rem_6rem_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1fr)_4.5rem_6rem]';
 
@@ -39,7 +40,12 @@ export function SnapshotPage() {
   }
   if (!data) return <p role="status">Loading…</p>;
   const now = clock.nowIso();
-  const { patient, encounter, allergy, active_order, snapshot_result } = data;
+  // Locally registered patients are not part of the hospital list: counted on their own tile, left out of the list counts.
+  const localIds = new Set(data.patient.filter((p) => isLocallyRegistered(p)).map((p) => p.id));
+  const localStays = new Set(data.encounter.filter((e) => localIds.has(e.patient_id)).map((e) => e.id));
+  const patient = data.patient.filter((p) => !localIds.has(p.id)), encounter = data.encounter.filter((e) => !localIds.has(e.patient_id));
+  const allergy = data.allergy.filter((a) => !localIds.has(a.patient_id)), active_order = data.active_order.filter((o) => !localStays.has(o.encounter_id));
+  const snapshot_result = data.snapshot_result.filter((r) => !localIds.has(r.patient_id));
   const want = snapshot?.row_counts ?? {};
   const foot = (t: string, n: number) => (want[t] == null ? 'Expected number not in the list' : want[t] === n ? `All ${n} of the list` : `${n} of ${want[t]} of the list`);
   const severe = allergy.filter((a) => a.severity === 'severe' && a.status === 'active' && !isNoKnownAllergy(a)).length;
@@ -84,6 +90,7 @@ export function SnapshotPage() {
         <Tile label="Allergies" icon="warning" value={allergy.filter((a) => !isNoKnownAllergy(a)).length} foot={<>{severe} marked severe. {foot('allergy', allergy.length)} with “No known”</>} tone={severe ? 'red' : undefined} />
         <Tile label="Orders" icon="receipt_long" value={active_order.length} foot={foot('active_order', active_order.length)} />
         <Tile label="Results" icon="science" value={snapshot_result.length} foot={`${snapshot_result.filter((r) => r.kind === 'lab').length} labs, ${snapshot_result.filter((r) => r.kind !== 'lab').length} vital signs and fluids`} />
+        {localIds.size > 0 && <Tile label="Registered here" icon="person_add" value={localIds.size} foot="Not part of the list. See Admissions." />}
       </div>
 
       <section aria-label="Patients on the list" className={`${PANEL} flex flex-col gap-space-sm print:border-0 print:p-0 print:shadow-none`}>

@@ -7,7 +7,7 @@ import { unlockIfNeeded } from './helpers';
 test.use({ serviceWorkers: 'block' });
 const squash = (t: string) => t.replace(/\s+/g, '').toLowerCase();
 const row = (page: Page, name: string) => page.getByRole('list', { name: 'Staff' }).getByRole('listitem').filter({ hasText: name });
-const openStaff = async (page: Page) => { await openAdmin(page, '/admin/staff'); await expect(page.getByRole('list', { name: 'Staff' }).getByRole('listitem')).toHaveCount(7); };
+const openStaff = async (page: Page) => { await openAdmin(page, '/admin/staff'); await expect(page.getByRole('list', { name: 'Staff' }).getByRole('listitem')).toHaveCount(8); }; // 7 + the fictional Admission Staff account
 
 test.describe('Staff', () => {
   test('roles, records and PIN state from the stored list; no badge, temporary PIN, duty or bed claim', async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe('Staff', () => {
     await expect(row(page, 'Tara Nguyen')).toContainText('Switched off');
     await expect(row(page, 'Kim Ellis')).toContainText('Cannot chart');
     const main = page.getByRole('main');
-    for (const t of ['5 nurses, 1 admin', '1 switched off', 'Salted hash only', 'There is no temporary PIN, recovery PIN or badge', 'RN (prototype, not approved)']) await expect(main).toContainText(t);
+    for (const t of ['5 nurses, 1 admin, 1 admission', '1 switched off', 'Salted hash only', 'There is no temporary PIN, recovery PIN or badge', 'RN (prototype, not approved)']) await expect(main).toContainText(t);
     const text = (await main.innerText()).replace('There is no temporary PIN, recovery PIN or badge', '');
     expect(text).not.toMatch(NOT_REAL);
     expect(text).not.toMatch(/#\d{4}|shift lead|charge nurse|biometric|provision|2-hour|pbkdf2\$/i);

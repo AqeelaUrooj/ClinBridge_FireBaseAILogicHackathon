@@ -56,7 +56,20 @@ export const NOTE_CATEGORIES = [
   { v: 'assessment', label: 'Assessment' }, { v: 'intervention', label: 'Care given' }, { v: 'communication', label: 'Talked to doctor / team' },
   { v: 'risk_score', label: 'Risk score' }, { v: 'restraint_check', label: 'Restraint check' }, { v: 'other', label: 'Other' },
 ] as const;
-export const noteLabel = (c: string) => NOTE_CATEGORIES.find((x) => x.v === c)?.label ?? c;
+/**
+ * Notes written by the admission lifecycle (registration, transfer, discharge, identity, allergy assessment). They are
+ * ordinary append-only records, but never chosen in the note form and never fixed or crossed out through it.
+ */
+export const LIFECYCLE_NOTE = {
+  admission: 'Admission',
+  transfer: 'Transfer',
+  discharge: 'Discharge',
+  identity_review: 'Identity review',
+  allergy_review: 'Allergy assessment',
+} as const;
+export type LifecycleCategory = keyof typeof LIFECYCLE_NOTE;
+export const isLifecycleNote = (category: string | undefined | null): category is LifecycleCategory => !!category && Object.prototype.hasOwnProperty.call(LIFECYCLE_NOTE, category);
+export const noteLabel = (c: string) => NOTE_CATEGORIES.find((x) => x.v === c)?.label ?? (isLifecycleNote(c) ? LIFECYCLE_NOTE[c] : c);
 
 export interface NoteForm { category: string; text: string; scoreName: string; scoreValue: string }
 

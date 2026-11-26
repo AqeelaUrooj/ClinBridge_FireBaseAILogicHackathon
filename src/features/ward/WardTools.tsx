@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { isActiveStay } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import type { DowntimeDB } from '../../db/db';
@@ -31,7 +32,7 @@ async function loadWardRows(db: DowntimeDB): Promise<WardRow[]> {
     const orders = b.encounter ? await db.active_order.where('encounter_id').equals(b.encounter.id).toArray() : [];
     return { ...b, items, orders };
   }));
-  return rows.sort((a, b) => (a.encounter?.bed ?? '').localeCompare(b.encounter?.bed ?? ''));
+  return rows.filter((r) => isActiveStay(r.encounter)).sort((a, b) => (a.encounter?.bed ?? '').localeCompare(b.encounter?.bed ?? '')); // discharged stays are not on the ward
 }
 
 function useWardRows() {

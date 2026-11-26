@@ -1,4 +1,9 @@
-/** Checks the patient list that is stored on this laptop. Compares counts and links only; changes nothing. */
+/**
+ * Checks the patient list that is stored on this laptop. Compares counts and links only; changes nothing.
+ * Patients registered on this laptop (and their stays, allergies, orders) are not part of the list: they are counted
+ * apart, so an eleventh, locally registered patient is not reported as a broken list.
+ */
+import { isLocallyRegistered } from '../../lib/admission';
 import type { ActiveOrder, Allergy, Encounter, Patient, Snapshot, SnapshotResult } from '../../db/schema';
 
 export interface StoredList { snapshot?: Snapshot | null; patient: Patient[]; encounter: Encounter[]; allergy: Allergy[]; active_order: ActiveOrder[]; snapshot_result: SnapshotResult[] }
@@ -6,8 +11,14 @@ export interface ListRow { label: string; ok: boolean | null; detail: string }
 
 const TABLES = [['patient', 'Patients'], ['encounter', 'Stays'], ['allergy', 'Allergies'], ['active_order', 'Orders'], ['snapshot_result', 'Results']] as const;
 
-export function checkStoredList(l: StoredList): ListRow[] {
+export function checkStoredList(all: StoredList): ListRow[] {
   const out: ListRow[] = [];
+  const local = new Set(all.patient.filter((p) => isLocallyRegistered(p)).map((p) => p.id));
+  const localStays = new Set(all.encounter.filter((e) => local.has(e.patient_id)).map((e) => e.id));
+  const l: StoredList = {
+    snapshot: all.snapshot, patient: all.patient.filter((p) => !local.has(p.id)), encounter: all.encounter.filter((e) => !local.has(e.patient_id)),
+    allergy: all.allergy.filter((a) => !local.has(a.patient_id)), active_order: all.active_order.filter((o) => !localStays.has(o.encounter_id)), snapshot_result: all.snapshot_result.filter((r) => !local.has(r.patient_id)),
+  };
   for (const [t, label] of TABLES) {
     const here = l[t].length, want = l.snapshot?.row_counts?.[t];
     out.push({ label, ok: want == null ? null : here === want, detail: want == null ? `${here} here; the list does not say how many it should have` : `${here} here, ${want} in the list` });
@@ -20,7 +31,8 @@ export function checkStoredList(l: StoredList): ListRow[] {
   links('Result has a patient', l.snapshot_result.filter((r) => !patients.has(r.patient_id)).length, 'result points to a patient here');
   const noAllergy = l.patient.filter((p) => !l.allergy.some((a) => a.patient_id === p.id)).length;
   out.push({ label: 'Allergies recorded', ok: noAllergy === 0 ? true : null, detail: noAllergy === 0 ? 'Every patient has an allergy line or "No known allergies"' : `${noAllergy} patients have no allergy line at all` });
-  const mrn = new Set(l.patient.map((p) => p.mrn));
-  out.push({ label: 'MRN used once', ok: mrn.size === l.patient.length, detail: mrn.size === l.patient.length ? 'No MRN is used twice' : `${l.patient.length - mrn.size} MRN used more than once` });
+  const mrn = new Set(all.patient.map((p) => p.mrn));
+  out.push({ label: 'MRN used once', ok: mrn.size === all.patient.length, detail: mrn.size === all.patient.length ? 'No MRN or temporary ID is used twice' : `${all.patient.length - mrn.size} MRN or temporary ID used more than once` });
+  if (local.size) out.push({ label: 'Registered on this laptop', ok: null, detail: `${local.size} patient${local.size > 1 ? 's' : ''} registered here, not part of the list` });
   return out;
 }

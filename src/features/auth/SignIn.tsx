@@ -49,7 +49,7 @@ export function usePinCheck(target: Practitioner | null, onSuccess: (p: Practiti
   return { pin, setPin, submit, error, disabled: busy || blocked };
 }
 
-const roleLabel = (r: Practitioner['role']) => (r === 'admin' ? 'Admin' : r);
+import { homeFor, roleLabel } from '../../lib/admission';
 
 /** Is there a network on this laptop? Only what the browser says; signing in never needs it. */
 function useOnline() {
@@ -132,7 +132,7 @@ export function SignIn() {
   const from = (location.state as { from?: string } | null)?.from;
   const pin = usePinCheck(selected, (p) => {
     signIn(p);
-    navigate(from && from !== '/sign-in' ? from : p.role === 'admin' ? '/admin' : '/ward', { replace: true });
+    navigate(from && from !== '/sign-in' && (p.role !== 'admission' || from.startsWith('/admission')) ? from : homeFor(p), { replace: true });
   });
   const choose = (p: Practitioner | null) => { setSelected(p); pin.setPin(''); };
 
@@ -212,7 +212,7 @@ export function SignIn() {
                 {selected && (
                   <div className={`${BOX} flex flex-wrap items-center gap-space-md`}>
                     <span aria-hidden className="w-14 h-14 rounded-lg bg-primary-container text-white grid place-items-center font-bold text-[20px]">{selected.initials}</span>
-                    <span className="flex-1 min-w-[8rem]"><span className="block font-headline-sm text-headline-sm text-primary">{selected.name}</span><span className="block font-body-sm text-body-sm text-secondary">{roleLabel(selected.role)} · {selected.role === 'admin' ? 'can manage this laptop, cannot chart' : 'can chart'}</span></span>
+                    <span className="flex-1 min-w-[8rem]"><span className="block font-headline-sm text-headline-sm text-primary">{selected.name}</span><span className="block font-body-sm text-body-sm text-secondary">{roleLabel(selected.role)} · {selected.role === 'admin' ? 'can manage this laptop, cannot chart' : selected.role === 'admission' ? 'registers patients and beds, cannot chart' : 'can chart'}</span></span>
                     <Button variant="ghost" onClick={() => choose(null)}>Not you?</Button>
                   </div>
                 )}
@@ -242,7 +242,7 @@ export function LockScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const laptop = useLaptop();
-  const back = (location.state as { from?: string } | null)?.from ?? (user?.role === 'admin' ? '/admin' : '/ward');
+  const back = (location.state as { from?: string } | null)?.from ?? homeFor(user);
   const pin = usePinCheck(user, () => { unlock(); navigate(back, { replace: true }); });
   if (!user) {
     return (

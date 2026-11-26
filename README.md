@@ -6,6 +6,10 @@ When ransomware or an outage takes the EHR offline, nurses fall back to paper an
 
 **Live demo (fictional patients only): https://clinbridge-hackathon.web.app** · [Judge demo guide](docs/JUDGE_DEMO_GUIDE.md)
 
+![ClinBridge ward board with fictional Practice patients](docs/images/readme/03-ward-board.webp)
+
+More pictures: [Screenshots](#screenshots).
+
 ## Three ways to use it
 
 | | Get it | Source | Guide | Tests |
@@ -29,9 +33,45 @@ Architecture: [web and hybrid AI](docs/AI_INTEGRATION.md) · [Android](mobile/do
 | Genuine Firebase cloud AI (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`, App Check enforced), text notes and paper-form photos | **Live-tested** on the owner's PC, 20 and 22 Nov 2026, and on the live site with real App Check, 24 Nov 2026 | `docs/RELEASE_REPORT_2026-11-24.md`, `docs/LIVE_TEST_RESULTS_2026-11-24.md`, `docs/LIVE_TEST_RESULTS_2026-11-20.md`, `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
 | Gemini Nano on-device inference (`ONLY_ON_DEVICE`, network blocked during the call) | **Implemented and mock-tested, not live-verified.** The test PC's hardware can't run Gemini Nano | `docs/AI_TEST_MATRIX.md`, `docs/GEMINI_NANO_VERIFICATION_CHECKLIST.md` |
 | FHIR R4 export (file) | **Working**: 0 errors from the official HL7 validator in CI. Many fields are free text; no live EHR link | `docs/FHIR_VALIDATION.md` |
+| Admission lifecycle: Admission Staff role, registration, provisional registration by a nurse during System Down, temporary IDs, beds, transfer, discharge, identity reconciliation (Practice only) | **Working, prototype policy**: fictional patients only; not a hospital registration system | Unit and offline browser tests; `docs/ADMISSION_ARCHITECTURE.md` |
 | Real patient deployment | **Not approved** | Clinical rules and security are prototypes (`KNOWN_LIMITATIONS.md`) |
 
 AI is optional. Every record can be typed by hand, and no AI proposal is ever saved as confirmed: a nurse checks it against the paper first.
+
+## Screenshots
+
+All screens show **fictional Practice patients** only. Click a picture to see it larger. Web pictures come from the judge build (1440 px wide); the phone pictures are 390 px (web) and 360 dp (Android).
+
+### Web application
+
+| | |
+|---|---|
+| <a href="docs/images/readme/01-landing.webp"><img src="docs/images/readme/01-landing.webp" alt="Landing page: launch the demo, install the desktop app or get the Android app" width="420"></a><br>Landing page: launch the demo, install the desktop app or get the Android app | <a href="docs/images/readme/02-sign-in.webp"><img src="docs/images/readme/02-sign-in.webp" alt="Sign in: choose a Practice staff member, then a PIN" width="420"></a><br>Sign in: choose a Practice staff member, then a PIN |
+| <a href="docs/images/readme/03-ward-board.webp"><img src="docs/images/readme/03-ward-board.webp" alt="Ward board: fictional patients, alerts, vitals due" width="420"></a><br>Ward board: fictional patients, alerts, vitals due | <a href="docs/images/readme/04-patient-summary.webp"><img src="docs/images/readme/04-patient-summary.webp" alt="Patient summary with allergies and recent records" width="420"></a><br>Patient summary with allergies and recent records |
+| <a href="docs/images/readme/05-record-vitals.webp"><img src="docs/images/readme/05-record-vitals.webp" alt="Recording vital signs offline" width="420"></a><br>Recording vital signs offline | <a href="docs/images/readme/06-medication-record.webp"><img src="docs/images/readme/06-medication-record.webp" alt="Medication record (MAR) with high-alert second check" width="420"></a><br>Medication record (MAR) with high-alert second check |
+| <a href="docs/images/readme/07-body-map.webp"><img src="docs/images/readme/07-body-map.webp" alt="Body map assessment" width="420"></a><br>Body map assessment | <a href="docs/images/readme/08-handwritten-report.webp"><img src="docs/images/readme/08-handwritten-report.webp" alt="Handwritten-style Practice report, drawn from the records" width="420"></a><br>Handwritten-style Practice report, drawn from the records |
+
+### Downtime, hybrid AI and recovery
+
+| | |
+|---|---|
+| <a href="docs/images/readme/09-system-down.webp"><img src="docs/images/readme/09-system-down.webp" alt="Admin starts a practice outage: System Down, cloud blocked" width="420"></a><br>Admin starts a practice outage: System Down, cloud blocked | <a href="docs/images/readme/10-device-vs-cloud.webp"><img src="docs/images/readme/10-device-vs-cloud.webp" alt="Device vs Cloud: the same fictional input through each model, labelled" width="420"></a><br>Device vs Cloud: the same fictional input through each model, labelled |
+| <a href="docs/images/readme/15-recovery-identity.webp"><img src="docs/images/readme/15-recovery-identity.webp" alt="Recovery worklist: a provisional patient waits for identity reconciliation" width="420"></a><br>Recovery worklist: a provisional patient waits for identity reconciliation | <a href="docs/images/readme/16-fhir-export.webp"><img src="docs/images/readme/16-fhir-export.webp" alt="FHIR R4 export file for the EHR" width="420"></a><br>FHIR R4 export file for the EHR |
+
+### Admission lifecycle (Practice only)
+
+| | |
+|---|---|
+| <a href="docs/images/readme/11-register-patient.webp"><img src="docs/images/readme/11-register-patient.webp" alt="Admission Staff registers a fictional patient: bed, nurse, allergies" width="420"></a><br>Admission Staff registers a fictional patient: bed, nurse, allergies | <a href="docs/images/readme/12-admissions-dashboard.webp"><img src="docs/images/readme/12-admissions-dashboard.webp" alt="Admissions dashboard: beds and active stays" width="420"></a><br>Admissions dashboard: beds and active stays |
+| <a href="docs/images/readme/13-stay-and-transfer.webp"><img src="docs/images/readme/13-stay-and-transfer.webp" alt="Stay page after a transfer, with location history" width="420"></a><br>Stay page after a transfer, with location history | <a href="docs/images/readme/14-ward-provisional.webp"><img src="docs/images/readme/14-ward-provisional.webp" alt="Ward board with a provisional patient (temporary ID) added by a nurse during System Down" width="420"></a><br>Ward board with a provisional patient (temporary ID) added by a nurse during System Down |
+
+### Phone
+
+| Web app on a phone | Android app: ward | Android app: vitals |
+|---|---|---|
+| <img src="docs/images/readme/17-phone-ward.webp" alt="Web app ward board at phone width" width="230"> | <img src="docs/images/readme/18-android-ward.webp" alt="Android app ward list" width="230"> | <img src="docs/images/readme/19-android-vitals.webp" alt="Android app vital signs editor" width="230"> |
+
+Android pictures come from the app's visual parity test (`mobile/docs/VISUAL_DIFFERENCES.md`). The Android app is separate, Practice only, offline, and has no AI.
 
 ## How the hybrid AI works
 
@@ -111,6 +151,7 @@ docs/            planning documents and the project docs below
 - [TEST_REPORT.md](TEST_REPORT.md): latest test runs
 - [DEPLOYMENT.md](DEPLOYMENT.md): how to ship it
 - [docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md): hybrid AI design and status
+- [docs/ADMISSION_ARCHITECTURE.md](docs/ADMISSION_ARCHITECTURE.md): roles, registration, transfer, discharge, identity reconciliation, database version 3
 - [docs/FHIR_VALIDATION.md](docs/FHIR_VALIDATION.md): export validation results
 - [docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md): security notes
 - [docs/ASSETS.md](docs/ASSETS.md): body map artwork and illustrations

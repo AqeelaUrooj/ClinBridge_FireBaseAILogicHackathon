@@ -1,5 +1,9 @@
 # Known limitations
 
+- **Admission lifecycle (26 Nov 2026) is Practice only and prototype policy** (`docs/ADMISSION_ARCHITECTURE.md`). Not a hospital registration system or master patient index. Roles and permissions are not approved. Real records cannot register, transfer or discharge. Not built: readmission, transfers to other units or hospitals, late entries after discharge, correcting a lifecycle record, automatic identity matching (on purpose). Scheduled doses of a Practice medication scenario show their usual times even before the admission time.
+- **Do not roll the website back to a build before database version 3.** Such a build would open a version 3 Practice database without complaint (Dexie 4) and show discharged patients as active and temporary IDs as MRNs. Deploy a fixed newer build instead. Builds from version 3 on refuse a newer database.
+- **Generated names reduce, but cannot prevent, misuse.** The public demo takes no typed patient names; a person could still type real details into free-text notes.
+
 - **Not for real patients yet.** Practice mode only until clinical review (D-17) and security work below are done.
 - **Encryption at rest (P-04) is a prototype.** Not reviewed by hospital IT/security. Keep full-disk encryption on. What stays readable or unprotected:
   - **Index fields are readable but authenticated** in every table: ids, `patient.mrn`, record times, statuses, links between records. They can be read from a copied profile, but changing one is detected. Names, values, notes, staff names and PIN hashes are encrypted.

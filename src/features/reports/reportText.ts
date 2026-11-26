@@ -1,4 +1,5 @@
 import type { ActiveOrder, MedAdmin, VitalSign } from '../../db/schema';
+import { allergyState } from '../../lib/admission';
 import { ioLabel, labLabel, noteLabel } from '../../lib/charting';
 import { formatDose } from '../../lib/dose';
 import { isMedOrder } from '../../lib/meds';
@@ -28,7 +29,8 @@ export const latest = (d: ReportData, has: (v: Partial<VitalSign>) => boolean): 
 export function allergyText(d: ReportData): string | null {
   const real = d.bundle.allergies.filter((a) => !isNoKnownAllergy(a));
   if (real.length) return real.map((a) => `${a.substance}${a.reaction ? ` (${a.reaction.toLowerCase()})` : ''}`).join(', ');
-  return d.bundle.allergies.length ? 'No known allergies' : null;
+  const st = allergyState(d.bundle.patient, d.bundle.allergies);
+  return d.bundle.allergies.length ? 'No known allergies' : st.tone === 'amber' ? st.text : null;
 }
 
 export const medDose = (m: MedAdmin) => [num(m.dose_given ?? m.dose_due), (m.dose_given != null ? m.dose_given_unit : m.dose_due_unit) ?? ''].filter(Boolean).join(' ');

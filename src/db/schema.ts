@@ -19,14 +19,29 @@ export interface Snapshot {
 
 export type AdministrativeGender = 'male' | 'female' | 'other' | 'unknown';
 
+/**
+ * Where a patient row came from. Absent on rows from a hospital list or the Practice seed (older rows).
+ * Added 26 Nov 2026 (admission lifecycle, owner-approved): optional, never indexed, so older rows stay valid.
+ */
+export type PatientOrigin = 'hospital_list' | 'practice_seed' | 'admission_registered' | 'nurse_provisional';
+/** Identity check against the hospital's own patient index. Never set to reconciled by the app itself. */
+export type IdentityStatus = 'not_required' | 'pending_verification' | 'under_review' | 'reconciled';
+/** Allergy assessment, kept apart from the allergy rows: an empty list is NOT "no known allergies". */
+export type AllergyStatus = 'documented' | 'none_known' | 'unknown' | 'not_assessed';
+
 export interface Patient {
   id: string;
+  /** Hospital MRN, or for a locally registered patient a temporary local identifier (identifier_kind says which). */
   mrn: string;
   family_name: string;
   given_name: string;
   birth_date: ISODate;
   sex: AdministrativeGender;
   wristband_barcode?: string | null;
+  origin?: PatientOrigin | null;
+  identifier_kind?: 'hospital_mrn' | 'local_temporary' | null;
+  identity_status?: IdentityStatus | null;
+  allergy_status?: AllergyStatus | null;
 }
 
 export interface Encounter {
@@ -42,7 +57,21 @@ export interface Encounter {
   isolation?: string | null;
   height_cm?: number | null;
   weight_kg?: number | null;
+  /** Lifecycle fields (26 Nov 2026, optional, not indexed). Absent status = an active stay from the patient list. */
+  status?: EncounterStatus | null;
+  admission_type?: string | null;
+  admit_reason?: string | null;
+  room?: string | null;
+  responsible_nurse_id?: string | null;
+  /** Every location of this stay, oldest first; the last one without `to` is the current one. Appended, never rewritten. */
+  location_history?: EncounterLocation[] | null;
+  discharge_time?: ISODateTime | null;
+  discharge_destination?: string | null;
+  discharge_reason?: string | null;
 }
+
+export type EncounterStatus = 'active' | 'discharged';
+export interface EncounterLocation { unit: string; room: string | null; bed: string; from: ISODateTime; to?: ISODateTime | null }
 
 export interface Allergy {
   id: string;
@@ -92,7 +121,8 @@ export interface SnapshotResult {
 
 /* ---------- B. Context ---------- */
 
-export type Role = 'RN' | 'LPN' | 'admin';
+/** 'admission': admission staff (registration, beds, transfer, discharge). Never charts. Added 26 Nov 2026. */
+export type Role = 'RN' | 'LPN' | 'admin' | 'admission';
 
 export interface Practitioner {
   id: string;

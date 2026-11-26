@@ -8,7 +8,12 @@ Built = works. No route is a placeholder any more; an unknown address shows an h
 | `/lock` | Unlock or switch user | Built |
 | `/` | Not signed in: the public landing page. Signed in: goes to `/ward` (nurse) or `/admin` (admin). Screen locked: goes to `/lock` | Built |
 | `/landing` | Public landing page, for everyone | Built |
-| `/ward` | Nurse dashboard (sign-in needed). My patients: search, filters, cards, patient check | Built |
+| `/ward` | Nurse dashboard (sign-in needed). My patients: search, filters (incl. Registered here, Provisional, Pending reconciliation, Discharged when not empty), cards, patient check. RN during System Down: **Add Provisional Practice Patient** | Built |
+| `/ward/register` | RN only, System Down only: provisional registration of a fictional patient (Practice) | Built |
+| `/admission` | Admission staff (and admin as oversight): dashboard with patients, filters, bed availability, recent admission activity. Practice only. An Admission Staff session can open only `/admission/*` | Built |
+| `/admission/register` | Register Practice Patient: generated identity, temporary ID, bed, reason, allergy status, optional Practice medication scenario, review, save | Built |
+| `/admission/patients/:id` | Admission record: identity, stay, location history, admission history; transfer, discharge, identity reconciliation, allergy assessment (by role). No nursing records | Built |
+| `/patients/:id/stay` | The same stay page for nurses, after the patient check (tab "Stay and admission") | Built |
 | `/add` | Add Note / Form: every patient with form shortcuts (vitals, note, photo, medicine, fluids, lab, handover); patient check first | Built |
 | `/alerts` | Alerts & Orders: drafts to check, critical lab results (read-back status), orders per patient (read only) | Built |
 | `/tools/meds` | Ward medication schedule for today (scheduled doses, Given / Due / Held from records) | Built |

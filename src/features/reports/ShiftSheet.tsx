@@ -39,7 +39,7 @@ export function ShiftSheet({ d, pen, seed, look }: { d: ReportData; pen: Pen; se
         <V x={540} y={148} h={36} s={1} c={G} /><Small x={552} y={172} t="MRN:" /><Value x={600} y={148} w={200} h={36} t={p.mrn} size={29} tag="mrn" />
         <V x={830} y={148} h={36} s={1} c={G} /><Small x={842} y={172} t="Bed:" /><Value x={884} y={148} w={200} h={36} t={e?.bed} size={30} tag="bed" />
         <Small x={L + 14} y={208} t="Age:" /><Value x={L + 54} y={184} w={60} h={36} t={String(d.age)} size={27} tag="age" /><Small x={L + 122} y={208} t="Sex:" /><Value x={L + 160} y={184} w={80} h={36} t={p.sex === 'male' ? 'M' : p.sex === 'female' ? 'F' : p.sex} size={27} />
-        <V x={L + 236} y={184} h={36} s={1} c={G} /><Small x={L + 248} y={208} t="Dx/Reason for Admit:" /><NotRecorded x={L + 410} y={208} />
+        <V x={L + 236} y={184} h={36} s={1} c={G} /><Small x={L + 248} y={208} t="Dx/Reason for Admit:" />{e?.admit_reason ? <Value x={L + 410} y={184} w={200} h={36} t={e.admit_reason.replace(/ \(practice scenario\)$/, '')} size={18} tag="reason" /> : <NotRecorded x={L + 410} y={208} />}
         <V x={690} y={184} h={36} s={1} c={G} /><Small x={702} y={208} t="Allergies:" /><Value x={776} y={184} w={314} h={36} t={allergyText(d)} size={25} tag="allergies" />
         <Small x={L + 14} y={244} t="Date:" /><Value x={L + 60} y={220} w={200} h={36} t={dayLabel(d.nowIso)} size={26} />
         <Small x={370} y={244} t="Born:" /><Value x={416} y={220} w={200} h={36} t={dayLabel(p.birth_date)} size={26} tag="born" />

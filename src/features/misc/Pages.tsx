@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { isActiveStay, staysByPatient } from '../../lib/admission';
+import { afterPracticeReset } from '../../db/repos/admission';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useApp, useSession } from '../../state/app';
@@ -31,8 +33,8 @@ const ADD_FORMS: [string, string, string][] = [
 export function AddPage() {
   const { db } = useApp();
   const rows = useLiveQuery(async () => {
-    const encs = await db.encounter.toArray();
-    return (await db.patient.toArray()).map((p) => ({ p, bed: encs.find((e) => e.patient_id === p.id)?.bed ?? '' })).sort((a, b) => a.bed.localeCompare(b.bed));
+    const stays = staysByPatient(await db.encounter.toArray()); // patients with an active stay only: no form for a discharged patient
+    return (await db.patient.toArray()).filter((p) => isActiveStay(stays.get(p.id))).map((p) => ({ p, bed: stays.get(p.id)?.bed ?? '' })).sort((a, b) => a.bed.localeCompare(b.bed));
   }, [db]);
   return (
     <>
@@ -65,14 +67,15 @@ export function AlertsPage() {
   const drafts = useLiveQuery(() => db.entry.where('status').equals('draft').toArray(), [db]);
   // Critical lab results on current records (confirmed or draft), and active orders per patient.
   const ward = useLiveQuery(async () => {
-    const patients = await db.patient.toArray();
-    const encs = await db.encounter.toArray();
+    const stays = staysByPatient(await db.encounter.toArray());
+    const patients = (await db.patient.toArray()).filter((p) => isActiveStay(stays.get(p.id))); // the ward now, not discharged stays
+    const encs = [...stays.values()];
     const labEntries = (await db.entry.where('status').anyOf('confirmed', 'draft').toArray()).filter((e) => e.type === 'lab_event');
     const labs = await db.lab_event.where('entry_id').anyOf(labEntries.map((e) => e.id)).toArray();
     const critical = labs.filter((l) => l.status === 'critical').map((l) => {
       const e = labEntries.find((x) => x.id === l.entry_id)!;
       return { l, e, p: patients.find((p) => p.id === e.patient_id), bed: encs.find((x) => x.patient_id === e.patient_id)?.bed };
-    }).sort((a, b) => b.e.care_time.localeCompare(a.e.care_time));
+    }).filter((x) => !!x.p).sort((a, b) => b.e.care_time.localeCompare(a.e.care_time));
     const orders = await db.active_order.toArray();
     const perPatient = patients.map((p) => {
       const enc = encs.find((x) => x.patient_id === p.id);
@@ -131,7 +134,7 @@ export function AlertsPage() {
 }
 
 export function MorePage() {
-  const { db, dataset, vault, lockRecords } = useApp();
+  const { db, dataset, vault, lockRecords, clock, deviceId } = useApp();
   const { user, signOut } = useSession();
   const navigate = useNavigate();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -208,9 +211,9 @@ export function MorePage() {
       )}
       {confirmReset && (
         <Dialog title="Reset practice data?" onClose={() => setConfirmReset(false)}>
-          <p>All practice records you added will be removed and the fake patients restored.</p>
+          <p>All practice records you added will be removed and the fake patients restored. Patients registered on this laptop (admissions and provisional), their stays, transfers, discharges and records are removed too. Real records are never touched.</p>
           <div className="flex gap-space-sm">
-            <Button variant="danger" className="flex-1" onClick={async () => { await resetPractice(db); await clearPhotos('practice'); signOut(); navigate('/sign-in'); }}>Reset</Button>
+            <Button variant="danger" className="flex-1" onClick={async () => { await resetPractice(db); await afterPracticeReset(db, clock, deviceId); await clearPhotos('practice'); signOut(); navigate('/sign-in'); }}>Reset</Button>
             <Button variant="secondary" className="flex-1" onClick={() => setConfirmReset(false)}>Cancel</Button>
           </div>
         </Dialog>

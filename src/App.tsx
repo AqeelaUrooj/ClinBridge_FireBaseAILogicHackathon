@@ -1,5 +1,5 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
-import { useApp, useSession, isAdmin } from './state/app';
+import { useApp, useSession } from './state/app';
 import { PUBLIC_DEMO } from './config/publicDemo';
 import { AppShell } from './components/AppShell';
 import { SignIn, LockScreen } from './features/auth/SignIn';
@@ -37,18 +37,29 @@ import { AiCheckPage } from './features/ai/AiPages';
 import { PracticeComparePage } from './features/ai/ComparePage';
 import { PrintFormPage, SpoolerPage } from './features/print/PrintPages';
 import { ReportPage } from './features/reports/ReportPage';
+import { AdmissionDashboard, AdmissionLayout, AdmissionPatientPage, RegisterPatientPage, PatientStayPage } from './features/admission/AdmissionPages';
+import { homeFor } from './lib/admission';
 
 function RequireAuth() {
   const { user, locked } = useSession();
   const location = useLocation();
   if (!user) return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />;
   if (locked) return <Navigate to="/lock" replace state={{ from: location.pathname }} />;
+  // Admission staff see admissions only: no ward, chart, medicine or recovery page (least privilege). Typed addresses too.
+  if (user.role === 'admission' && !/^\/admission(\/|$)/.test(location.pathname)) return <Navigate to="/admission" replace />;
   return <Outlet />;
 }
 
 function Home() {
   const { user } = useSession();
-  return <Navigate to={isAdmin(user) ? '/admin' : '/ward'} replace />;
+  return <Navigate to={homeFor(user)} replace />;
+}
+
+/** A nurse's provisional registration during downtime, inside the ward area. */
+function NurseRegister() {
+  const { user } = useSession();
+  if (user?.role !== 'RN') return <Navigate to={homeFor(user)} replace />;
+  return <RegisterPatientPage />;
 }
 
 export function App() {
@@ -77,6 +88,12 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<Home />} />
           <Route path="/ward" element={<WardBoard />} />
+          <Route path="/ward/register" element={<NurseRegister />} />
+          <Route path="/admission" element={<AdmissionLayout />}>
+            <Route index element={<AdmissionDashboard />} />
+            <Route path="register" element={<RegisterPatientPage />} />
+            <Route path="patients/:id" element={<AdmissionPatientPage />} />
+          </Route>
           <Route path="/add" element={<AddPage />} />
           <Route path="/handover" element={<WardHandoverPage />} />
           <Route path="/alerts" element={<AlertsPage />} />
@@ -128,6 +145,7 @@ export function App() {
             <Route path="handoff/new" element={<NewHandoffPage />} />
             <Route path="handoff/:hid" element={<HandoffViewPage />} />
             <Route path="capture" element={<CapturePage />} />
+            <Route path="stay" element={<PatientStayPage />} />
           </Route>
           <Route path="/entries/:entry" element={<EntryLayout />}>
             <Route index element={<EntryDetail />} />

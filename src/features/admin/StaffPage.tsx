@@ -7,6 +7,7 @@ import type { Practitioner, Role } from '../../db/schema';
 import { ACTIVE_CLINICAL_POLICY as POLICY } from '../../config/clinicalPolicy';
 import { SECURITY_POLICY } from '../../config/securityPolicy';
 import { PHASE_LABEL } from '../../lib/phase';
+import { roleLabel } from '../../lib/admission';
 import { auditLabel } from '../../lib/auditLabels';
 import { dateTimeLabel, hm, dayLabel } from '../../lib/time';
 import { Badge, Button, ButtonLink, EmptyState, Icon } from '../../components/ui';
@@ -15,8 +16,8 @@ import { ActivateStaffForm } from './EnrollmentUi';
 import { Block, Err, Facts, Head, PANEL, PaperHead, Tile, msg } from './adminUi';
 
 const GRID = 'xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1.5fr)_8rem_8.5rem_15rem]';
-const roleName = (r: Role) => (r === 'admin' ? 'Admin' : r);
-const mayDo = (r: Role) => (r === 'admin' ? 'Manages this laptop. Cannot chart.' : `Charts for patients.${POLICY.secondChecker.roles.includes(r) ? ' Can be the second nurse (prototype rule).' : ' Cannot be the second nurse (prototype rule).'}`);
+const roleName = (r: Role) => roleLabel(r);
+const mayDo = (r: Role) => (r === 'admission' ? 'Registers patients, assigns beds, records transfers and discharges (Practice). Cannot chart.' : r === 'admin' ? 'Manages this laptop. Cannot chart.' : `Charts for patients.${POLICY.secondChecker.roles.includes(r) ? ' Can be the second nurse (prototype rule).' : ' Cannot be the second nurse (prototype rule).'}`);
 const STAFF_ROW = /^(staff_|credential_|first_time_setup)/;
 
 /** Staff (Stitch "Staff roster, offline credentials"). No badge numbers, temporary PINs or recovery PINs: an admin sets a new PIN in person. */
@@ -61,7 +62,7 @@ export function StaffPage() {
       </Head>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md print:hidden">
-        <Tile label="Can sign in" icon="person_check" value={ready.length} unit="people" foot={`${ready.filter((p) => p.role !== 'admin').length} nurses, ${ready.filter((p) => p.role === 'admin').length} admin`} />
+        <Tile label="Can sign in" icon="person_check" value={ready.length} unit="people" foot={`${ready.filter((p) => p.role === 'RN' || p.role === 'LPN').length} nurses, ${ready.filter((p) => p.role === 'admin').length} admin, ${ready.filter((p) => p.role === 'admission').length} admission`} />
         <Tile label="PINs on this laptop" icon="lock_clock" value={staff.filter((p) => !isPendingActivation(p)).length} unit="set" foot="Salted hash only (PBKDF2)" />
         <Tile label="Waiting" icon="how_to_reg" value={waiting} unit="to activate" foot={`${staff.length - on.length} switched off`} tone={waiting ? 'amber' : undefined} />
         <Tile label="Staff changes" icon="receipt_long" value={changes.length} unit="in the log" foot={last ? `Newest: ${auditLabel(last.action)}, ${dateTimeLabel(last.time)}` : 'None since this list was made'} />
@@ -114,7 +115,7 @@ export function StaffPage() {
             <label className="flex flex-col gap-1"><span className={labelCls}>Name</span><input ref={nameBox} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldCls()} aria-label="Name" /></label>
             <label className="flex flex-col gap-1"><span className={labelCls}>Initials</span><input value={form.initials} maxLength={3} onChange={(e) => setForm({ ...form, initials: e.target.value })} className={fieldCls()} aria-label="Initials" /></label>
             <label className="flex flex-col gap-1"><span className={labelCls}>Role</span>
-              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className={fieldCls()} aria-label="Role"><option value="RN">RN</option><option value="LPN">LPN</option><option value="admin">Admin</option></select></label>
+              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })} className={fieldCls()} aria-label="Role"><option value="RN">RN</option><option value="LPN">LPN</option><option value="admin">Admin</option><option value="admission">Admission staff</option></select></label>
             <label className="flex flex-col gap-1"><span className={labelCls}>4-digit PIN</span><input type="password" inputMode="numeric" maxLength={4} autoComplete="new-password" value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value })} className={fieldCls()} aria-label="PIN" /></label>
           </div>
           <Button className="self-start" onClick={() => run(() => addStaff(db, clock, actor, form), () => setForm({ name: '', initials: '', role: 'RN', pin: '' }), 'Person added to the list.')}><Icon name="person_add" />Add</Button>

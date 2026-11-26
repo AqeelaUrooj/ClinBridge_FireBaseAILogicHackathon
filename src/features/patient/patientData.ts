@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import type { DowntimeDB } from '../../db/db';
 import type { Allergy, Encounter, Patient } from '../../db/schema';
 import { useApp } from '../../state/app';
+import { currentEncounter } from '../../lib/admission';
 
 export interface PatientBundle {
   patient: Patient;
@@ -12,11 +13,11 @@ export interface PatientBundle {
 export async function loadPatient(db: DowntimeDB, id: string): Promise<PatientBundle | null> {
   const patient = await db.patient.get(id);
   if (!patient) return null;
-  const [encounter, allergies] = await Promise.all([
-    db.encounter.where('patient_id').equals(id).first(),
+  const [stays, allergies] = await Promise.all([
+    db.encounter.where('patient_id').equals(id).toArray(),
     db.allergy.where('patient_id').equals(id).toArray(),
   ]);
-  return { patient, encounter, allergies: allergies.filter((a) => a.status === 'active') };
+  return { patient, encounter: currentEncounter(stays), allergies: allergies.filter((a) => a.status === 'active') };
 }
 
 /** undefined = still loading, null = not found. */

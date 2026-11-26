@@ -6,6 +6,8 @@ import { ACTIVE_CLINICAL_POLICY } from '../../config/clinicalPolicy';
 import { buildAuditRow } from '../audit';
 import { guardStorage } from '../errors';
 import type { Clock } from '../../lib/time';
+import { currentEncounter, isActiveStay } from '../../lib/admission';
+import { isLifecycleNote } from '../../lib/charting';
 
 /**
  * Append-only clinical entries (Implementation Plan: save-first rule, append-only log).
@@ -78,9 +80,12 @@ export async function createEntry<T extends EntryType>(
 ): Promise<Entry> {
   return guardStorage(() => serial(async () => {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const encounter = await db.encounter.where('patient_id').equals(input.patientId).first();
+      const encounter = currentEncounter(await db.encounter.where('patient_id').equals(input.patientId).toArray());
       if (!encounter) throw new EntryWriteError('This patient has no encounter in the patient list.');
+      if (!isActiveStay(encounter)) throw new EntryWriteError(`This patient was discharged${encounter.discharge_time ? ` at ${encounter.discharge_time.slice(11, 16)}` : ''}. New records are closed for this stay.`);
+      await refuseAdmissionStaff(db, actor);
       const old = input.supersedesId ? await db.entry.get(input.supersedesId) : undefined;
+      if (old?.type === 'note' && isLifecycleNote((await db.note.where('entry_id').equals(old.id).first())?.category)) throw new EntryWriteError('Admission, transfer and discharge records are changed through the stay page, not fixed here.');
       if (input.supersedesId) {
         if (!old) throw new EntryWriteError('The record being corrected was not found.');
         if (old.status !== 'confirmed') throw new EntryWriteError('Only a confirmed record can be corrected.');
@@ -135,9 +140,11 @@ export async function createEntry<T extends EntryType>(
 
       try {
         let saved: Entry | undefined;
-        await db.transaction('rw', [db.entry, childTable(db, input.type), db.audit_log], async () => {
+        await db.transaction('rw', [db.entry, childTable(db, input.type), db.audit_log, db.encounter], async () => {
           const head = await db.audit_log.orderBy('seq').last();
           if ((head?.seq ?? 0) !== (last?.seq ?? 0)) throw new Dexie.AbortError('audit head moved');
+          // A discharge saved in another tab a moment ago closes the stay: checked again inside the transaction.
+          if (!isActiveStay(await db.encounter.get(encounter.id))) throw new EntryWriteError('This patient was discharged a moment ago. New records are closed for this stay.');
           const top = await db.entry
             .where('[device_id+counter]')
             .between([actor.deviceId, Dexie.minKey], [actor.deviceId, Dexie.maxKey])
@@ -162,13 +169,20 @@ export async function createEntry<T extends EntryType>(
   }), (m) => new EntryWriteError(m));
 }
 
+/** Admission staff never write, confirm, fix or cross out nursing records (also when a route guard is bypassed). */
+export async function refuseAdmissionStaff(db: DowntimeDB, actor: Actor): Promise<void> {
+  if ((await db.practitioner.get(actor.userId))?.role === 'admission') throw new EntryWriteError('Admission staff do not write nursing records.');
+}
+
 /** Mark an entry as entered in error. Values stay; the record is shown crossed out. */
 export async function markEnteredInError(db: DowntimeDB, clock: Clock, actor: Actor, entryId: string, reason: string): Promise<void> {
   if (!reason.trim()) throw new EntryWriteError('A reason is required.');
+  await refuseAdmissionStaff(db, actor);
   return guardStorage(() => serial(async () => {
     const entry = await db.entry.get(entryId);
     if (!entry) throw new EntryWriteError('Record not found.');
     if (entry.status !== 'confirmed') throw new EntryWriteError('Only a confirmed record can be marked as a mistake.');
+    if (entry.type === 'note' && isLifecycleNote((await db.note.where('entry_id').equals(entry.id).first())?.category)) throw new EntryWriteError('Admission, transfer and discharge records cannot be crossed out here.');
     const now = clock.nowIso();
     const last = await lastAudit(db);
     const row = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'entered_in_error', entity: `entry/${entryId}`, before: { status: entry.status }, after: { status: 'entered-in-error', change_reason: reason.trim() } });
@@ -231,6 +245,7 @@ export async function confirmDraft<T extends EntryType>(
   db: DowntimeDB, clock: Clock, actor: Actor, entryId: string, type: T, values: Omit<ChildByType[T], 'id' | 'entry_id'>, careTime?: string,
 ): Promise<Entry> {
   if (type === 'med_admin') await checkHighAlert(db, actor, values as Omit<MedAdmin, 'id' | 'entry_id'>);
+  await refuseAdmissionStaff(db, actor);
   return guardStorage(() => serial(async () => {
     const entry = await db.entry.get(entryId);
     if (!entry) throw new EntryWriteError('Record not found.');
@@ -242,11 +257,12 @@ export async function confirmDraft<T extends EntryType>(
     const last = await lastAudit(db);
     const row = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'entry_confirmed', entity: `entry/${entryId}`, before: entry.ai_proposal ?? child ?? {}, after: confirmed });
     const updated: Entry = { ...entry, status: 'confirmed', confirmed, confirmed_by: actor.userId, confirmed_at: now, care_time: careTime ?? entry.care_time };
-    await db.transaction('rw', [db.entry, childTable(db, type), db.audit_log], async () => {
+    await db.transaction('rw', [db.entry, childTable(db, type), db.audit_log, db.encounter], async () => {
       const head = await db.audit_log.orderBy('seq').last();
       if ((head?.seq ?? 0) !== (last?.seq ?? 0)) throw new EntryWriteError('Another change was saved at the same moment. Try again.');
       const current = await db.entry.get(entryId);
       if (!current || current.status !== 'draft') throw new EntryWriteError('This draft was already handled.');
+      if (!isActiveStay(await db.encounter.get(current.encounter_id))) throw new EntryWriteError('This patient was discharged. A draft of a closed stay cannot be confirmed.');
       await db.entry.put(updated);
       if (child) await childTable(db, type).put({ ...(values as object), id: (child as { id: string }).id, entry_id: entryId } as ChildByType[T]);
       else await childTable(db, type).add({ ...(values as object), id: newId(type.replace('_', '').slice(0, 3)), entry_id: entryId } as ChildByType[T]);

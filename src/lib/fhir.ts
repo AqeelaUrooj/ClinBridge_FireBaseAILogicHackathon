@@ -1,3 +1,4 @@
+import { LIFECYCLE_NOTE, isLifecycleNote } from './charting';
 import type { ActiveOrder, Allergy, Encounter, Entry, IntakeOutput, LabEvent, MedAdmin, Note, Patient, Practitioner, VitalSign } from '../db/schema';
 
 /**
@@ -15,6 +16,21 @@ type R = Record<string, unknown>;
 const BASE = 'https://clinbridge.example/fhir';
 const TAG = { system: 'https://clinbridge.example/fhir/tags', code: 'downtime-documentation', display: 'Documented during EHR downtime' };
 const LOINC = 'http://loinc.org';
+/** Namespaces of identifiers made on this laptop (never a hospital's). */
+const LOCAL_ID_SYSTEM = 'https://clinbridge.example/fhir/identifier/local-temporary-patient-id';
+const VISIT_SYSTEM = 'https://clinbridge.example/fhir/identifier/visit-number';
+const LIFECYCLE_TAGS: Record<string, { code: string; display: string }> = {
+  admission_registered: { code: 'registered-locally', display: 'Registered on the downtime laptop by admissions' },
+  nurse_provisional: { code: 'provisional-identity', display: 'Provisional identity registered by a nurse during downtime' },
+};
+/** Extra meta tags for a locally registered patient, on top of the downtime tag every resource carries. */
+const patientTags = (p: Patient): { _tags?: R[] } => {
+  const t = p.origin ? LIFECYCLE_TAGS[p.origin] : undefined;
+  if (!t) return {};
+  const tags: R[] = [{ system: 'https://clinbridge.example/fhir/tags', ...t }];
+  if (p.identity_status === 'pending_verification' || p.identity_status === 'under_review') tags.push({ system: 'https://clinbridge.example/fhir/tags', code: 'identity-reconciliation-pending', display: 'Identity not yet reconciled with the hospital record' });
+  return { _tags: tags };
+};
 const UCUM = 'http://unitsofmeasure.org';
 
 const meta = (profile?: string) => ({ ...(profile ? { profile: [`${VS}${profile}`] } : {}), tag: [TAG] });
@@ -50,14 +66,38 @@ const obsStatus = (e: Entry) => (e.status === 'confirmed' ? 'final' : 'entered-i
 
 export function buildBundle(input: ExportInput): R {
   const res: R[] = [];
-  const add = (r: R) => { const { _profile, ...rest } = r as R & { _profile?: string }; res.push({ ...rest, meta: meta(_profile), text: narrative(rest) }); };
+  const add = (r: R) => {
+    const { _profile, _tags, ...rest } = r as R & { _profile?: string; _tags?: R[] };
+    const m = meta(_profile);
+    res.push({ ...rest, meta: _tags ? { ...m, tag: [...m.tag, ..._tags] } : m, text: narrative(rest) });
+  };
   const encOf = new Map(input.encounters.map((e) => [e.patient_id, e]));
 
   for (const p of input.patients) {
-    add({ resourceType: 'Patient', id: p.id, identifier: [{ type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR', display: 'Medical record number' }], text: 'MRN' }, value: p.mrn }], name: [{ family: p.family_name, given: [p.given_name] }], gender: p.sex, birthDate: p.birth_date });
+    // A temporary local identifier is never sent as an MRN: own system, no "MR" type, usual = temp.
+    const identifier = p.identifier_kind === 'local_temporary'
+      ? [{ use: 'temp', system: LOCAL_ID_SYSTEM, value: p.mrn }] // the namespace says what it is; no hospital identifier type applies
+      : [{ type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR', display: 'Medical record number' }], text: 'MRN' }, value: p.mrn }];
+    add({ resourceType: 'Patient', id: p.id, ...patientTags(p), identifier, name: [{ family: p.family_name, given: [p.given_name] }], gender: p.sex, birthDate: p.birth_date });
   }
   for (const e of input.encounters) {
-    add({ resourceType: 'Encounter', id: e.id, status: 'in-progress', class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'IMP', display: 'inpatient encounter' }, subject: ref('Patient', e.patient_id), period: { start: e.admit_time }, ...(e.bed ? { location: [{ location: { display: `${e.unit}, bed ${e.bed}` } }] } : {}) });
+    const finished = e.status === 'discharged' && !!e.discharge_time;
+    const places = e.location_history?.length ? e.location_history : e.bed ? [{ unit: e.unit, room: e.room ?? null, bed: e.bed, from: e.admit_time, to: finished ? e.discharge_time : null }] : [];
+    add({
+      resourceType: 'Encounter', id: e.id, ...(e.visit_number ? { identifier: [{ system: VISIT_SYSTEM, value: e.visit_number }] } : {}),
+      status: finished ? 'finished' : 'in-progress', class: { system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode', code: 'IMP', display: 'inpatient encounter' },
+      ...(e.admission_type ? { type: [textCode(e.admission_type)] } : {}),
+      subject: ref('Patient', e.patient_id),
+      ...(e.responsible_nurse_id && input.practitioners.some((p) => p.id === e.responsible_nurse_id) ? { participant: [{ type: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType', code: 'PART', display: 'Participation' }], text: 'Responsible nurse' }], individual: ref('Practitioner', e.responsible_nurse_id) }] } : {}),
+      period: { start: e.admit_time, ...(finished ? { end: e.discharge_time } : {}) },
+      ...(e.admit_reason ? { reasonCode: [textCode(e.admit_reason)] } : {}),
+      ...(finished && e.discharge_destination ? { hospitalization: { dischargeDisposition: textCode(e.discharge_destination) } } : {}),
+      ...(places.length ? { location: places.map((l, i) => {
+        const current = i === places.length - 1 && !finished;
+        const end = l.to ?? (i === places.length - 1 && finished ? e.discharge_time : null);
+        return { location: { display: `${l.unit}${l.room ? `, room ${l.room}` : ''}, bed ${l.bed}` }, status: current ? 'active' : 'completed', period: { start: l.from, ...(end ? { end } : {}) } };
+      }) } : {}),
+    });
   }
   for (const pr of input.practitioners) add({ resourceType: 'Practitioner', id: pr.id, name: [{ text: pr.name }], active: pr.active });
   for (const a of input.allergies) {
@@ -68,12 +108,12 @@ export function buildBundle(input: ExportInput): R {
     if (o.type !== 'med' && o.type !== 'iv') continue;
     const enc = input.encounters.find((e) => e.id === o.encounter_id);
     if (!enc) continue;
-    add({ resourceType: 'MedicationRequest', id: o.id, status: o.status === 'active' ? 'active' : 'unknown', intent: 'order', medicationCodeableConcept: textCode(o.drug_name ?? o.text), subject: ref('Patient', enc.patient_id), encounter: ref('Encounter', enc.id), dosageInstruction: [{ text: o.text }] });
+    add({ resourceType: 'MedicationRequest', id: o.id, status: o.status === 'active' ? 'active' : o.status === 'completed' ? 'completed' : 'unknown', intent: 'order', medicationCodeableConcept: textCode(o.drug_name ?? o.text), subject: ref('Patient', enc.patient_id), encounter: ref('Encounter', enc.id), dosageInstruction: [{ text: o.text }] });
   }
 
   for (const { entry: e, child } of input.entries) {
     if (e.status === 'draft' || !child) continue;
-    const enc = encOf.get(e.patient_id);
+    const enc = input.encounters.find((x) => x.id === e.encounter_id) ?? encOf.get(e.patient_id); // the record's own stay
     const common = { subject: ref('Patient', e.patient_id), ...(enc ? { encounter: ref('Encounter', enc.id) } : {}), effectiveDateTime: e.care_time, performer: [ref('Practitioner', e.performer_id)] };
     let target: { type: string; id: string } | null = null;
 
@@ -115,7 +155,7 @@ export function buildBundle(input: ExportInput): R {
         add({ resourceType: 'Observation', id: `${e.id}-score`, status: obsStatus(e), code: textCode(n.score_name ?? 'Risk score'), ...common, valueInteger: n.score_value, note: [{ text: n.text }] });
         add(provenance(e, 'Observation', `${e.id}-score`, input));
       }
-      add({ resourceType: 'DocumentReference', id: e.id, status: e.status === 'confirmed' ? 'current' : 'entered-in-error', type: textCode(`Nursing note: ${n.category}`), subject: common.subject, date: e.entry_time,
+      add({ resourceType: 'DocumentReference', id: e.id, status: e.status === 'confirmed' ? 'current' : 'entered-in-error', type: textCode(isLifecycleNote(n.category) ? `Stay record: ${LIFECYCLE_NOTE[n.category]}` : `Nursing note: ${n.category}`), subject: common.subject, date: e.entry_time,
         author: [ref('Practitioner', e.performer_id)], content: [{ attachment: { contentType: 'text/plain', data: b64(n.text) } }], ...(enc ? { context: { encounter: [ref('Encounter', enc.id)] } } : {}) });
       target = { type: 'DocumentReference', id: e.id };
     } else if (e.type === 'lab_event') {

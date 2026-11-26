@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { isActiveStay, staysByPatient } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { createEntry, getEntry, listPatientEntries } from '../../db/repos/entries';
@@ -120,8 +121,8 @@ export function WardLabsPage() {
   const [q, setQ] = useState('');
   const nurse = isNurse(user);
   const data = useLiveQuery(async () => {
-    const patients = await db.patient.toArray();
-    const encs = new Map((await db.encounter.toArray()).map((e) => [e.patient_id, e]));
+    const encs = staysByPatient(await db.encounter.toArray());
+    const patients = (await db.patient.toArray()).filter((p) => isActiveStay(encs.get(p.id))); // ward labs: active stays only
     const who = new Map<string, Who>(patients.map((p) => [p.id, { patient: p, bed: encs.get(p.id)?.bed }]));
     const items = (await Promise.all(patients.map((p) => listPatientEntries(db, p.id)))).flat();
     return { who, rows: labRows(items), list: hospitalLabs(await db.snapshot_result.toArray()), names: new Map((await db.practitioner.toArray()).map((s) => [s.id, s.name])) };

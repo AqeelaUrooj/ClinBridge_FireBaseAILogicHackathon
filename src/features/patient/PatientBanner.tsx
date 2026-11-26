@@ -1,7 +1,9 @@
 import { useApp } from '../../state/app';
 import { ageOn, dayLabel, hm } from '../../lib/time';
 import { Icon } from '../../components/ui';
-import { fullName, isNoKnownAllergy, sexLabel, type PatientBundle } from './patientData';
+import { fullName, sexLabel, type PatientBundle } from './patientData';
+import { allergyState, idLabel, isActiveStay, isLocallyRegistered } from '../../lib/admission';
+import { OriginBadges } from '../admission/AdmissionPages';
 
 /**
  * Patient identity banner (Stitch "Patient Banner & Triage Header").
@@ -11,21 +13,23 @@ import { fullName, isNoKnownAllergy, sexLabel, type PatientBundle } from './pati
 export function PatientBanner({ data }: { data: PatientBundle }) {
   const { clock, snapshot } = useApp();
   const { patient: p, encounter: e, allergies } = data;
-  const real = allergies.filter((a) => !isNoKnownAllergy(a));
+  const al = allergyState(p, allergies);
+  const real = al.real;
   return (
     <section aria-label="Patient" className="sticky z-30 bg-surface-container-lowest rounded-xl border border-card-border p-space-md" style={{ top: 'calc(var(--header-h) + 8px)' }}>
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
         <div className="flex items-start gap-space-md">
           <div className="bg-primary text-on-primary rounded-lg px-3 py-2 flex flex-col items-center justify-center min-w-[72px]">
             <span className="font-label-uppercase text-[10px] tracking-widest text-primary-fixed">BED</span>
-            <span className="font-headline-lg text-headline-lg leading-none font-bold">{e?.bed ?? '—'}</span>
+            <span className="font-headline-lg text-headline-lg leading-none font-bold">{isActiveStay(e) ? e?.bed ?? '—' : '—'}</span>
           </div>
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-x-space-sm gap-y-1">
               <h1 className="font-headline-lg text-headline-lg text-primary tracking-tight">{fullName(p)}</h1>
               <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface font-body-sm text-body-sm font-semibold">{ageOn(p.birth_date, clock.nowIso())}y {sexLabel(p.sex)}</span>
               <span className="font-code-tabular text-code-tabular text-secondary">Born {dayLabel(p.birth_date)}</span>
-              <span className="font-code-tabular text-code-tabular font-semibold px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed" style={{ fontFeatureSettings: "'tnum' 1, 'zero' 1" }}>MRN {p.mrn}</span>
+              <span className="font-code-tabular text-code-tabular font-semibold px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed" style={{ fontFeatureSettings: "'tnum' 1, 'zero' 1" }}>{idLabel(p)} {p.mrn}</span>
+              {(isLocallyRegistered(p) || !isActiveStay(e)) && <OriginBadges p={p} e={e} />}
             </div>
             <div className="flex flex-wrap items-center gap-x-space-md gap-y-1 mt-1 text-on-surface-variant font-body-md text-body-md">
               {e?.admit_time && <span>Admitted: <span className="font-medium text-on-surface">{dayLabel(e.admit_time)}</span></span>}
@@ -55,9 +59,9 @@ export function PatientBanner({ data }: { data: PatientBundle }) {
               </div>
             ))
           ) : (
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-high text-on-surface font-label-badge text-label-badge">
-              <Icon name="verified" className="text-[18px] text-secondary" />
-              {allergies.length ? 'No known allergies' : 'Allergies not recorded'}
+            <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-label-badge text-label-badge ${al.tone === 'amber' ? 'bg-downtime-amber-bg border border-downtime-amber-border text-[#7a5410]' : 'bg-surface-container-high text-on-surface'}`}>
+              <Icon name={al.tone === 'amber' ? 'help' : 'verified'} className="text-[18px] text-secondary" />
+              {al.text}
             </div>
           )}
         </div>

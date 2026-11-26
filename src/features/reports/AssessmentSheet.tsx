@@ -42,7 +42,7 @@ export function AssessmentSheet({ d, pen, seed, look }: { d: ReportData; pen: Pe
         <Label x={702} y={154} t="Sex:" /><Check x={776} y={139} /><Print x={800} y={154} t="Male" size={19} /><Check x={892} y={139} /><Print x={916} y={154} t="Female" size={19} />
         {p.sex === 'male' && <Tick x={776} y={138} />}{p.sex === 'female' && <Tick x={892} y={138} />}
         {(p.sex === 'other' || p.sex === 'unknown') && <Value x={745} y={148} w={80} h={20} t={p.sex} size={18} />}
-        <Label x={20} y={199} t="Admit Reason:" /><NotRecorded x={165} y={199} />
+        <Label x={20} y={199} t="Admit Reason:" />{e?.admit_reason ? <Value x={165} y={170} w={310} h={46} t={e.admit_reason.replace(/ \(practice scenario\)$/, '')} size={22} tag="reason" /> : <NotRecorded x={165} y={199} />}
         <Label x={490} y={199} t="Room:" /><Value x={562} y={170} w={120} h={46} t={e?.bed} size={30} tag="bed" />
         <Label x={702} y={199} t="Allergies:" /><Value x={800} y={170} w={226} h={46} t={allergyText(d)} size={26} tag="allergies" />
         <Label x={20} y={244} t="Admit Date:" /><Value x={142} y={218} w={320} h={40} t={e ? `${dayLabel(e.admit_time)}, ${hm(e.admit_time)}` : null} size={27} />

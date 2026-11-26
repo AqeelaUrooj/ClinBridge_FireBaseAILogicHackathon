@@ -4,7 +4,7 @@ import type { EntryWithChild } from '../../db/repos/entries';
 import { formatDose } from '../../lib/dose';
 import { VITAL_RULES, type VitalKey } from '../../lib/vitals';
 
-export const CATEGORY_LABEL: Record<string, string> = { meds: 'Medicine', results: 'Lab', vitals: 'Vitals', io: 'Fluids', notes: 'Note' };
+export const CATEGORY_LABEL: Record<string, string> = { admission: 'Admission and identity', meds: 'Medicine', results: 'Lab', vitals: 'Vitals', io: 'Fluids', notes: 'Note' };
 
 export interface LookRow { key: string; label: string; record: string; reading: string; differs: boolean }
 
