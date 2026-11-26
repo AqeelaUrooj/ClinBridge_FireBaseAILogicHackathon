@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { IDENTITY_LABEL, currentEncounter, idLabel, identityStatus, isLocallyRegistered, locationLabel, originLabel } from '../../lib/admission';
+import { IDENTITY_LABEL, currentEncounter, idLabel, identityStatus, isLocallyRegistered, locationLabel, needsReconciliation, originLabel } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { isAdmin, isNurse, useApp, useSession } from '../../state/app';
@@ -55,7 +55,7 @@ function WorkRow({ r, current, names, nowIso }: { r: Row; current: boolean; name
         </span>
         <span className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
           <span className="font-body-lg text-body-lg font-bold text-primary">{p ? `${fullName(p)}, ${ageOn(p.birth_date, nowIso)}` : i.patient_id}</span>
-          <span className="font-code-tabular text-body-sm text-secondary">MRN {p?.mrn ?? '—'}</span>
+          <span className="font-code-tabular text-body-sm text-secondary">{p ? idLabel(p) : 'MRN'} {p?.mrn ?? '—'}</span>
         </span>
         <span className="block font-body-md text-body-md text-on-surface [overflow-wrap:anywhere]"><strong className="font-code-tabular">{x ? hm(x.entry.care_time) : ''}</strong> {x ? entrySummary(x) : i.entry_id}</span>
         {reason && <span className={`mt-1 block font-body-sm text-body-sm font-semibold ${red ? 'text-clinical-red' : 'text-[#7a5410]'}`}>{reason}</span>}
@@ -223,7 +223,8 @@ export function RecoveryItemPage() {
   const draft = main?.entry.status === 'draft';
   const nextId = next(item.id);
   const who = (pid: string | null | undefined) => (pid ? names.get(pid) ?? pid : '—');
-  const alerts = [...(why?.reasons ?? []), ...(dose ? [`${med!.drug_name}: ${dose}.`] : []), ...differs.map((d) => `${d.label}: the record says ${d.record}, the second look read ${d.reading}.`)];
+  const identity = p && needsReconciliation(p) && item.flags.includes('recheck') ? ['Identity not reconciled yet: admissions match this patient with the hospital record first.'] : [];
+  const alerts = [...identity, ...(why?.reasons ?? []), ...(dose ? [`${med!.drug_name}: ${dose}.`] : []), ...differs.map((d) => `${d.label}: the record says ${d.record}, the second look read ${d.reading}.`)];
   async function signOff() {
     setError(null); setBusy(true);
     try { await signOffItem(db, clock, { userId: user!.id, deviceId }, item.id); } catch (e) { setError(msg(e)); }
@@ -237,7 +238,7 @@ export function RecoveryItemPage() {
           <span className="px-3 py-2 rounded-lg bg-primary-container text-white text-center"><span className="block font-label-badge text-label-badge opacity-80">BED</span><span className="block font-headline-md text-headline-md font-bold">{enc?.bed ?? '—'}</span></span>
           <div className="flex-1 min-w-[12rem]">
             <p className="flex flex-wrap items-center gap-2"><strong className="font-headline-md text-headline-md text-primary">{p ? fullName(p) : item.patient_id}</strong><Badge tone="blue">{p ? idLabel(p) : 'MRN'} {p?.mrn ?? '—'}</Badge>{p && <Badge>{ageOn(p.birth_date, clock.nowIso())}y {sexLabel(p.sex)}</Badge>}</p>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">Born {dayLabel(p?.birth_date)} · {enc?.unit ?? ''} · {enc?.attending ?? ''}{enc?.admit_time ? ` · admitted ${dayLabel(enc.admit_time)}` : ''}</p>
+            <p className="font-body-sm text-body-sm text-on-surface-variant">{[`Born ${dayLabel(p?.birth_date)}`, enc?.unit, enc?.attending, enc?.admit_time ? `admitted ${dayLabel(enc.admit_time)}` : ''].filter(Boolean).join(' · ')}</p>
           </div>
           <span className="flex flex-wrap gap-1">{item.flags.map((f) => <Badge key={f} tone={FLAG_TONE[f]}>{FLAG_TEXT[f]}</Badge>)}{x && <StatusBadge entry={x.entry} />}</span>
         </div>
