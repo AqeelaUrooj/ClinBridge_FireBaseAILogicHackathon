@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { allergyState } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { listPatientEntries } from '../../db/repos/entries';
 import type { ActiveOrder, MedAdmin } from '../../db/schema';
@@ -81,7 +82,7 @@ export function OrdersPage() {
             <div className={`rounded-lg p-space-md flex items-start gap-space-sm ${real.length ? 'bg-error-container text-on-error-container' : nka ? 'bg-surface-container-low' : 'bg-downtime-amber-bg'}`}>
               <Icon name={real.length ? 'warning' : nka ? 'verified_user' : 'help'} />
               <div className="min-w-0">
-                <h2 className="font-headline-sm text-headline-sm">{real.length ? 'Allergies' : nka ? 'No known allergies' : 'Allergies not recorded on the list'}</h2>
+                <h2 className="font-headline-sm text-headline-sm">{real.length ? 'Allergies' : nka ? 'No known allergies' : patient.allergy_status === 'unknown' || patient.allergy_status === 'not_assessed' ? allergyState(patient, allergies).text : 'Allergies not recorded on the list'}</h2>
                 {real.length > 0 ? <ul className="flex flex-col gap-1 mt-1">{real.map((a) => <li key={a.id} className="font-body-md text-body-md [overflow-wrap:anywhere]"><strong>{a.substance}</strong>{a.reaction ? `: ${a.reaction}` : ''}{a.severity ? ` (${a.severity})` : ''}</li>)}</ul>
                   : <p className="font-body-md text-body-md">{nka ? 'As written on the patient list.' : 'The patient list has no allergy line for this patient.'}</p>}
               </div>

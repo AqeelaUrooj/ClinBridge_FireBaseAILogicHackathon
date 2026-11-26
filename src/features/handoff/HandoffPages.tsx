@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { isActiveStay, staysByPatient } from '../../lib/admission';
+import { allergyState } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { listPatientEntries, type EntryWithChild } from '../../db/repos/entries';
@@ -73,7 +75,7 @@ export function NewHandoffPage() {
   const facts = [
     encounter?.code_status && `Code status: ${encounter.code_status}`,
     encounter?.isolation && `Isolation: ${encounter.isolation}`,
-    allergies.length ? `Allergies: ${allergies.map((a) => a.substance).join(', ')}` : 'Allergies: not recorded',
+    allergies.length ? `Allergies: ${allergies.map((a) => a.substance).join(', ')}` : `Allergies: ${allergyState(patient, allergies).text.toLowerCase()}`,
     encounter?.admit_time && `Admitted ${dayLabel(encounter.admit_time)}`,
   ].filter(Boolean).join('. ');
 
@@ -182,8 +184,8 @@ export function NewHandoffPage() {
 export function WardHandoverPage() {
   const { db } = useApp();
   const rows = useLiveQuery(async () => {
-    const patients = await db.patient.toArray();
-    const encs = new Map((await db.encounter.toArray()).map((e) => [e.patient_id, e]));
+    const encs = staysByPatient(await db.encounter.toArray());
+    const patients = (await db.patient.toArray()).filter((p) => isActiveStay(encs.get(p.id)));
     const out = [];
     for (const p of patients) {
       const list = await listHandoffs(db, p.id);

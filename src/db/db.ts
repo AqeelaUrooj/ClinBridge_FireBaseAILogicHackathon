@@ -36,7 +36,7 @@ export const V1_STORES: Record<string, string> = {
   audit_log: 'id, &seq',
   key_store: 'id',
 };
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 /** Reason stored the pre-v2 way (inside entry.confirmed) during development. Read-only helper. */
 export function legacyReason(e: Pick<Entry, 'confirmed'>): string | null {
@@ -86,6 +86,14 @@ export class DowntimeDB extends Dexie {
         if (legacy) copied++;
       });
       pendingMigrationNotes.set(this.name, { toVersion: 2, reasonsCopied: copied });
+    });
+    // Version 3 (admission lifecycle, approved 26 Nov 2026): optional patient and stay fields, Admission Staff role.
+    // No new table, no index change, no row is rewritten. Dexie 4 still opens a database that a NEWER build upgraded,
+    // so from this version on openWithMigration (backup.ts) refuses a database whose version is above DB_VERSION.
+    // Builds before version 3 do not have that check: never roll the website back to one (docs/ADMISSION_ARCHITECTURE.md).
+    this.version(3).stores({}).upgrade(() => {
+      const fromV2 = pendingMigrationNotes.get(this.name); // a v1 database runs both upgrades in one open
+      pendingMigrationNotes.set(this.name, { toVersion: 3, reasonsCopied: fromV2?.reasonsCopied ?? 0 });
     });
     // Encryption at rest (P-04): index fields stay plain, the rest of each row is AES-256-GCM. See encryption.ts.
     this.use(encryptionMiddleware(this.name, V1_STORES));

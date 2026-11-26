@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { isLocallyRegistered } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useNavigate } from 'react-router-dom';
 import { useApp, useSession, isNurse, readCloudContext } from '../../state/app';
@@ -45,7 +46,8 @@ function useSources(): Source[] | undefined {
       db.entry.where('status').equals('confirmed').filter((e) => e.type === 'vital_sign').toArray(), db.vital_sign.toArray(),
     ]);
     const child = new Map(vitals.map((v) => [v.entry_id, v]));
-    return patients.sort((a, b) => a.id.localeCompare(b.id)).map((p): Source => ({
+    // Only the reviewed Practice list: patients registered on this laptop are never benchmark inputs and never go to the cloud from here.
+    return patients.filter((p) => !isLocallyRegistered(p)).sort((a, b) => a.id.localeCompare(b.id)).map((p): Source => ({
       id: p.id, name: fullName(p), mrn: p.mrn, bed: encounters.find((e) => e.patient_id === p.id)?.bed ?? '',
       records: entries.filter((e) => e.patient_id === p.id && child.has(e.id)).sort((a, b) => b.care_time.localeCompare(a.care_time)).map((entry) => ({ entry, v: child.get(entry.id)! })),
     }));

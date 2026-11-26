@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { allergyState } from '../../lib/admission';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createEntry, listPatientEntries } from '../../db/repos/entries';
 import type { ActiveOrder, MedAdmin } from '../../db/schema';
@@ -80,7 +81,7 @@ export function RecordMed() {
   const facts: RefFact[] = [
     real.length
       ? { text: `Allergy: ${real.map((a) => `${a.substance}${a.reaction ? ` (${a.reaction}${a.severity ? `, ${a.severity}` : ''})` : ''}`).join('; ')}`, source: 'Patient list', tone: 'red' }
-      : { text: allergies.length ? 'No known allergies' : 'Allergies not recorded', source: 'Patient list' },
+      : { text: allergyState(patient, allergies).text, source: patient.origin === 'admission_registered' || patient.origin === 'nurse_provisional' ? 'Admission record' : 'Patient list', ...(allergyState(patient, allergies).tone === 'amber' ? { tone: 'amber' as const } : {}) },
     last
       ? { text: `Last dose of this order: ${formatDose(lastDose?.dose_given)} ${lastDose?.dose_given_unit ?? ''} at ${dateTimeLabel(last.entry.care_time)}${ago ? `, ${ago} ago` : ''}, by ${extra.names.get(last.entry.performer_id) ?? last.entry.performer_id}`, source: 'Recorded' }
       : { text: 'No dose of this order is recorded yet', source: 'Records' },

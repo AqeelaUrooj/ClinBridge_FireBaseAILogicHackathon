@@ -92,7 +92,8 @@ export const PROTOTYPE_POLICY: ClinicalPolicy = {
   recovery: {
     approved: false,
     // Medicines first (Data plan: "top back-entry priority to stop double dosing"), then the plan's category order.
-    categoryRank: { meds: 6, results: 5, vitals: 4, io: 3, notes: 2, other: 1 },
+    // Admission and identity first (26 Nov 2026): a locally registered patient must be matched before records go back.
+    categoryRank: { admission: 7, meds: 6, results: 5, vitals: 4, io: 3, notes: 2, other: 1 },
     networkChecklist: [
       'IT / security team says the hospital network is safe to use again',
       'EHR team says back-entry into the main record can start',

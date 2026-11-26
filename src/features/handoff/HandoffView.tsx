@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { allergyState } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link } from 'react-router-dom';
 import type { ActiveOrder, Practitioner, SnapshotResult } from '../../db/schema';
@@ -203,7 +204,7 @@ export function HandoverScreen({ data, current, banner }: { data: Loaded; curren
   const author = h ? data.staff.find((p) => p.id === h.created_by) : undefined;
   const facts: [string, string][] = [
     ['Admitted', e?.admit_time ? dayLabel(e.admit_time) : 'Not on the list'], ['Isolation', e?.isolation ?? 'None on the list'], ['Code status', e?.code_status ?? 'Not on the list'],
-    ['Diet', e?.diet ?? 'Not on the list'], ['Allergies', allergies.length ? allergies.map((a) => a.substance).join(', ') : 'Not recorded'],
+    ['Diet', e?.diet ?? 'Not on the list'], ['Allergies', allergies.length ? allergies.map((a) => a.substance).join(', ') : allergyState(patient, allergies).text],
   ];
   return (
     <>

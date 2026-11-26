@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { IDENTITY_LABEL, currentEncounter, idLabel, identityStatus, isLocallyRegistered, locationLabel, originLabel } from '../../lib/admission';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { isAdmin, isNurse, useApp, useSession } from '../../state/app';
@@ -202,7 +203,7 @@ export function RecoveryItemPage() {
     const related = why ? (await Promise.all(why.related.map((r) => getEntry(db, r)))).filter((x): x is EntryWithChild => !!x) : [];
     const chain = main ? await versionChain(db, main.entry.id) : [];
     const patient = await db.patient.get(item.patient_id);
-    const encounter = await db.encounter.where('patient_id').equals(item.patient_id).first();
+    const encounter = currentEncounter(await db.encounter.where('patient_id').equals(item.patient_id).toArray());
     const results = await db.snapshot_result.where('patient_id').equals(item.patient_id).toArray();
     const names = new Map((await db.practitioner.toArray()).map((s) => [s.id, s.name]));
     return { item, main, now, why, related, chain, patient, encounter, results, names, orders };
@@ -235,7 +236,7 @@ export function RecoveryItemPage() {
         <div className="flex flex-wrap items-center gap-space-md">
           <span className="px-3 py-2 rounded-lg bg-primary-container text-white text-center"><span className="block font-label-badge text-label-badge opacity-80">BED</span><span className="block font-headline-md text-headline-md font-bold">{enc?.bed ?? '—'}</span></span>
           <div className="flex-1 min-w-[12rem]">
-            <p className="flex flex-wrap items-center gap-2"><strong className="font-headline-md text-headline-md text-primary">{p ? fullName(p) : item.patient_id}</strong><Badge tone="blue">MRN {p?.mrn ?? '—'}</Badge>{p && <Badge>{ageOn(p.birth_date, clock.nowIso())}y {sexLabel(p.sex)}</Badge>}</p>
+            <p className="flex flex-wrap items-center gap-2"><strong className="font-headline-md text-headline-md text-primary">{p ? fullName(p) : item.patient_id}</strong><Badge tone="blue">{p ? idLabel(p) : 'MRN'} {p?.mrn ?? '—'}</Badge>{p && <Badge>{ageOn(p.birth_date, clock.nowIso())}y {sexLabel(p.sex)}</Badge>}</p>
             <p className="font-body-sm text-body-sm text-on-surface-variant">Born {dayLabel(p?.birth_date)} · {enc?.unit ?? ''} · {enc?.attending ?? ''}{enc?.admit_time ? ` · admitted ${dayLabel(enc.admit_time)}` : ''}</p>
           </div>
           <span className="flex flex-wrap gap-1">{item.flags.map((f) => <Badge key={f} tone={FLAG_TONE[f]}>{FLAG_TEXT[f]}</Badge>)}{x && <StatusBadge entry={x.entry} />}</span>
@@ -248,6 +249,14 @@ export function RecoveryItemPage() {
         )}
         {alerts.length === 0 && item.flags.length > 0 && <p className="font-body-sm text-body-sm text-secondary">Flagged in the practice data set; the rules no longer find a problem (for example after a fix).</p>}
         {fixed && <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-1"><Icon name="history" className="text-[20px]" />This record was fixed. The newest version is shown.</p>}
+        {p && isLocallyRegistered(p) && (
+          <div role="note" aria-label="Identity reconciliation" className="rounded-lg bg-downtime-amber-bg border border-downtime-amber-border p-space-md flex flex-col gap-1 font-body-md text-body-md text-[#5c400c]">
+            <strong>Registered on this laptop: {originLabel(p)}</strong>
+            <span>Temporary ID {p.mrn} (not a hospital MRN) · admitted {dateTimeLabel(enc?.admit_time)} · {locationLabel(enc)} · {IDENTITY_LABEL[identityStatus(p)]}{enc?.responsible_nurse_id ? ` · responsible nurse ${who(enc.responsible_nurse_id)}` : ''}</span>
+            <span>Admissions match this patient with the hospital record by their own procedure. ClinBridge never merges patients, never decides that two records are the same person, and has not sent anything to the EHR.</span>
+            <ButtonLink variant="secondary" className="self-start" to={user?.role === 'admin' ? `/admission/patients/${p.id}` : `/patients/${p.id}/stay`}><Icon name="badge" />Open identity reconciliation</ButtonLink>
+          </div>
+        )}
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-md items-start">

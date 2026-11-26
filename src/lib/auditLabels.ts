@@ -39,6 +39,17 @@ const ACTIONS: Record<string, [label: string, group: AuditGroup, icon: string]> 
   vault_unlocked: ['Records unlocked', 'system', 'lock_open'],
   vault_recovered: ['Opened with the recovery key', 'system', 'key'],
   vault_format_upgraded: ['Encryption format updated', 'system', 'lock'],
+  patient_registered: ['Patient registered (admissions)', 'records', 'person_add'],
+  patient_registered_provisional: ['Provisional patient registered (downtime)', 'records', 'person_add'],
+  bed_assigned: ['Bed assigned', 'records', 'bed'],
+  practice_orders_added: ['Practice medication scenario added', 'records', 'medication'],
+  patient_transferred: ['Patient transferred', 'records', 'move_down'],
+  patient_discharged: ['Patient discharged', 'records', 'logout'],
+  identity_reviewed: ['Identity reconciliation step', 'records', 'badge'],
+  allergy_status_recorded: ['Allergy status recorded', 'records', 'warning'],
+  admin_override: ['Admin override', 'system', 'admin_panel_settings'],
+  practice_staff_added: ['Practice staff account added', 'system', 'person_add'],
+  practice_reset: ['Practice data reset', 'system', 'restart_alt'],
 };
 
 export const auditLabel = (action: string): string => ACTIONS[action]?.[0] ?? action;

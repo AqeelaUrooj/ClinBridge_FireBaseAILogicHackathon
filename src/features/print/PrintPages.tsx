@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { allergyState } from '../../lib/admission';
 import { Link, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useApp, useSession } from '../../state/app';
@@ -90,7 +91,7 @@ type Step = 'select' | 'review' | 'preview';
 
 function allergyShort(b: PatientBundle): string {
   const real = b.allergies.filter((a) => !isNoKnownAllergy(a));
-  return real.length ? real.map((a) => a.substance).join(', ') : b.allergies.length ? 'No known allergies' : 'Not recorded';
+  return real.length ? real.map((a) => a.substance).join(', ') : allergyState(b.patient, b.allergies).text;
 }
 
 /** Narrow screens: born date, MRN and allergies under the name, so every identifier is visible without sideways scrolling. */

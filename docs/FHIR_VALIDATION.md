@@ -29,6 +29,23 @@
 | 3 (MRN type code, validator pinned) | `8508424` | **0** | 254 | 418 |
 | 4 (generated narrative, PR #4) | `74368b2` | **0** | **11** | 418 |
 
+### Admission lifecycle (26 Nov 2026, run on the owner's PC)
+
+Validator 7.0.6, downloaded from the official GitHub release; SHA-256 `2686590539f0b3ba…df89` equals GitHub's published digest, and the PGP signature (`validator_cli.jar.asc`) checks out as "Good signature" from key `85D1 C17C F115 2107 B272 386C 8FDF A682 8139 9B5D` (David Otasek). That key is not certified in a local web of trust. Java 17 (Temurin). Synthetic Practice data only. CI now validates both files as well.
+
+| File | What is in it | Terminology server | Errors | Warnings | Information |
+|---|---|---|---|---|---|
+| `fhir-bundle.json` (seed, 301 resources; in the app the export has 302: + the fictional Admission Staff practitioner) | the Practice list | tx.fhir.org | **0** | 11 | 418 |
+| `fhir-lifecycle.json` (329 resources), first run | + one patient registered by admissions, charted, transferred, discharged; + one provisional patient (System Down), transferred, identity under review | tx.fhir.org | **0** | 15 | 458 |
+| `fhir-lifecycle.json`, after fixes | same | tx.fhir.org | **0** | **11** | 458 |
+| `fhir-lifecycle.json`, after fixes | same | **none** (`-tx n/a`, offline) | **0** | 109 | 458 |
+
+The 4 extra warnings of the first lifecycle run were ours: the temporary identifier had a text-only `type`, and the responsible nurse's `participant.type` had no code (both extensible bindings). Fixed: the identifier has no `type` (its namespace says what it is), and the participant type is coded `PART` (v3 ParticipationType) with the text "Responsible nurse". The remaining 11 warnings are the existing `{score}` UCUM note on pain scores.
+
+**Offline limitation:** without a terminology server the validator cannot check LOINC and UCUM codes: 98 "Unable to validate code … without terminology services" warnings, no errors. The structure, cardinality, references and invariants are still checked offline. The packages (`hl7.fhir.r4.core` and dependencies) were downloaded once into the local FHIR cache.
+
+Checked in the lifecycle file: temporary identifiers (`use: temp`, ClinBridge namespace, no MR type), Encounter `status` `finished` with `period.end` for the discharged stay and `in-progress` for the active one, `location[]` with each bed, its `status` and `period`, `hospitalization.dischargeDisposition`, `reasonCode`, `participant`, and that every reference points to a resource in the Bundle.
+
 ### The 10 errors from run 1, and what we did
 
 | # | Rule | Where | Cause | Fix |

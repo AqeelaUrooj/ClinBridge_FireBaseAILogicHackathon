@@ -10,6 +10,7 @@ import {
 import { PUBLIC_DEMO } from '../config/publicDemo';
 import { PUBLIC_PRACTICE_PASSPHRASE, SECURITY_POLICY } from '../config/securityPolicy';
 import { importPracticeSeed } from '../db/seed';
+import { ensurePracticeAdmissionStaff } from '../db/repos/admission';
 import { openWithMigration } from '../db/backup';
 import { latestRecordedTime } from '../db/practiceTime';
 import type { DowntimeEvent, Practitioner, Snapshot } from '../db/schema';
@@ -108,6 +109,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await resealLegacyRows(db, { clock, deviceId: bootDevice });
       // Practice clock restarts at the scenario anchor on each load: move it past anything already saved.
       if (db.dataset === 'practice') clock.advanceTo?.(await latestRecordedTime(db));
+      // Older Practice installations get the fictional Admission Staff account once (idempotent, audited, nothing reset).
+      if (db.dataset === 'practice') await ensurePracticeAdmissionStaff(db, clock, bootDevice);
       return 'unlocked';
     }
     return (await detectVault(db)) as VaultView;
@@ -141,6 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             await migrateToEncrypted(db, { passphrase: PUBLIC_PRACTICE_PASSPHRASE, clock, deviceId: bootDevice });
           }
           clock.advanceTo?.(await latestRecordedTime(db));
+          await ensurePracticeAdmissionStaff(db, clock, bootDevice);
           view = 'unlocked';
         }
         void requestPersistentStorage();
@@ -355,5 +359,6 @@ export function useSession(): SessionState {
   return v;
 }
 
+/** Nursing roles. Admission staff are not nurses: they never chart (checked again in the repositories). */
 export const isNurse = (p: Practitioner | null) => p?.role === 'RN' || p?.role === 'LPN';
 export const isAdmin = (p: Practitioner | null) => p?.role === 'admin';

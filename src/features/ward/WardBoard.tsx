@@ -6,7 +6,10 @@ import { ageOn, hm } from '../../lib/time';
 import { ButtonLink, Icon } from '../../components/ui';
 import { MedIllustration } from '../../components/MedIllustration';
 import { VerifyPatientDialog } from '../patient/PatientLayout';
-import { fullName, isNoKnownAllergy } from '../patient/patientData';
+import { fullName } from '../patient/patientData';
+import { allergyState, idLabel, isActiveStay, isLocallyRegistered, isProvisional, mayDo, needsReconciliation } from '../../lib/admission';
+import { OriginBadges } from '../admission/AdmissionPages';
+import { Badge } from '../../components/ui';
 import { orderArt } from '../meds/MedsPages';
 import { doseLine, loadWardFacts, sortWard, type Measure, type PatientFacts, type WardSort } from './wardData';
 
@@ -17,10 +20,18 @@ import { doseLine, loadWardFacts, sortWard, type Measure, type PatientFacts, typ
  * behind it: NEWS2, acuity, shift times, "bedside verified", printer status. Opening any patient page still goes
  * through the patient check.
  */
-type Filter = 'all' | 'due' | 'critical' | 'drafts';
-const FILTER_LABEL: Record<Filter, string> = { all: 'All', due: 'Due meds', critical: 'Critical lab', drafts: 'Drafts' };
+type Filter = 'all' | 'due' | 'critical' | 'drafts' | 'local' | 'provisional' | 'pending' | 'discharged';
+// "All" is every patient with an active stay; discharged patients are only under their own filter (read only).
+const FILTER_LABEL: Record<Filter, string> = { all: 'All', due: 'Due meds', critical: 'Critical lab', drafts: 'Drafts', local: 'Registered here', provisional: 'Provisional', pending: 'Pending reconciliation', discharged: 'Discharged' };
 
-const matches = (r: PatientFacts, f: Filter) => f === 'all' || (f === 'due' ? r.due.length > 0 : f === 'critical' ? !!r.critical : r.drafts.length > 0);
+const matches = (r: PatientFacts, f: Filter) => {
+  if (f === 'discharged') return !isActiveStay(r.encounter);
+  if (!isActiveStay(r.encounter)) return false;
+  return f === 'all' || (f === 'due' ? r.due.length > 0 : f === 'critical' ? !!r.critical : f === 'drafts' ? r.drafts.length > 0
+    : f === 'local' ? isLocallyRegistered(r.patient) : f === 'provisional' ? isProvisional(r.patient) : needsReconciliation(r.patient));
+};
+/** Extra filters appear only when there is something to show, so the board stays as it was for the patient list alone. */
+const OPTIONAL: Filter[] = ['local', 'provisional', 'pending', 'discharged'];
 const sexLetter = (s: string) => (s === 'male' ? 'M' : s === 'female' ? 'F' : '');
 
 function Tile({ m, className = '' }: { m: Measure; className?: string }) {
@@ -61,7 +72,8 @@ function PatientCard({ r, open, nowIso, names, nurse, onToggle, onOpen }: {
   const { patient: p, encounter: e } = r;
   const base = `/patients/${p.id}`;
   const crit = r.critical;
-  const real = r.allergies.filter((a) => !isNoKnownAllergy(a));
+  const al = allergyState(p, r.allergies);
+  const real = al.real;
   const next = r.due[0];
   const differs = r.given.filter((g) => g.differsFromOrder);
   const art = next ? orderArt(next.order) : null;
@@ -86,7 +98,8 @@ function PatientCard({ r, open, nowIso, names, nurse, onToggle, onOpen }: {
                 <span className="font-body-sm text-body-sm text-secondary">{ageOn(p.birth_date, nowIso)}{sexLetter(p.sex)}</span>
                 {e?.code_status && <span className="px-1.5 py-0.5 rounded bg-surface-container font-code-tabular text-[10px] text-on-surface-variant font-bold uppercase">{e.code_status}</span>}
               </div>
-              <p className="font-code-tabular text-code-tabular text-secondary flex flex-wrap gap-x-1.5"><span className="whitespace-nowrap">MRN: {p.mrn}</span>{e?.attending && <span>• {e.attending}</span>}</p>
+              <p className="font-code-tabular text-code-tabular text-secondary flex flex-wrap gap-x-1.5"><span className="whitespace-nowrap">{idLabel(p)}: {p.mrn}</span>{e?.attending && <span>• {e.attending}</span>}</p>
+              {(isLocallyRegistered(p) || !isActiveStay(e)) && <div className="mt-1"><OriginBadges p={p} e={e} /></div>}
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 shrink-0 max-w-[45%]">
@@ -95,7 +108,7 @@ function PatientCard({ r, open, nowIso, names, nurse, onToggle, onOpen }: {
                 <Icon name="warning" className="text-[13px]" /><span className="sr-only">Allergy: </span>{real.map((a) => a.substance).join(', ')}
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded bg-surface-container text-secondary font-label-uppercase text-[10px] font-bold">{r.allergies.length ? 'No known allergies' : 'Allergies not recorded'}</span>
+              <span className={`px-2 py-0.5 rounded font-label-uppercase text-[10px] font-bold ${al.tone === 'amber' ? 'bg-downtime-amber-bg text-[#7a5410] border border-downtime-amber-border' : 'bg-surface-container text-secondary'}`}>{al.text}</span>
             )}
             {crit && <span className="px-2 py-0.5 rounded bg-error text-on-error font-code-tabular text-[11px] font-bold">Critical lab</span>}
             {e?.isolation && <span className="px-2 py-0.5 rounded bg-downtime-amber-bg text-[#7a5410] border border-downtime-amber-border font-label-uppercase text-[10px] font-bold uppercase">{e.isolation} isolation</span>}
@@ -211,7 +224,7 @@ function useStorageUsed(): string | null {
 }
 
 export function WardBoard() {
-  const { db, clock, snapshot } = useApp();
+  const { db, clock, snapshot, phase, dataset } = useApp();
   const { user, verifyPatient } = useSession();
   const navigate = useNavigate();
   const [read, setRead] = useState(0);
@@ -228,14 +241,16 @@ export function WardBoard() {
   const [pending, setPending] = useState<{ row: PatientFacts; path: string } | null>(null);
   const used = useStorageUsed();
 
-  const rows = data?.rows;
+  const all = data?.rows;
+  const rows = all?.filter((r) => isActiveStay(r.encounter)); // census, tiles and counts: active stays only
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return sortWard((rows ?? []).filter((r) => matches(r, filter)
+    return sortWard((all ?? []).filter((r) => matches(r, filter)
       && (!s || fullName(r.patient).toLowerCase().includes(s) || r.patient.mrn.toLowerCase().includes(s) || (r.encounter?.bed ?? '').toLowerCase().includes(s))), sort);
-  }, [rows, q, filter, sort]);
+  }, [all, q, filter, sort]);
 
-  const count = (f: Filter) => (rows ?? []).filter((r) => matches(r, f)).length;
+  const count = (f: Filter) => (all ?? []).filter((r) => matches(r, f)).length;
+  const provisional = mayDo(user, 'register_provisional', phase);
   const dues = (rows ?? []).flatMap((r) => r.due);
   const nextDue = [...dues].map((d) => d.time).filter((t) => data && t >= data.nowIso).sort()[0];
   const crits = (rows ?? []).filter((r) => r.critical);
@@ -266,7 +281,7 @@ export function WardBoard() {
               className="w-full min-h-9 pl-8 pr-3 bg-surface-container-low text-on-surface font-body-md text-body-md rounded border border-transparent focus:bg-surface-container-lowest focus:border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary" />
           </label>
           <div role="group" aria-label="Filter" className="flex flex-wrap items-center bg-surface-container-low rounded p-0.5 border border-outline-variant/30">
-            {(Object.keys(FILTER_LABEL) as Filter[]).map((f) => (
+            {(Object.keys(FILTER_LABEL) as Filter[]).filter((f) => !OPTIONAL.includes(f) || f === filter || count(f) > 0).map((f) => (
               <button key={f} type="button" aria-pressed={filter === f} onClick={() => setFilter(f)}
                 className={`min-h-8 px-2.5 rounded font-body-sm text-body-sm whitespace-nowrap ${filter === f ? 'bg-surface-container-lowest text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:text-primary'}`}>
                 {FILTER_LABEL[f]} ({rows ? count(f) : '…'})
@@ -316,6 +331,9 @@ export function WardBoard() {
         <span className="flex flex-wrap gap-space-sm">
           <ButtonLink variant="secondary" to="/spooler"><Icon name="print" />Paper form packets</ButtonLink>
           <ButtonLink to="/handover"><Icon name="assignment" />Prepare SBAR handover</ButtonLink>
+          {user?.role === 'RN' && dataset === 'practice' && (provisional.ok
+            ? <ButtonLink to="/ward/register"><Icon name="person_add" />Add Provisional Practice Patient</ButtonLink>
+            : <span className="flex items-center gap-1 font-body-sm text-body-sm text-secondary" title={provisional.reason}><Badge icon="person_add">Provisional patients: during System Down only</Badge></span>)}
         </span>
       </footer>
 

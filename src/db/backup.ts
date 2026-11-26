@@ -75,9 +75,20 @@ export async function backupBeforeUpgrade(name: string, nowIso: string): Promise
 }
 
 /** Open with backup first, then write one audit row describing the migration (if one ran). */
+/** A newer ClinBridge build saved these records: this build would misread fields it does not know (e.g. a discharge). */
+export class NewerDatabaseError extends Error {
+  constructor(found: number) {
+    super(`The records on this laptop were saved by a newer ClinBridge version (database version ${found}; this version knows ${DB_VERSION}). Close this window and open the current ClinBridge version. Nothing was changed.`);
+    this.name = 'NewerDatabaseError';
+  }
+}
+
 export async function openWithMigration(db: DowntimeDB, clock: Clock, deviceId: string): Promise<{ backupId: number | null; migrated: boolean }> {
   const backupId = await backupBeforeUpgrade(db.name, clock.nowIso());
   await db.open();
+  // Dexie 4 opens a database that a newer build upgraded. Fail closed instead (checked before anything is read).
+  const found = Math.floor(db.backendDB().version / 10);
+  if (found > DB_VERSION) { db.close(); throw new NewerDatabaseError(found); }
   const note = pendingMigrationNotes.get(db.name);
   if (!note) return { backupId, migrated: false };
   pendingMigrationNotes.delete(db.name);

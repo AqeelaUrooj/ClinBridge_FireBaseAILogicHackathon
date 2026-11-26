@@ -55,8 +55,8 @@ jobs:
           distribution: temurin
           java-version: 21
       - run: npm ci
-      - name: Build synthetic export
-        run: FHIR_OUT=$PWD/fhir-bundle.json npx vitest run src/lib/fhir.export.test.ts
+      - name: Build synthetic exports (patient list; admission lifecycle)
+        run: FHIR_OUT=$PWD/fhir-bundle.json FHIR_OUT_LIFECYCLE=$PWD/fhir-lifecycle.json npx vitest run src/lib/fhir.export.test.ts src/lib/fhir.lifecycle.export.test.ts
       - name: Download HL7 validator
         run: curl -sSL -o validator_cli.jar https://github.com/hapifhir/org.hl7.fhir.core/releases/download/7.0.6/validator_cli.jar
       - name: Validate (R4 4.0.1)
@@ -69,11 +69,18 @@ jobs:
             [ -s fhir-validation.json ] && break
             echo "Validator produced no result (attempt $attempt)"; sleep 60
           done
+          for attempt in 1 2; do
+            java -jar validator_cli.jar fhir-lifecycle.json -version 4.0.1 -output fhir-lifecycle-validation.json -html-output fhir-lifecycle-validation.html | tee fhir-lifecycle-validation.txt
+            [ -s fhir-lifecycle-validation.json ] && break
+            echo "Validator produced no result for the lifecycle export (attempt $attempt)"; sleep 60
+          done
       - name: Summary
         if: always()
         run: |
           node scripts/fhir-summary.mjs fhir-validation.json --fail-on-error
           grep -E "Success|Error|errors" fhir-validation.txt | tail -5 || true
+          node scripts/fhir-summary.mjs fhir-lifecycle-validation.json --fail-on-error
+          grep -E "Success|Error|errors" fhir-lifecycle-validation.txt | tail -5 || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -83,3 +90,7 @@ jobs:
             fhir-validation.json
             fhir-validation.html
             fhir-validation.txt
+            fhir-lifecycle.json
+            fhir-lifecycle-validation.json
+            fhir-lifecycle-validation.html
+            fhir-lifecycle-validation.txt

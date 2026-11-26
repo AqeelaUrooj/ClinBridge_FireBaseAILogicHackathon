@@ -3,6 +3,7 @@
  * Nothing here writes, and nothing is invented: a value that is not in the records is left out (the form then
  * shows an empty box for the nurse to write in).
  */
+import { isActiveStay } from '../../lib/admission';
 import type { DowntimeDB } from '../../db/db';
 import type { ActiveOrder, Handoff, IntakeOutput, VitalSign } from '../../db/schema';
 import { listPatientEntries } from '../../db/repos/entries';
@@ -80,6 +81,7 @@ export async function loadPrintData(db: DowntimeDB, patientId: string, nowIso: s
 /** Ward list for the packet builder: every patient in this dataset, by bed. */
 export async function loadWardForPrint(db: DowntimeDB): Promise<PatientBundle[]> {
   const ids = (await db.patient.toArray()).map((p) => p.id);
-  const all = (await Promise.all(ids.map((id) => loadPatient(db, id)))).filter((x): x is PatientBundle => !!x);
+  // Paper packets are for patients on the ward: a discharged stay gets no blank form to write on.
+  const all = (await Promise.all(ids.map((id) => loadPatient(db, id)))).filter((x): x is PatientBundle => !!x && isActiveStay(x.encounter));
   return all.sort((a, b) => (a.encounter?.bed ?? '').localeCompare(b.encounter?.bed ?? '') || a.patient.family_name.localeCompare(b.patient.family_name));
 }

@@ -22,11 +22,19 @@ It is a web app that your browser installs. There is no `.exe`. You can also use
 | Step | What to do |
 |---|---|
 | "Unlock records on this laptop" | Click **Use practice passphrase** (public on purpose; it appears after a reload or restart) |
-| Who are you? | Choose a fictional person. **Daniel Okafor** is a nurse (RN), **Kim Ellis** is the admin |
+| Who are you? | Choose a fictional person. **Daniel Okafor** is a nurse (RN), **Kim Ellis** is the admin, **Leila Marquez** is admission staff |
 | PIN | **2468** for everyone (shown on the screen) |
 | Patient check | "Is this the right patient?" → **Yes, open** |
 
-Nurses chart. The admin declares the outage, clears the network and runs the recovery.
+Nurses chart. The admin declares the outage, clears the network and runs the recovery. Admission staff register fictional patients and assign beds; they never chart.
+
+### A new patient during the outage (optional, about 4 minutes)
+
+1. **Leila Marquez** → **Register Practice Patient** → the identity is generated (Generate another) → reason, free bed, allergy status → Review → Save. The patient gets a temporary ID (PX-000001), not an MRN.
+2. **Daniel Okafor** → the patient is on the ward board → the patient check shows the temporary ID → record vitals.
+3. **Kim Ellis** → Start a practice outage. **Daniel Okafor** → **Add Provisional Practice Patient** (only during System Down) → chart for that patient.
+4. Patient → **Stay and admission** → Record a transfer. Leila Marquez → Admissions → open the first patient → Record a discharge (drafts block it; outstanding doses must be acknowledged). The bed is free again; the records stay readable.
+5. Kim Ellis → clear the network → Recovery → **Add new downtime records**: the provisional patient is first ("Admission and identity", Recheck). A person records "Reconciled" on the stay page; ClinBridge never matches identities itself. Export: the FHIR file has the temporary IDs, the transfer and the finished stay.
 
 ## Recommended demo (about 6 minutes)
 

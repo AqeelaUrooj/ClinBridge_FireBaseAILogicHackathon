@@ -23,9 +23,9 @@ test('export: real counts, who signed off, and no claim of a sync, gateway, cert
 test('export: the resources shown are the resources in the file', async ({ page }) => {
   await openExport(page);
   await page.getByRole('button', { name: 'Prepare export file' }).click();
-  await expect(page.getByTestId('export-summary')).toContainText('301 resources in the file');
+  await expect(page.getByTestId('export-summary')).toContainText('302 resources in the file'); // 301 + the fictional Admission Staff account (Practitioner)
   const n = (await page.locator('dl[aria-label="Resources in the file"] dd').allInnerTexts()).map(Number);
-  expect(n.reduce((a, b) => a + b, 0)).toBe(301);
+  expect(n.reduce((a, b) => a + b, 0)).toBe(302);
   await page.getByLabel('I understand this file is sensitive and not encrypted').check();
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Download file' }).click();

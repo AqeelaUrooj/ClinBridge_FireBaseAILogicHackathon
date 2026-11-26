@@ -29,6 +29,7 @@ Architecture: [web and hybrid AI](docs/AI_INTEGRATION.md) · [Android](mobile/do
 | Genuine Firebase cloud AI (`gemini-3.5-flash-lite`, `ONLY_IN_CLOUD`, App Check enforced), text notes and paper-form photos | **Live-tested** on the owner's PC, 20 and 22 Nov 2026, and on the live site with real App Check, 24 Nov 2026 | `docs/RELEASE_REPORT_2026-11-24.md`, `docs/LIVE_TEST_RESULTS_2026-11-24.md`, `docs/LIVE_TEST_RESULTS_2026-11-20.md`, `docs/LIVE_TEST_RESULTS_2026-11-22.md` |
 | Gemini Nano on-device inference (`ONLY_ON_DEVICE`, network blocked during the call) | **Implemented and mock-tested, not live-verified.** The test PC's hardware can't run Gemini Nano | `docs/AI_TEST_MATRIX.md`, `docs/GEMINI_NANO_VERIFICATION_CHECKLIST.md` |
 | FHIR R4 export (file) | **Working**: 0 errors from the official HL7 validator in CI. Many fields are free text; no live EHR link | `docs/FHIR_VALIDATION.md` |
+| Admission lifecycle: Admission Staff role, registration, provisional registration by a nurse during System Down, temporary IDs, beds, transfer, discharge, identity reconciliation (Practice only) | **Working, prototype policy**: fictional patients only; not a hospital registration system | Unit and offline browser tests; `docs/ADMISSION_ARCHITECTURE.md` |
 | Real patient deployment | **Not approved** | Clinical rules and security are prototypes (`KNOWN_LIMITATIONS.md`) |
 
 AI is optional. Every record can be typed by hand, and no AI proposal is ever saved as confirmed: a nurse checks it against the paper first.
@@ -111,6 +112,7 @@ docs/            planning documents and the project docs below
 - [TEST_REPORT.md](TEST_REPORT.md): latest test runs
 - [DEPLOYMENT.md](DEPLOYMENT.md): how to ship it
 - [docs/AI_INTEGRATION.md](docs/AI_INTEGRATION.md): hybrid AI design and status
+- [docs/ADMISSION_ARCHITECTURE.md](docs/ADMISSION_ARCHITECTURE.md): roles, registration, transfer, discharge, identity reconciliation, database version 3
 - [docs/FHIR_VALIDATION.md](docs/FHIR_VALIDATION.md): export validation results
 - [docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md): security notes
 - [docs/ASSETS.md](docs/ASSETS.md): body map artwork and illustrations

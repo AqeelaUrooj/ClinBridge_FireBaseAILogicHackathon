@@ -1,5 +1,8 @@
 import type { DowntimeDB } from '../db';
-import type { WorklistItem } from '../schema';
+import type { Note, WorklistFlag, WorklistItem } from '../schema';
+import { isLifecycleNote } from '../../lib/charting';
+import { needsReconciliation } from '../../lib/admission';
+import { ACTIVE_CLINICAL_POLICY } from '../../config/clinicalPolicy';
 import { buildAuditRow } from '../audit';
 import type { Clock } from '../../lib/time';
 import { currentEvent } from '../../lib/phase';
@@ -26,11 +29,17 @@ export async function buildWorklist(db: DowntimeDB, clock: Clock, actor: Actor):
   for (const p of patients) {
     const all = (await listPatientEntries(db, p.id)).filter((x) => x.entry.status === 'confirmed');
     for (const item of all) {
-      if (existing.has(item.entry.id) || !inDowntime(item.entry, ev)) continue;
+      // Admission, transfer, discharge and identity records belong to the downtime when they were WRITTEN in it: a
+      // patient who arrived shortly before the outage was declared but was registered during it is still listed.
+      const lifecycle = item.entry.type === 'note' && isLifecycleNote((item.child as Note | undefined)?.category);
+      if (existing.has(item.entry.id) || !(inDowntime(item.entry, ev) || (lifecycle && inDowntime({ ...item.entry, care_time: item.entry.entry_time }, ev)))) continue;
       const f = flagEntry(item, all, orders);
+      // Every record of a patient whose identity is not reconciled yet is marked "Recheck": admissions match the
+      // patient with the hospital record first. Rules only: nothing is matched automatically.
+      const flags: WorklistFlag[] = needsReconciliation(p) && !f.flags.includes('recheck') ? [...f.flags, 'recheck'] : f.flags;
       created.push({
-        id: `wl-${crypto.randomUUID().slice(0, 8)}`, entry_id: item.entry.id, patient_id: p.id, category: CATEGORY[item.entry.type],
-        priority: queuePriority(item.entry.type, f.flags), flags: f.flags, billable: null, assigned_to: null,
+        id: `wl-${crypto.randomUUID().slice(0, 8)}`, entry_id: item.entry.id, patient_id: p.id, category: lifecycle ? 'admission' : CATEGORY[item.entry.type],
+        priority: lifecycle ? (ACTIVE_CLINICAL_POLICY.recovery.categoryRank.admission ?? 1) * 10 + flags.length : queuePriority(item.entry.type, flags), flags, billable: null, assigned_to: null,
         signed_off_by: null, signed_off_at: null, exported_at: null, second_look_status: null, second_look_reading: null, mismatch_fields: null,
       });
     }
@@ -51,6 +60,7 @@ export async function signOffItem(db: DowntimeDB, clock: Clock, actor: Actor, it
   await requirePhaseOnline(db);
   const who = await db.practitioner.get(actor.userId);
   if (!who?.active) throw new EntryWriteError('Sign in again.');
+  if (who.role === 'admission') throw new EntryWriteError('Admission staff do not sign off nursing records. They record identity steps on the stay page.');
   const item = await db.worklist_item.get(itemId);
   if (!item) throw new EntryWriteError('Worklist item not found.');
   if (item.signed_off_at) throw new EntryWriteError('Already signed off.');

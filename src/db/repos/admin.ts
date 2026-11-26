@@ -40,7 +40,7 @@ export async function addStaff(db: DowntimeDB, clock: Clock, actor: Actor, s: { 
   const name = s.name.trim(), initials = s.initials.trim().toUpperCase();
   if (!name) throw new EntryWriteError('Enter a name.');
   if (!/^[A-Z]{1,3}$/.test(initials)) throw new EntryWriteError('Initials: 1 to 3 letters.');
-  if (!(['RN', 'LPN', 'admin'] as Role[]).includes(s.role)) throw new EntryWriteError('Pick a role.');
+  if (!(['RN', 'LPN', 'admin', 'admission'] as Role[]).includes(s.role)) throw new EntryWriteError('Pick a role.');
   if (!isValidPinFormat(s.pin)) throw new EntryWriteError('PIN must be 4 digits.');
   const p: Practitioner = { id: `pr-${crypto.randomUUID().slice(0, 8)}`, name, initials, role: s.role, pin_hash: await hashPin(s.pin), active: true };
   const row = await audit(db, clock, actor, 'staff_added', `practitioner/${p.id}`, { name, initials, role: s.role, active: true });

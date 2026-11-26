@@ -4,6 +4,7 @@ import { buildAuditRow } from '../audit';
 import { guardStorage } from '../errors';
 import type { Clock } from '../../lib/time';
 import { EntryWriteError, type Actor } from './entries';
+import { currentEncounter, isActiveStay } from '../../lib/admission';
 
 /**
  * Shift handover notes (handoff table, final schema: no time or status fields).
@@ -34,6 +35,9 @@ export function validateHandoff(i: HandoffInput): Record<string, string> {
 export async function createHandoff(db: DowntimeDB, clock: Clock, actor: Actor, i: HandoffInput): Promise<Handoff> {
   const errors = validateHandoff(i);
   if (Object.keys(errors).length) throw new EntryWriteError(Object.values(errors)[0]!);
+  if ((await db.practitioner.get(actor.userId))?.role === 'admission') throw new EntryWriteError('Admission staff do not write nursing handovers.');
+  const stay = currentEncounter(await db.encounter.where('patient_id').equals(i.patientId).toArray());
+  if (stay && !isActiveStay(stay)) throw new EntryWriteError('This patient was discharged. A new handover is not written for a closed stay.');
   const ids = [...new Set(i.sourceEntryIds)];
   const sources = await db.entry.bulkGet(ids);
   sources.forEach((s, k) => {
@@ -55,9 +59,10 @@ export async function createHandoff(db: DowntimeDB, clock: Clock, actor: Actor, 
   const now = clock.nowIso();
   const last = await db.audit_log.orderBy('seq').last();
   const audit = await buildAuditRow({ last, time: now, userId: actor.userId, deviceId: actor.deviceId, action: 'handoff_saved', entity: `handoff/${row.id}`, after: row });
-  await guardStorage(() => db.transaction('rw', [db.handoff, db.audit_log], async () => {
+  await guardStorage(() => db.transaction('rw', [db.handoff, db.audit_log, db.encounter], async () => {
     const head = await db.audit_log.orderBy('seq').last();
     if ((head?.seq ?? 0) !== (last?.seq ?? 0)) throw new EntryWriteError('Another change was saved at the same moment. Try again.');
+    if (stay && !isActiveStay(await db.encounter.get(stay.id))) throw new EntryWriteError('This patient was discharged a moment ago. A new handover is not written for a closed stay.');
     await db.handoff.add(row);
     await db.audit_log.add(audit);
   }), (m) => new EntryWriteError(m));

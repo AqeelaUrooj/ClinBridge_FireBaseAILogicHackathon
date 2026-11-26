@@ -6,6 +6,7 @@ import { isAdmin, useApp, useSession } from '../state/app';
 import { Icon } from './ui';
 import { hm } from '../lib/time';
 import { PHASE_LABEL } from '../lib/phase';
+import { roleLabel } from '../lib/admission';
 
 /** Header: always visible, shows mode, snapshot age, laptop and the signed-in person (Stitch status rail). */
 export function ModeBanner({ onMenu, menuOpen, menuRef }: { menuRef?: Ref<HTMLButtonElement>; onMenu?: () => void; menuOpen?: boolean } = {}) {
@@ -54,7 +55,7 @@ export function ModeBanner({ onMenu, menuOpen, menuRef }: { menuRef?: Ref<HTMLBu
             <>
               <span className="text-right leading-tight hidden sm:block">
                 <span className="block font-body-sm text-body-sm font-semibold">{user.name}</span>
-                <span className="block font-label-uppercase text-[10px] text-on-primary-container">{user.role === 'admin' ? 'Admin' : user.role}</span>
+                <span className="block font-label-uppercase text-[10px] text-on-primary-container">{roleLabel(user.role)}</span>
               </span>
               <button onClick={() => { lock(); navigate('/lock'); }} className="min-h-9 px-2.5 rounded bg-white/10 hover:bg-white/20 flex items-center gap-1 font-body-sm font-semibold" aria-label="Lock screen">
                 <Icon name="lock" className="text-[16px]" />Lock
@@ -113,7 +114,7 @@ function NavGroup({ title, children }: { title: string; children: ReactNode }) {
  * otherwise a ward overview (the patient check still runs before any patient page).
  */
 export function Sidebar({ open = false }: { open?: boolean } = {}) {
-  const { db, snapshot } = useApp();
+  const { db, snapshot, dataset } = useApp();
   const { user } = useSession();
   const drafts = useLiveQuery(() => db.entry.where('status').equals('draft').count(), [db], 0);
   const patients = useLiveQuery(() => db.patient.count(), [db], 0);
@@ -134,7 +135,12 @@ export function Sidebar({ open = false }: { open?: boolean } = {}) {
           <span className="font-body-sm text-body-sm font-bold text-primary block">{snapshot?.unit ?? 'No patient list'}</span>
         </div>
         <nav className="flex flex-col gap-space-xs">
-          {isAdmin(user) ? (
+          {user?.role === 'admission' ? (
+            <NavGroup title="Admissions">
+              <NavItem to="/admission" icon="assignment_ind" label="Admissions & Beds" end />
+              <NavItem to="/admission/register" icon="person_add" label="Register Patient" />
+            </NavGroup>
+          ) : isAdmin(user) ? (
             <>
               <NavGroup title="System admin">
                 <NavItem to="/admin" icon="monitor_heart" label="Readiness & Storage" end />
@@ -144,6 +150,7 @@ export function Sidebar({ open = false }: { open?: boolean } = {}) {
               </NavGroup>
               <NavGroup title="Operations">
                 <NavItem to="/alerts" icon="notifications_active" label="Alerts & Orders" badge={drafts} />
+                {dataset === 'practice' && <NavItem to="/admission" icon="assignment_ind" label="Admissions (oversight)" />}
                 <NavItem to="/more" icon="more_horiz" label="More" />
               </NavGroup>
             </>
@@ -173,7 +180,7 @@ export function Sidebar({ open = false }: { open?: boolean } = {}) {
         <span className="w-9 h-9 rounded-full bg-secondary-fixed text-on-secondary-fixed grid place-items-center font-bold font-body-md" aria-hidden>{user?.initials}</span>
         <span className="leading-tight">
           <span className="block font-body-md text-body-md font-semibold text-primary">{user?.name}</span>
-          <span className="block font-body-sm text-body-sm text-secondary">{user?.role === 'admin' ? 'Admin' : user?.role}</span>
+          <span className="block font-body-sm text-body-sm text-secondary">{user ? roleLabel(user.role) : ''}</span>
         </span>
       </div>
     </aside>

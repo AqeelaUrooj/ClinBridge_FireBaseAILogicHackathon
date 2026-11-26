@@ -35,7 +35,7 @@ async function makeV1(name: string) {
 describe('DB v2 migration: entry.change_reason (P-02)', () => {
   it('keeps the final 19-table schema', () => {
     expect(TABLE_NAMES).toHaveLength(19);
-    expect(DB_VERSION).toBe(2);
+    expect(DB_VERSION).toBe(3);
   });
 
   it('backs up, copies every legacy reason, changes nothing else, and keeps the audit chain valid', async () => {
@@ -46,7 +46,7 @@ describe('DB v2 migration: entry.change_reason (P-02)', () => {
     const res = await openWithMigration(db, clock, 'dev-01');
     expect(res.migrated).toBe(true);
     expect(res.backupId).not.toBeNull();
-    expect(db.verno).toBe(2);
+    expect(db.verno).toBe(3); // v1 → v2 (reasons) → v3 (admission lifecycle) in one open
 
     const after = await db.entry.toArray();
     expect(after).toHaveLength(before.entries.length);
@@ -76,6 +76,28 @@ describe('DB v2 migration: entry.change_reason (P-02)', () => {
     expect(backup!.from_version).toBe(1);
     expect(backup!.tables.entry).toHaveLength(before.entries.length);
     expect(JSON.stringify(backup!.tables.entry)).toContain('Pulse and breathing swapped');
+    db.close();
+  });
+
+  it('v2 → v3 (admission lifecycle): backup first, no row changed, one audit row, chain valid; old patients read as active list patients', async () => {
+    const name = `mig3-${crypto.randomUUID()}`;
+    const seeded = new DowntimeDB('practice', `${name}-src`);
+    await importPracticeSeed(seeded);
+    const tables: Record<string, unknown[]> = {};
+    for (const t of TABLE_NAMES) tables[t] = await seeded.table(t).toArray();
+    seeded.close();
+    const v2 = new Dexie(name);
+    v2.version(2).stores(V1_STORES);
+    await v2.open();
+    await v2.transaction('rw', v2.tables, async () => { for (const t of TABLE_NAMES) await v2.table(t).bulkAdd(tables[t]!); });
+    v2.close();
+    const db = new DowntimeDB('practice', name);
+    const res = await openWithMigration(db, clock, 'dev-01');
+    expect(res.migrated).toBe(true);
+    expect(res.backupId).not.toBeNull();
+    for (const t of TABLE_NAMES) expect(await db.table(t).toArray(), t).toEqual(t === 'audit_log' ? [...tables[t]!, expect.objectContaining({ action: 'schema_migrated' })] : tables[t]);
+    expect((await verifyChain(await db.audit_log.toArray())).ok).toBe(true);
+    expect((await db.encounter.toArray()).every((e) => e.status === undefined)).toBe(true); // absent = active stay from the list
     db.close();
   });
 
